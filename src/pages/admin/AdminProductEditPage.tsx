@@ -54,6 +54,8 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     },
   ]);
 
+  const [existingVariantsMap, setExistingVariantsMap] = useState<Record<string, string>>({});
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [newColorInput, setNewColorInput] = useState('');
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
             if (found.variants && found.variants.length > 0) {
               const sizeSet = new Set<string>();
               const grouped: Record<string, Record<string, number>> = {};
+              const idMap: Record<string, string> = {};
 
               found.variants.forEach((v) => {
                 sizeSet.add(v.size);
@@ -102,11 +105,16 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                   grouped[v.color] = {};
                 }
                 grouped[v.color][v.size] = v.stock_quantity;
+                if (v.id) {
+                  idMap[`${v.color}___${v.size}`] = v.id;
+                }
               });
 
               if (sizeSet.size > 0) {
                 setAvailableSizes(Array.from(sizeSet));
               }
+
+              setExistingVariantsMap(idMap);
 
               setVariantGroups(
                 Object.entries(grouped).map(([col, szs]) => ({
@@ -290,6 +298,76 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     );
   };
 
+  const handleDeleteVariant = async (color: string, size: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المقاس/اللون من المنتج؟')) {
+      return;
+    }
+
+    try {
+      const key = `${color}___${size}`;
+      const varId = existingVariantsMap[key];
+      if (varId) {
+        await api.adminDeleteVariant(varId);
+      }
+
+      setVariantGroups((prev) =>
+        prev.map((g) => {
+          if (g.color !== color) return g;
+          const nextSizes = { ...g.sizes };
+          delete nextSizes[size];
+          return {
+            ...g,
+            sizes: nextSizes,
+          };
+        })
+      );
+
+      setExistingVariantsMap((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+
+      setSuccessNotice('تم حذف المتغير بنجاح');
+      setTimeout(() => setSuccessNotice(null), 3000);
+    } catch (err: any) {
+      alert(err.message || 'فشل حذف المتغير');
+    }
+  };
+
+  const handleAddSizeToColor = (color: string, sizeToAdd: string) => {
+    if (!sizeToAdd) return;
+    setVariantGroups((prev) =>
+      prev.map((g) => {
+        if (g.color !== color) return g;
+        if (g.sizes[sizeToAdd] !== undefined) return g;
+        return {
+          ...g,
+          sizes: {
+            ...g.sizes,
+            [sizeToAdd]: 5,
+          },
+        };
+      })
+    );
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!productId) return;
+    if (!window.confirm('هل أنت متأكد من حذف هذا الموديل نهائيًا من قاعدة البيانات؟\nلن يتم حذف بيانات الطلبات السابقة المرتبطة به.')) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await api.adminDeleteProduct(productId);
+      onSaved();
+    } catch (err: any) {
+      setError(err.message || 'فشل حذف المنتج');
+      setIsSaving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -309,11 +387,11 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     try {
       const flattenedVariants: { color: string; size: string; stock_quantity: number }[] = [];
       variantGroups.forEach((g) => {
-        availableSizes.forEach((sz) => {
+        Object.entries(g.sizes).forEach(([sz, qty]) => {
           flattenedVariants.push({
             color: g.color,
             size: sz,
-            stock_quantity: g.sizes[sz] || 0,
+            stock_quantity: qty || 0,
           });
         });
       });
@@ -374,15 +452,37 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
           </h1>
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="py-2.5 px-6 bg-white hover:bg-neutral-200 text-black font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          <span>{isSaving ? 'جاري الحفظ...' : 'حفظ الموديل'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isEditing && productId && (
+            <button
+              type="button"
+              onClick={handleDeleteProduct}
+              disabled={isSaving}
+              className="py-2.5 px-4 bg-red-950/70 hover:bg-red-900/90 border border-red-800 text-red-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="حذف هذا الموديل نهائيًا"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>حذف الموديل</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="py-2.5 px-6 bg-white hover:bg-neutral-200 text-black font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isSaving ? 'جاري الحفظ...' : 'حفظ الموديل'}</span>
+          </button>
+        </div>
       </div>
+
+      {successNotice && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-200 text-xs flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{successNotice}</span>
+        </div>
+      )}
 
       {error && (
         <div className="p-3.5 rounded-xl bg-red-950/60 border border-red-800 text-red-200 text-xs">
@@ -720,26 +820,67 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                   </button>
                 </div>
 
-                {/* Stock per Size Row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 text-xs">
-                  {availableSizes.map((size) => (
-                    <div key={size} className="space-y-1">
-                      <span className="font-mono text-neutral-400 block text-center font-bold">
-                        مقاس {size}
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={group.sizes[size] ?? 0}
-                        onChange={(e) =>
-                          updateSizeStock(group.color, size, parseInt(e.target.value) || 0)
-                        }
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2 text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-white"
-                      />
+                {/* Stock per Size Row / Variants */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+                  {Object.keys(group.sizes).map((size) => (
+                    <div
+                      key={size}
+                      className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-white font-bold bg-neutral-800 px-2 py-0.5 rounded text-xs">
+                          مقاس {size}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVariant(group.color, size)}
+                          className="px-2 py-1 rounded bg-red-950/60 hover:bg-red-900/90 border border-red-800/80 text-red-300 hover:text-white text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          title={`حذف مقاس ${size} من لون ${group.color}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>حذف</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] text-neutral-400 whitespace-nowrap">
+                          المخزون:
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={group.sizes[size] ?? 0}
+                          onChange={(e) =>
+                            updateSizeStock(group.color, size, parseInt(e.target.value) || 0)
+                          }
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded py-1 px-2 text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-white"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Add available size to this specific color group */}
+                {availableSizes.some((s) => group.sizes[s] === undefined) && (
+                  <div className="pt-2 flex items-center gap-2 text-xs border-t border-neutral-900">
+                    <span className="text-neutral-400 text-[11px]">إضافة مقاس لهذا اللون:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableSizes
+                        .filter((s) => group.sizes[s] === undefined)
+                        .map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleAddSizeToColor(group.color, s)}
+                            className="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white font-mono font-bold text-[11px] transition-colors cursor-pointer"
+                          >
+                            + {s}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

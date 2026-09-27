@@ -51,61 +51,180 @@ export const api = {
   async getCategories(): Promise<Category[]> {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('categories').select('*').eq('is_active', true).order('created_at', { ascending: true });
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .neq('is_active', false)
+          .order('created_at', { ascending: true });
         if (!error && data) return data;
+        if (error) console.error('Supabase getCategories error:', error);
       } catch (err) {
         console.warn('Supabase getCategories notice:', err);
       }
     }
-    const res = await fetch(`${API_BASE}/categories`);
-    if (!res.ok) throw new Error('فشل جلب الأقسام');
-    return res.json();
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      if (res.ok) return await res.json();
+    } catch {}
+    return [];
   },
 
   // 3. Fetch Products (Single Source of Truth: Supabase or App Server)
   async getProducts(options?: { admin?: boolean }): Promise<Product[]> {
     if (isSupabaseConfigured && supabase) {
       try {
-        let query = supabase
+        // Attempt 1: Standard join with custom alias
+        let query1 = supabase
           .from('products')
           .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)');
 
         if (!options?.admin) {
-          query = query.eq('is_active', true);
+          query1 = query1.neq('is_active', false);
         }
 
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
-          return data.map((p: any) => ({
+        const res1 = await query1.order('created_at', { ascending: false });
+        if (!res1.error && res1.data && res1.data.length > 0) {
+          return res1.data.map((p: any) => ({
             ...p,
-            images: (p.images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            category: p.category || (p.categories ? (Array.isArray(p.categories) ? p.categories[0] : p.categories) : undefined),
+            images: (p.images || p.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            variants: p.variants || p.product_variants || [],
           }));
+        }
+
+        // Attempt 2: Join without alias
+        let query2 = supabase
+          .from('products')
+          .select('*, categories(*), product_images(*), product_variants(*)');
+
+        if (!options?.admin) {
+          query2 = query2.neq('is_active', false);
+        }
+
+        const res2 = await query2.order('created_at', { ascending: false });
+        if (!res2.error && res2.data && res2.data.length > 0) {
+          return res2.data.map((p: any) => ({
+            ...p,
+            category: p.categories ? (Array.isArray(p.categories) ? p.categories[0] : p.categories) : undefined,
+            images: (p.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            variants: p.product_variants || [],
+          }));
+        }
+
+        // Attempt 3: Flat queries (bypasses any PostgREST resource embedding schema cache issues)
+        let prodQuery = supabase.from('products').select('*');
+        if (!options?.admin) {
+          prodQuery = prodQuery.neq('is_active', false);
+        }
+
+        const [pRes, imgRes, varRes, catRes] = await Promise.all([
+          prodQuery.order('created_at', { ascending: false }),
+          supabase.from('product_images').select('*'),
+          supabase.from('product_variants').select('*'),
+          supabase.from('categories').select('*'),
+        ]);
+
+        if (!pRes.error && pRes.data && pRes.data.length > 0) {
+          const allImages = imgRes.data || [];
+          const allVariants = varRes.data || [];
+          const allCategories = catRes.data || [];
+
+          return pRes.data.map((p: any) => {
+            const category = allCategories.find((c: any) => c.id === p.category_id);
+            const images = allImages
+              .filter((img: any) => img.product_id === p.id)
+              .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+            const variants = allVariants.filter((v: any) => v.product_id === p.id);
+
+            return {
+              ...p,
+              category,
+              images,
+              variants,
+            };
+          });
+        }
+
+        if (res1.error || res2.error || pRes.error) {
+          console.warn('Supabase getProducts diagnostics:', {
+            err1: res1.error,
+            err2: res2.error,
+            pErr: pRes.error,
+          });
         }
       } catch (err) {
         console.warn('Supabase getProducts notice:', err);
       }
     }
 
-    const res = await fetch(`${API_BASE}/products${options?.admin ? '?admin=true' : ''}`);
-    if (!res.ok) throw new Error('فشل جلب المنتجات');
-    return res.json();
+    try {
+      const res = await fetch(`${API_BASE}/products${options?.admin ? '?admin=true' : ''}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {}
+
+    return [];
   },
 
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase
+        // Attempt 1: Joined query with aliases
+        const { data: d1, error: e1 } = await supabase
           .from('products')
           .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)')
           .eq('slug', slug)
-          .eq('is_active', true)
+          .neq('is_active', false)
           .maybeSingle();
 
-        if (!error && data) {
+        if (!e1 && d1) {
           return {
-            ...data,
-            images: (data.images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            ...d1,
+            category: d1.category || (d1.categories ? (Array.isArray(d1.categories) ? d1.categories[0] : d1.categories) : undefined),
+            images: (d1.images || d1.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            variants: d1.variants || d1.product_variants || [],
+          };
+        }
+
+        // Attempt 2: Joined query without alias
+        const { data: d2, error: e2 } = await supabase
+          .from('products')
+          .select('*, categories(*), product_images(*), product_variants(*)')
+          .eq('slug', slug)
+          .neq('is_active', false)
+          .maybeSingle();
+
+        if (!e2 && d2) {
+          return {
+            ...d2,
+            category: d2.categories ? (Array.isArray(d2.categories) ? d2.categories[0] : d2.categories) : undefined,
+            images: (d2.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            variants: d2.product_variants || [],
+          };
+        }
+
+        // Attempt 3: Flat query
+        const { data: pData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', slug)
+          .neq('is_active', false)
+          .maybeSingle();
+
+        if (pData) {
+          const [imgRes, varRes, catRes] = await Promise.all([
+            supabase.from('product_images').select('*').eq('product_id', pData.id),
+            supabase.from('product_variants').select('*').eq('product_id', pData.id),
+            pData.category_id ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle() : Promise.resolve({ data: null }),
+          ]);
+
+          return {
+            ...pData,
+            category: catRes.data || undefined,
+            images: (imgRes.data || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+            variants: varRes.data || [],
           };
         }
       } catch (err) {
@@ -516,6 +635,32 @@ export const api = {
     }
 
     const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/products/${id}/archive`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل أرشفة المنتج');
+    }
+  },
+
+  // 12.1 Admin: Permanent Delete Product (Safely preserves historical orders via ON DELETE SET NULL on order_items)
+  async adminDeleteProduct(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(error.message || 'فشل حذف المنتج من قاعدة البيانات.');
+      }
+      return;
+    }
+
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/admin/products/${id}`, {
       method: 'DELETE',
       headers: authHeaders,
@@ -523,7 +668,7 @@ export const api = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'فشل أرشفة المنتج');
+      throw new Error(err.error || 'فشل حذف المنتج');
     }
   },
 
@@ -759,6 +904,42 @@ export const api = {
     }
 
     const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/categories/${id}/archive`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل أرشفة القسم');
+    }
+  },
+
+  // 19. Admin: Permanent Delete Category (Safely disassociates assigned products first)
+  async adminDeleteCategory(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      // Disassociate products from this category first so foreign key doesn't block deletion
+      const { error: disassociateError } = await supabase
+        .from('products')
+        .update({ category_id: null })
+        .eq('category_id', id);
+
+      if (disassociateError) {
+        console.warn('Disassociate products notice:', disassociateError);
+      }
+
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(error.message || 'فشل حذف القسم من قاعدة البيانات.');
+      }
+      return;
+    }
+
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/admin/categories/${id}`, {
       method: 'DELETE',
       headers: authHeaders,
@@ -766,7 +947,33 @@ export const api = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'فشل أرشفة القسم');
+      throw new Error(err.error || 'فشل حذف القسم');
+    }
+  },
+
+  // 20. Admin: Delete Product Variant
+  async adminDeleteVariant(variantId: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('id', variantId);
+
+      if (error) {
+        throw new Error(error.message || 'فشل حذف متغير المنتج.');
+      }
+      return;
+    }
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/variants/${variantId}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل حذف المتغير');
     }
   },
 };

@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Edit2, Archive, Search, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Archive, Trash2, Search, CheckCircle, XCircle } from 'lucide-react';
 import { Product } from '../../types';
 import { api } from '../../services/api';
 import { formatPrice } from '../../utils/constants';
+import { resolveImageUrl } from '../../utils/imageHelper';
 
 interface AdminProductsPageProps {
   onNewProduct: () => void;
@@ -47,6 +48,21 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
       setTimeout(() => setArchiveSuccess(null), 3000);
     } catch (err: any) {
       alert(err.message || 'فشل أرشفة المنتج');
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`هل أنت متأكد من حذف الموديل "${name}" نهائيًا من قاعدة البيانات؟\nلن يتم حذف بيانات الطلبات السابقة المرتبطة به.`)) {
+      return;
+    }
+
+    try {
+      await api.adminDeleteProduct(id);
+      setArchiveSuccess(`تم حذف الموديل "${name}" بنجاح.`);
+      loadProducts();
+      setTimeout(() => setArchiveSuccess(null), 3000);
+    } catch (err: any) {
+      alert(err.message || 'فشل حذف المنتج');
     }
   };
 
@@ -158,7 +174,8 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
               <tbody className="divide-y divide-neutral-900">
                 {filteredProducts.map((product) => {
                   const totalStock = product.variants?.reduce((sum, v) => sum + v.stock_quantity, 0) || 0;
-                  const primaryImg = product.images?.[0]?.image_url || '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg';
+                  const rawImg = product.images?.[0]?.image_url;
+                  const primaryImg = resolveImageUrl(rawImg);
 
                   return (
                     <tr key={product.id} className="hover:bg-neutral-900/40 transition-colors">
@@ -201,7 +218,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => onEditProduct(product.id)}
-                            className="p-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
+                            className="p-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors cursor-pointer"
                             title="تعديل الموديل والمخزون"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -209,7 +226,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                           {product.is_active ? (
                             <button
                               onClick={() => handleArchive(product.id, product.name)}
-                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950/40 text-neutral-400 hover:text-red-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-amber-950/40 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer"
                               title="أرشفة المنتج (إخفاء من المتجر)"
                             >
                               <Archive className="w-3.5 h-3.5" />
@@ -224,12 +241,19 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                                   alert(e.message || 'فشل إعادة التفعيل');
                                 }
                               }}
-                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-emerald-950/40 text-neutral-400 hover:text-emerald-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-emerald-950/40 text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
                               title="إعادة تفعيل وعرض بالمتجر"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDelete(product.id, product.name)}
+                            className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950/60 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
+                            title="حذف المنتج نهائيًا"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { api } from '../services/api';
 import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
+import { resolveImageUrl } from '../utils/imageHelper';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;
@@ -103,7 +104,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
             <div className="lg:col-span-6 relative">
               <div className="relative aspect-[16/10] sm:aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-900">
                 <img
-                  src={content?.hero_image_url || '/src/assets/images/hero_streetwear_editorial_1790342899745.jpg'}
+                  src={resolveImageUrl(content?.hero_image_url || '/src/assets/images/hero_streetwear_editorial_1790342899745.jpg')}
                   alt="Outfit Zone Campaign"
                   className="w-full h-full object-cover object-center"
                   fetchPriority="high"

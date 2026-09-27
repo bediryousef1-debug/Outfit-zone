@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product } from '../../types';
 import { formatPrice } from '../../utils/constants';
+import { resolveImageUrl } from '../../utils/imageHelper';
 
 interface ProductCardProps {
   product: Product;
@@ -8,10 +9,10 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
-  const primaryImage =
+  const rawImage =
     product.images?.find((img) => img.is_primary)?.image_url ||
-    product.images?.[0]?.image_url ||
-    '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg';
+    product.images?.[0]?.image_url;
+  const primaryImage = resolveImageUrl(rawImage);
 
   const hasDiscount =
     product.compare_at_price !== null &&

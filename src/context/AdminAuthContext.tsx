@@ -179,33 +179,42 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     try {
-      // 1. If remote Supabase is configured, authenticate via Supabase Auth
+      // 1. If remote Supabase is configured, authenticate strictly via Supabase Auth
       if (isSupabaseConfigured && supabase) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
-          if (!error && data?.user?.email) {
-            const isApproved = await verifyAdminApproval(data.user.email);
-            if (isApproved) {
-              setAdminEmail(data.user.email);
-              localStorage.setItem(ADMIN_EMAIL_KEY, data.user.email);
-              if (data.session?.access_token) {
-                localStorage.setItem(ADMIN_TOKEN_KEY, data.session.access_token);
-              }
-              setAuthError(null);
-              return true;
-            } else {
-              await supabase.auth.signOut();
-              setAdminEmail(null);
-              setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
-              return false;
+        if (error) {
+          // Supabase Auth rejected the password or credentials
+          setAuthError(
+            error.message === 'Invalid login credentials'
+              ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
+              : error.message || 'فشل تسجيل الدخول.'
+          );
+          return false;
+        }
+
+        if (data?.user?.email) {
+          const isApproved = await verifyAdminApproval(data.user.email);
+          if (isApproved) {
+            setAdminEmail(data.user.email);
+            localStorage.setItem(ADMIN_EMAIL_KEY, data.user.email);
+            if (data.session?.access_token) {
+              localStorage.setItem(ADMIN_TOKEN_KEY, data.session.access_token);
             }
+            setAuthError(null);
+            return true;
+          } else {
+            // Authenticated user is not an approved admin
+            await supabase.auth.signOut();
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            localStorage.removeItem(ADMIN_EMAIL_KEY);
+            setAdminEmail(null);
+            setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
+            return false;
           }
-        } catch {
-          // Fall back to server admin login endpoint
         }
       }
 

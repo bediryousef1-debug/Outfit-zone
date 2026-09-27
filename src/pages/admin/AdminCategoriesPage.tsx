@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Category } from '../../types';
 import { api } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
-import { Plus, Edit2, Archive, Check, Layers, AlertCircle, RefreshCw, Image } from 'lucide-react';
+import { Plus, Edit2, Archive, Trash2, Check, Layers, AlertCircle, RefreshCw, Image } from 'lucide-react';
 
 export const AdminCategoriesPage: React.FC = () => {
   const { refreshData } = useStore();
@@ -117,6 +117,22 @@ export const AdminCategoriesPage: React.FC = () => {
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.message || 'فشل أرشفة القسم');
+    }
+  };
+
+  const handleDelete = async (cat: Category) => {
+    if (!window.confirm(`هل أنت متأكد من حذف القسم "${cat.name}" نهائيًا من قاعدة البيانات؟\nلن يتم حذف الموديلات والمنتجات التابعة له.`)) {
+      return;
+    }
+
+    try {
+      await api.adminDeleteCategory(cat.id);
+      setSuccessMsg(`تم حذف القسم "${cat.name}" بنجاح.`);
+      await fetchCategories();
+      await refreshData();
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err: any) {
+      setError(err.message || 'فشل حذف القسم');
     }
   };
 
@@ -235,12 +251,19 @@ export const AdminCategoriesPage: React.FC = () => {
                           {isActive && (
                             <button
                               onClick={() => handleArchive(cat)}
-                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950 border border-neutral-800 hover:border-red-900 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg bg-neutral-900 hover:bg-amber-950 border border-neutral-800 hover:border-amber-900 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer"
                               title="أرشفة القسم"
                             >
                               <Archive className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDelete(cat)}
+                            className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950 border border-neutral-800 hover:border-red-900 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
+                            title="حذف القسم نهائيًا"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>

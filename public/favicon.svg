@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350" fill="none">
+  <!-- Coat Hanger Icon -->
+  <g fill="currentColor">
+    <!-- Hook -->
+    <path d="M250 45 C250 35 258 25 270 25 C282 25 292 35 292 47 C292 58 283 67 274 72 C263 78 256 86 255 98 L245 98 C246 82 255 72 267 65 C275 60 281 54 281 47 C281 40 276 35 270 35 C263 35 259 40 259 45 L250 45 Z" />
+    <!-- Hanger Triangular Frame with Rounded Ends -->
+    <path d="M250 96 L395 160 C405 164 410 173 408 182 C406 191 398 197 388 197 L112 197 C102 197 94 191 92 182 C90 173 95 164 105 160 L250 96 Z M250 114 L122 171 C117 173 115 177 116 181 C117 185 120 187 124 187 L376 187 C380 187 383 185 384 181 C385 177 383 173 378 171 L250 114 Z" />
+    <!-- Bottom Rounded Bar -->
+    <rect x="96" y="184" width="308" height="18" rx="9" />
+  </g>
+  
+  <!-- OUTFIT ZONE Typography -->
+  <text x="250" y="248" text-anchor="middle" font-family="'Syne', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="4" fill="currentColor">OUTFIT</text>
+  <text x="250" y="306" text-anchor="middle" font-family="'Syne', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="54" letter-spacing="6" fill="currentColor">ZONE</text>
+</svg>

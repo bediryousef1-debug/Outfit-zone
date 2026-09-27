@@ -103,7 +103,7 @@ interface OrderRecord {
 interface OrderItemRecord {
   id: string;
   order_id: string;
-  product_id: string;
+  product_id: string | null;
   product_name_snapshot: string;
   color: string;
   size: string;
@@ -742,7 +742,8 @@ app.put('/api/admin/categories/:id', requireAdmin, async (req: Request, res: Res
   res.json(cat);
 });
 
-app.delete('/api/admin/categories/:id', requireAdmin, async (req: Request, res: Response) => {
+// Archive Category
+app.post('/api/admin/categories/:id/archive', requireAdmin, async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (supabaseClient) {
@@ -752,7 +753,38 @@ app.delete('/api/admin/categories/:id', requireAdmin, async (req: Request, res: 
   const cat = db.categories.find((c) => c.id === id);
   if (cat) cat.is_active = false;
   saveToFile('categories.json', db.categories);
-  res.json({ success: true });
+  res.json({ success: true, message: 'تم أرشفة القسم بنجاح.' });
+});
+
+// Permanent Delete Category
+app.delete('/api/admin/categories/:id', requireAdmin, async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (supabaseClient) {
+    try {
+      // Disassociate products from this category first so foreign key doesn't block deletion
+      await supabaseClient.from('products').update({ category_id: null }).eq('category_id', id);
+      const { error } = await supabaseClient.from('categories').delete().eq('id', id);
+      if (error) {
+        return res.status(400).json({ error: error.message || 'فشل حذف القسم من Supabase.' });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'خطأ أثناء حذف القسم.' });
+    }
+  }
+
+  // Disassociate in local store
+  db.products.forEach((p) => {
+    if (p.category_id === id) {
+      p.category_id = '';
+    }
+  });
+  saveToFile('products.json', db.products);
+
+  db.categories = db.categories.filter((c) => c.id !== id);
+  saveToFile('categories.json', db.categories);
+
+  res.json({ success: true, message: 'تم حذف القسم بنجاح.' });
 });
 
 // Admin Email + Password Login Verification Endpoint
@@ -771,37 +803,37 @@ app.post('/api/admin/login', async (req: Request, res: Response) => {
         password,
       });
 
-      if (!authErr && authData.user) {
-        const { data: adminRecord } = await supabaseClient
-          .from('admin_users')
-          .select('id, email, created_at')
-          .ilike('email', cleanEmail)
-          .maybeSingle();
-
-        if (adminRecord) {
-          return res.json({
-            authorized: true,
-            email: adminRecord.email,
-            token: authData.session?.access_token || `admin_token_${adminRecord.email}`,
-          });
-        }
+      if (authErr || !authData?.user) {
+        return res.status(401).json({
+          authorized: false,
+          error: authErr?.message === 'Invalid login credentials'
+            ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
+            : (authErr?.message || 'فشل التحقق من كلمة المرور.'),
+        });
       }
-    } catch {
-      // Continue to local check
+
+      const { data: adminRecord } = await supabaseClient
+        .from('admin_users')
+        .select('id, email, created_at')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+
+      if (adminRecord) {
+        return res.json({
+          authorized: true,
+          email: adminRecord.email,
+          token: authData.session?.access_token || `admin_token_${adminRecord.email}`,
+        });
+      } else {
+        await supabaseClient.auth.signOut();
+        return res.status(403).json({ authorized: false, error: 'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.' });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ authorized: false, error: err.message || 'حدث خطأ في الخادم.' });
     }
   }
 
-  // Fallback: verify against db.admin_users
-  const admin = db.admin_users.find((u) => u.email.toLowerCase() === cleanEmail);
-  if (admin) {
-    return res.json({
-      authorized: true,
-      email: admin.email,
-      token: `admin_token_${admin.email}`,
-    });
-  }
-
-  return res.status(403).json({ authorized: false, error: 'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.' });
+  return res.status(403).json({ authorized: false, error: 'الاتصال بقاعدة بيانات Supabase غير مهيأ بعد.' });
 });
 
 // Admin Verify Endpoint
@@ -1572,7 +1604,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req: Request, res: Respo
 });
 
 // Archive Product
-app.delete('/api/admin/products/:id', requireAdmin, async (req: Request, res: Response) => {
+app.post('/api/admin/products/:id/archive', requireAdmin, async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (supabaseClient) {
@@ -1592,6 +1624,62 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req: Request, res: Re
   saveToFile('products.json', db.products);
 
   res.json({ success: true, message: 'تم أرشفة المنتج بنجاح.' });
+});
+
+// Permanent Delete Product (Safely preserves historical orders via product_id = NULL)
+app.delete('/api/admin/products/:id', requireAdmin, async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient.from('products').delete().eq('id', id);
+      if (error) {
+        return res.status(400).json({ error: error.message || 'فشل حذف المنتج من Supabase.' });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'خطأ أثناء حذف المنتج.' });
+    }
+  }
+
+  // Preserve historical orders by setting product_id to null in order items
+  db.order_items.forEach((item) => {
+    if (item.product_id === id) {
+      item.product_id = null;
+    }
+  });
+  saveToFile('order_items.json', db.order_items);
+
+  // Clean up product images and variants
+  db.product_images = db.product_images.filter((img) => img.product_id !== id);
+  db.product_variants = db.product_variants.filter((v) => v.product_id !== id);
+  db.products = db.products.filter((p) => p.id !== id);
+
+  saveToFile('product_images.json', db.product_images);
+  saveToFile('product_variants.json', db.product_variants);
+  saveToFile('products.json', db.products);
+
+  res.json({ success: true, message: 'تم حذف المنتج بنجاح.' });
+});
+
+// Delete Variant
+app.delete('/api/admin/variants/:id', requireAdmin, async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient.from('product_variants').delete().eq('id', id);
+      if (error) {
+        return res.status(400).json({ error: error.message || 'فشل حذف المتغير.' });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'خطأ أثناء حذف المتغير.' });
+    }
+  }
+
+  db.product_variants = db.product_variants.filter((v) => v.id !== id);
+  saveToFile('product_variants.json', db.product_variants);
+
+  res.json({ success: true, message: 'تم حذف المتغير بنجاح.' });
 });
 
 // System Health

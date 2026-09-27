@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/constants';
 import { VariantSelector } from '../components/product/VariantSelector';
+import { resolveImageUrl } from '../utils/imageHelper';
 
 interface ProductDetailPageProps {
   slug: string;
@@ -140,7 +141,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onBa
           {/* Main Selected Image */}
           <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-[#141418] border border-neutral-800 shadow-xl">
             <img
-              src={currentImage.image_url}
+              src={resolveImageUrl(currentImage.image_url)}
               alt={product.name}
               className="w-full h-full object-cover object-center"
               fetchPriority="high"
@@ -165,7 +166,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onBa
                       : 'border-neutral-800 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={resolveImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

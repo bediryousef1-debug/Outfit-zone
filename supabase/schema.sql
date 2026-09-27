@@ -487,9 +487,16 @@ CREATE POLICY "Admins can manage categories" ON public.categories
   WITH CHECK (public.is_admin());
 
 -- 3. products policies:
+DROP POLICY IF EXISTS "Public can view active products" ON public.products;
+DROP POLICY IF EXISTS "Admins can view all products" ON public.products;
+
 CREATE POLICY "Public can view active products" ON public.products
   FOR SELECT TO anon, authenticated
-  USING (is_active = true OR public.is_admin());
+  USING (is_active = true OR is_active IS NULL);
+
+CREATE POLICY "Admins can view all products" ON public.products
+  FOR SELECT TO authenticated
+  USING (public.is_admin());
 
 CREATE POLICY "Admins can insert products" ON public.products
   FOR INSERT TO authenticated
@@ -507,13 +514,7 @@ CREATE POLICY "Admins can delete products" ON public.products
 -- 4. product_images policies:
 CREATE POLICY "Public can view images for active products" ON public.product_images
   FOR SELECT TO anon, authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.products p 
-      WHERE p.id = product_images.product_id 
-      AND (p.is_active = true OR public.is_admin())
-    )
-  );
+  USING (true);
 
 CREATE POLICY "Admins can manage product images" ON public.product_images
   FOR ALL TO authenticated
@@ -523,13 +524,7 @@ CREATE POLICY "Admins can manage product images" ON public.product_images
 -- 5. product_variants policies:
 CREATE POLICY "Public can view variants for active products" ON public.product_variants
   FOR SELECT TO anon, authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.products p 
-      WHERE p.id = product_variants.product_id 
-      AND (p.is_active = true OR public.is_admin())
-    )
-  );
+  USING (true);
 
 CREATE POLICY "Admins can manage product variants" ON public.product_variants
   FOR ALL TO authenticated
