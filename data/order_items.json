@@ -1,0 +1,24 @@
+[
+  {
+    "id": "item_1790433222726_2n38p",
+    "order_id": "ord_1790433222726_6drmr",
+    "product_id": "b1111111-1111-1111-1111-111111111111",
+    "product_name_snapshot": "تيشيرت Interlock Box Fit - أسود كربوني",
+    "color": "أسود كربوني",
+    "size": "M",
+    "quantity": 2,
+    "unit_price": 450,
+    "line_total": 900
+  },
+  {
+    "id": "item_1790433328934_khq2r",
+    "order_id": "ord_1790433328934_vmxvy",
+    "product_id": "b1111111-1111-1111-1111-111111111111",
+    "product_name_snapshot": "تيشيرت Interlock Box Fit - أسود كربوني",
+    "color": "أسود كربوني",
+    "size": "L",
+    "quantity": 1,
+    "unit_price": 450,
+    "line_total": 450
+  }
+]

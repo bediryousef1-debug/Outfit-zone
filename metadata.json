@@ -1,0 +1,6 @@
+{
+  "name": "Outfit Zone - Wear In The Zone",
+  "description": "Egyptian men's streetwear clothing brand. Box Fit and Oversized t-shirts, polos, and shirts with Cash on Delivery across Egypt.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
