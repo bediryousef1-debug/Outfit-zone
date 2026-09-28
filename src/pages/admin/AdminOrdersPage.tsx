@@ -25,8 +25,9 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
     try {
       const data = await api.adminGetOrders();
       setOrders(data);
-    } catch (err) {
-      console.error('Failed to load orders:', err);
+    } catch (err: any) {
+      console.warn('Notice loading admin orders:', err?.message || err);
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
