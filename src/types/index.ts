@@ -28,6 +28,7 @@ export interface ProductVariant {
   id: string;
   product_id: string;
   color: string;
+  color_hex: string;
   size: 'M' | 'L' | 'XL' | '2XL' | string;
   stock_quantity: number;
   created_at?: string;
@@ -121,6 +122,7 @@ export interface StoreContent {
   hero_subtitle: string;
   hero_button_text: string;
   hero_image_url: string;
+
   // Section Titles
   featured_section_title: string;
   new_arrivals_section_title: string;
@@ -128,6 +130,7 @@ export interface StoreContent {
   cta_title: string;
   cta_text: string;
   announcement_text: string;
+
   // Visibility Toggles
   show_hero: boolean;
   show_featured: boolean;
@@ -135,10 +138,12 @@ export interface StoreContent {
   show_categories: boolean;
   show_trust: boolean;
   show_contact_cta: boolean;
+
   // Pages
   about_text: string;
   about_story: string;
   contact_text: string;
+
   // Policies & Footer
   footer_text: string;
   shipping_text: string;
@@ -146,6 +151,7 @@ export interface StoreContent {
   exchange_policy: string;
   return_policy: string;
   cod_text: string;
+
   updated_at?: string;
 }
 

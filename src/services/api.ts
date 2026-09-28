@@ -152,7 +152,9 @@ export const api = {
       const [imgRes, varRes, catRes] = await Promise.all([
         supabase.from('product_images').select('*').eq('product_id', pData.id),
         supabase.from('product_variants').select('*').eq('product_id', pData.id),
-        pData.category_id ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle() : Promise.resolve({ data: null }),
+        pData.category_id
+          ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
 
       return {
@@ -443,6 +445,7 @@ export const api = {
               productData.variants.map((v: any) => ({
                 product_id: newProd.id,
                 color: v.color,
+                color_hex: v.color_hex || '#333333',
                 size: v.size,
                 stock_quantity: Number(v.stock_quantity) || 0,
               }))
@@ -510,11 +513,13 @@ export const api = {
 
           if (Array.isArray(productData.variants)) {
             await supabase.from('product_variants').delete().eq('product_id', id);
+
             if (productData.variants.length > 0) {
               await supabase.from('product_variants').insert(
                 productData.variants.map((v: any) => ({
                   product_id: id,
                   color: v.color,
+                  color_hex: v.color_hex || '#333333',
                   size: v.size,
                   stock_quantity: Number(v.stock_quantity) || 0,
                 }))
@@ -664,6 +669,7 @@ export const api = {
           .neq('id', '00000000-0000-0000-0000-000000000000')
           .select()
           .single();
+
         if (!error && data) return data;
       } catch (err) {
         console.warn('Supabase adminUpdateStoreContent notice:', err);
@@ -711,6 +717,7 @@ export const api = {
           .neq('id', '00000000-0000-0000-0000-000000000000')
           .select()
           .single();
+
         if (!error && data) return data;
       } catch (err) {
         console.warn('Supabase adminUpdateContactSocial notice:', err);
@@ -735,19 +742,31 @@ export const api = {
   async adminGetCategories(): Promise<Category[]> {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('created_at', { ascending: true });
+
         if (!error && data) return data;
       } catch (err) {
         console.warn('Supabase adminGetCategories notice:', err);
       }
     }
+
     const authHeaders = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/admin/categories`, { headers: authHeaders });
+    const res = await fetch(`${API_BASE}/admin/categories`, {
+      headers: authHeaders,
+    });
+
     if (!res.ok) throw new Error('فشل جلب الأقسام');
     return res.json();
   },
 
-  async adminCreateCategory(catData: { name: string; slug: string; image_url?: string }): Promise<Category> {
+  async adminCreateCategory(catData: {
+    name: string;
+    slug: string;
+    image_url?: string;
+  }): Promise<Category> {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -760,6 +779,7 @@ export const api = {
           })
           .select()
           .single();
+
         if (!error && data) return data;
       } catch (err) {
         console.warn('Supabase adminCreateCategory notice:', err);
@@ -777,6 +797,7 @@ export const api = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'فشل إضافة القسم');
     }
+
     return res.json();
   },
 
@@ -794,6 +815,7 @@ export const api = {
           .eq('id', id)
           .select()
           .single();
+
         if (!error && data) return data;
       } catch (err) {
         console.warn('Supabase adminUpdateCategory notice:', err);
@@ -811,6 +833,7 @@ export const api = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'فشل تحديث القسم');
     }
+
     return res.json();
   },
 
@@ -821,6 +844,7 @@ export const api = {
           .from('categories')
           .update({ is_active: false })
           .eq('id', id);
+
         if (!error) return;
       } catch (err) {
         console.warn('Supabase adminArchiveCategory notice:', err);
