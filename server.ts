@@ -77,6 +77,7 @@ interface ProductVariantRecord {
   id: string;
   product_id: string;
   color: string;
+  color_hex: string;
   size: string;
   stock_quantity: number;
   created_at: string;
@@ -323,7 +324,7 @@ function initializeCatalog() {
   const initialProducts: {
     product: ProductRecord;
     images: string[];
-    variants: { color: string; size: string; stock: number }[];
+    variants: { color: string; color_hex: string; size: string; stock: number }[];
   }[] = [
     {
       product: {
@@ -343,13 +344,13 @@ function initializeCatalog() {
       },
       images: ['/src/assets/images/product_boxfit_tee_black_1790342911897.jpg'],
       variants: [
-        { color: 'أسود كربوني', size: 'M', stock: 8 },
-        { color: 'أسود كربوني', size: 'L', stock: 12 },
-        { color: 'أسود كربوني', size: 'XL', stock: 6 },
-        { color: 'أسود كربوني', size: '2XL', stock: 4 },
-        { color: 'أوف وايت', size: 'M', stock: 5 },
-        { color: 'أوف وايت', size: 'L', stock: 7 },
-        { color: 'أوف وايت', size: 'XL', stock: 0 },
+        { color: 'أسود كربوني', color_hex: '#333333', size: 'M', stock: 8 },
+        { color: 'أسود كربوني', color_hex: '#333333', size: 'L', stock: 12 },
+        { color: 'أسود كربوني', color_hex: '#333333', size: 'XL', stock: 6 },
+        { color: 'أسود كربوني', color_hex: '#333333', size: '2XL', stock: 4 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'M', stock: 5 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'L', stock: 7 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'XL', stock: 0 },
       ],
     },
     {
@@ -370,10 +371,10 @@ function initializeCatalog() {
       },
       images: ['/src/assets/images/product_oversized_tee_offwhite_1790342923739.jpg'],
       variants: [
-        { color: 'أوف وايت', size: 'M', stock: 10 },
-        { color: 'أوف وايت', size: 'L', stock: 14 },
-        { color: 'أوف وايت', size: 'XL', stock: 9 },
-        { color: 'أوف وايت', size: '2XL', stock: 3 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'M', stock: 10 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'L', stock: 14 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: 'XL', stock: 9 },
+        { color: 'أوف وايت', color_hex: '#F5F5F0', size: '2XL', stock: 3 },
       ],
     },
     {
@@ -394,10 +395,10 @@ function initializeCatalog() {
       },
       images: ['/src/assets/images/product_interlock_polo_charcoal_1790342934447.jpg'],
       variants: [
-        { color: 'شاركول', size: 'M', stock: 6 },
-        { color: 'شاركول', size: 'L', stock: 8 },
-        { color: 'شاركول', size: 'XL', stock: 5 },
-        { color: 'شاركول', size: '2XL', stock: 2 },
+        { color: 'شاركول', color_hex: '#36454F', size: 'M', stock: 6 },
+        { color: 'شاركول', color_hex: '#36454F', size: 'L', stock: 8 },
+        { color: 'شاركول', color_hex: '#36454F', size: 'XL', stock: 5 },
+        { color: 'شاركول', color_hex: '#36454F', size: '2XL', stock: 2 },
       ],
     },
     {
@@ -418,10 +419,10 @@ function initializeCatalog() {
       },
       images: ['/src/assets/images/product_streetwear_shirt_olive_1790342946975.jpg'],
       variants: [
-        { color: 'زيتي شاحب', size: 'M', stock: 4 },
-        { color: 'زيتي شاحب', size: 'L', stock: 6 },
-        { color: 'زيتي شاحب', size: 'XL', stock: 4 },
-        { color: 'زيتي شاحب', size: '2XL', stock: 0 },
+        { color: 'زيتي شاحب', color_hex: '#808000', size: 'M', stock: 4 },
+        { color: 'زيتي شاحب', color_hex: '#808000', size: 'L', stock: 6 },
+        { color: 'زيتي شاحب', color_hex: '#808000', size: 'XL', stock: 4 },
+        { color: 'زيتي شاحب', color_hex: '#808000', size: '2XL', stock: 0 },
       ],
     },
   ];
@@ -445,6 +446,7 @@ function initializeCatalog() {
         id: `var_${item.product.id}_${idx}`,
         product_id: item.product.id,
         color: v.color,
+        color_hex: v.color_hex || '#333333',
         size: v.size,
         stock_quantity: v.stock,
         created_at: new Date().toISOString(),
@@ -1442,6 +1444,7 @@ app.post('/api/admin/products', requireAdmin, async (req: Request, res: Response
             variants.map((v: any) => ({
               product_id: newProd.id,
               color: v.color,
+              color_hex: v.color_hex || '#333333',
               size: v.size,
               stock_quantity: Number(v.stock_quantity) || 0,
             }))
@@ -1495,6 +1498,7 @@ app.post('/api/admin/products', requireAdmin, async (req: Request, res: Response
         id: `var_${Date.now()}_${idx}`,
         product_id: productId,
         color: v.color,
+        color_hex: v.color_hex || '#333333',
         size: v.size,
         stock_quantity: Number(v.stock_quantity) || 0,
         created_at: new Date().toISOString(),
@@ -1557,6 +1561,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req: Request, res: Respo
               variants.map((v: any) => ({
                 product_id: id,
                 color: v.color,
+                color_hex: v.color_hex || '#333333',
                 size: v.size,
                 stock_quantity: Number(v.stock_quantity) || 0,
               }))
@@ -1610,6 +1615,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req: Request, res: Respo
         id: v.id || `var_${Date.now()}_${idx}`,
         product_id: id,
         color: v.color,
+        color_hex: v.color_hex || '#333333',
         size: v.size,
         stock_quantity: Number(v.stock_quantity) || 0,
         created_at: new Date().toISOString(),
