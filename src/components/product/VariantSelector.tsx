@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ProductVariant } from '../../types';
-import { STANDARD_SIZES, POPULAR_COLORS } from '../../utils/constants';
+import { STANDARD_SIZES } from '../../utils/constants';
 
 interface VariantSelectorProps {
   variants: ProductVariant[];
@@ -47,14 +47,27 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
   // Selected variant specific stock
   const currentVariant = useMemo(() => {
     if (!selectedColor || !selectedSize) return null;
-    return variants.find((v) => v.color === selectedColor && v.size === selectedSize) || null;
+
+    return (
+      variants.find(
+        (v) =>
+          v.color === selectedColor &&
+          v.size === selectedSize
+      ) || null
+    );
   }, [variants, selectedColor, selectedSize]);
 
-  const maxStock = currentVariant ? currentVariant.stock_quantity : 0;
+  const maxStock = currentVariant
+    ? currentVariant.stock_quantity
+    : 0;
 
+  // Get the exact color saved for this variant in Supabase
   const getColorHex = (colorName: string): string => {
-    const match = POPULAR_COLORS.find((c) => c.name === colorName);
-    return match ? match.hex : '#333333';
+    const variant = variants.find(
+      (v) => v.color === colorName
+    );
+
+    return variant?.color_hex || '#333333';
   };
 
   return (
@@ -65,6 +78,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
             اللون:
           </span>
+
           <span className="text-xs font-semibold text-neutral-200">
             {selectedColor || 'اختر اللون'}
           </span>
@@ -73,10 +87,15 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
         <div className="flex flex-wrap gap-2.5">
           {availableColors.map((color) => {
             const isSelected = selectedColor === color;
+
             // Check if color has any stock at all
             const colorStock = variants
               .filter((v) => v.color === color)
-              .reduce((sum, v) => sum + v.stock_quantity, 0);
+              .reduce(
+                (sum, v) => sum + v.stock_quantity,
+                0
+              );
+
             const isColorOutOfStock = colorStock <= 0;
 
             return (
@@ -94,9 +113,12 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
                 }`}
               >
                 <span
-                  className="w-3.5 h-3.5 rounded-full border border-neutral-600 shadow-inner"
-                  style={{ backgroundColor: getColorHex(color) }}
+                  className="w-3.5 h-3.5 rounded-full border border-neutral-600 shadow-inner shrink-0"
+                  style={{
+                    backgroundColor: getColorHex(color),
+                  }}
                 />
+
                 <span>{color}</span>
               </button>
             );
@@ -110,8 +132,11 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
             المقاس:
           </span>
+
           <span className="text-xs font-semibold text-neutral-200">
-            {selectedSize ? `المقاس المختار: ${selectedSize}` : 'اختر مقاسك'}
+            {selectedSize
+              ? `المقاس المختار: ${selectedSize}`
+              : 'اختر مقاسك'}
           </span>
         </div>
 
@@ -135,9 +160,16 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
                     : 'bg-[#141418] text-neutral-200 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900'
                 }`}
               >
-                <span className="text-sm font-bold block">{size}</span>
+                <span className="text-sm font-bold block">
+                  {size}
+                </span>
+
                 <span className="text-[10px] block opacity-75 font-sans">
-                  {!isAvailable ? 'غير متوفر' : stock <= 3 ? `باقي ${stock}` : 'متوفر'}
+                  {!isAvailable
+                    ? 'غير متوفر'
+                    : stock <= 3
+                    ? `باقي ${stock}`
+                    : 'متوفر'}
                 </span>
               </button>
             );
@@ -146,34 +178,47 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
       </div>
 
       {/* 3. Quantity Selector */}
-      {selectedColor && selectedSize && maxStock > 0 && (
-        <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80">
-          <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-            الكمية:
-          </span>
-          <div className="flex items-center border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => onChangeQuantity(Math.max(1, quantity - 1))}
-              disabled={quantity <= 1}
-              className="px-3 py-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
-            >
-              -
-            </button>
-            <span className="w-10 text-center font-mono-numbers font-bold text-sm text-white">
-              {quantity}
+      {selectedColor &&
+        selectedSize &&
+        maxStock > 0 && (
+          <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80">
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              الكمية:
             </span>
-            <button
-              type="button"
-              onClick={() => onChangeQuantity(Math.min(maxStock, quantity + 1))}
-              disabled={quantity >= maxStock}
-              className="px-3 py-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
-            >
-              +
-            </button>
+
+            <div className="flex items-center border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden">
+              <button
+                type="button"
+                onClick={() =>
+                  onChangeQuantity(
+                    Math.max(1, quantity - 1)
+                  )
+                }
+                disabled={quantity <= 1}
+                className="px-3 py-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+              >
+                -
+              </button>
+
+              <span className="w-10 text-center font-mono-numbers font-bold text-sm text-white">
+                {quantity}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onChangeQuantity(
+                    Math.min(maxStock, quantity + 1)
+                  )
+                }
+                disabled={quantity >= maxStock}
+                className="px-3 py-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+              >
+                +
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };
