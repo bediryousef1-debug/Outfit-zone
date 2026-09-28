@@ -1,6 +1,11 @@
-```tsx
 import React, { useState } from 'react';
-import { ShieldCheck, Truck, ArrowRight, Lock, CheckCircle2 } from 'lucide-react';
+import {
+  ShieldCheck,
+  Truck,
+  ArrowRight,
+  Lock,
+  CheckCircle2,
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { api } from '../services/api';
@@ -69,6 +74,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
 
     setErrors(errs);
+
     return Object.keys(errs).length === 0;
   };
 
@@ -124,6 +130,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       }
     } catch (err: any) {
       console.error('Order submission error:', err);
+
       setSubmitError(
         err.message || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.'
       );
@@ -170,7 +177,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </h1>
 
         <p className="text-xs text-neutral-400 mt-1">
-          لا تحتاج لإنشاء حساب. فقط املأ بيانات التوصيل وسنقوم بتجهيز شحنتك فورًا.
+          لا تحتاج لإنشاء حساب. فقط املأ بيانات التوصيل وسنقوم بتجهيز شحنتك
+          فورًا.
         </p>
       </div>
 
@@ -288,6 +296,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </option>
                   ))}
                 </select>
+
+                {errors.governorate && (
+                  <p className="text-[11px] text-red-400 mt-1">
+                    {errors.governorate}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -394,9 +408,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {settings?.inspection_available && (
                 <div className="pt-2 border-t border-neutral-900 text-neutral-300 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+
                   <span>
-                    معاينة مجانية: يحق لك فتح الكيس والتأكد من الخامة والمقاس قبل
-                    دفع أي جنيه.
+                    معاينة مجانية: يحق لك فتح الكيس والتأكد من الخامة والمقاس
+                    قبل دفع أي جنيه.
                   </span>
                 </div>
               )}
@@ -500,14 +515,3 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     </div>
   );
 };
-```
-
-**التغيير الوظيفي الوحيد** عن ملفك الأصلي هو إضافة:
-
-```tsx
-noValidate
-```
-
-إلى `<form>`.
-
-بعد وضعه في `CheckoutPage.tsx`، شغّل المشروع. لو ظهر **حتى Error واحد**، ابعت نص الـError نفسه بدل ما نغير كود إضافي.
