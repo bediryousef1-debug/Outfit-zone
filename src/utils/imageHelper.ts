@@ -31,5 +31,9 @@ export function resolveImageUrl(url?: string | null): string {
     return staticImageMap[filename];
   }
 
+  if (url.startsWith('/src/assets/images/')) {
+    return `/images/${filename}`;
+  }
+
   return url;
 }

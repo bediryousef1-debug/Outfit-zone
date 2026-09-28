@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, MessageCircle, Truck, Package, ShieldCheck, ArrowRight } from 'lucide-react';
-import { Order } from '../types';
+import { CheckCircle2, MessageCircle, Truck, Package, ShieldCheck, ArrowRight, Lock } from 'lucide-react';
+import { OrderReceipt } from '../types';
 import { api } from '../services/api';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/constants';
@@ -12,28 +12,46 @@ interface OrderSuccessPageProps {
 
 export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber, onNavigate }) => {
   const { settings, getWhatsAppUrl } = useStore();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderReceipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Extract receipt authorization token from URL ?t=<token>
+  const receiptToken = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('t') || undefined
+    : undefined;
+
   useEffect(() => {
+    let isMounted = true;
+
     const loadOrder = async () => {
+      setIsLoading(true);
       try {
-        const data = await api.lookupOrder(orderNumber);
-        setOrder(data);
+        const data = await api.lookupOrder(orderNumber, receiptToken);
+        if (isMounted) {
+          setOrder(data);
+        }
       } catch (err) {
-        console.error('Failed to load order details:', err);
+        console.error('Order receipt notice:', err);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     if (orderNumber) {
       loadOrder();
     }
-  }, [orderNumber]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderNumber, receiptToken]);
 
   const whatsappTrackingMessage = `مرحبًا Outfit Zone، أريد متابعة الطلب رقم ${orderNumber}`;
   const whatsappUrl = getWhatsAppUrl(whatsappTrackingMessage);
+
+  const hasFullDetails = Boolean(order && (order.has_full_access || (order.customer_name && order.phone)));
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-right">
@@ -83,8 +101,8 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
           </a>
         </div>
 
-        {/* Order Details Breakdown */}
-        {order && (
+        {/* Order Details Breakdown (Displayed only when verified via secure receipt token) */}
+        {hasFullDetails && order && (
           <div className="space-y-6">
             {/* Delivery destination */}
             <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2 text-xs">
@@ -110,69 +128,80 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
             </div>
 
             {/* Items table */}
-            <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
-              <h3 className="font-bold text-white flex items-center gap-2 text-xs">
-                <Package className="w-4 h-4 text-neutral-300" />
-                <span>القطع المطلوبة:</span>
-              </h3>
+            {order.order_items && order.order_items.length > 0 && (
+              <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
+                <h3 className="font-bold text-white flex items-center gap-2 text-xs">
+                  <Package className="w-4 h-4 text-neutral-300" />
+                  <span>القطع المطلوبة:</span>
+                </h3>
 
-              <div className="divide-y divide-neutral-900 text-xs">
-                {order.order_items?.map((item) => (
-                  <div key={item.id} className="py-2.5 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-white">{item.product_name_snapshot}</h4>
-                      <p className="text-[11px] text-neutral-400">
-                        اللون: {item.color} · المقاس: {item.size} · الكمية: {item.quantity}
-                      </p>
+                <div className="divide-y divide-neutral-900 text-xs">
+                  {order.order_items.map((item) => (
+                    <div key={item.id} className="py-2.5 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-white">{item.product_name_snapshot}</h4>
+                        <p className="text-[11px] text-neutral-400">
+                          اللون: {item.color} · المقاس: {item.size} · الكمية: {item.quantity}
+                        </p>
+                      </div>
+                      <span className="font-mono-numbers font-bold text-white">
+                        {formatPrice(item.line_total)}
+                      </span>
                     </div>
-                    <span className="font-mono-numbers font-bold text-white">
-                      {formatPrice(item.line_total)}
+                  ))}
+                </div>
+
+                {/* Financial Breakdown */}
+                <div className="pt-3 border-t border-neutral-800 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-neutral-400">
+                    <span>قيمة المنتجات:</span>
+                    <span className="font-mono-numbers text-white">{formatPrice(order.subtotal || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>الشحن لجميع المحافظات:</span>
+                    <span className="font-mono-numbers text-white">{formatPrice(order.shipping_fee || 0)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
+                    <span>الإجمالي المطلوب سداده نقدًا عند الاستلام:</span>
+                    <span className="font-mono-numbers text-base text-emerald-400">
+                      {formatPrice(order.total || 0)}
                     </span>
                   </div>
-                ))}
-              </div>
-
-              {/* Financial Breakdown */}
-              <div className="pt-3 border-t border-neutral-800 space-y-1.5 text-xs">
-                <div className="flex justify-between text-neutral-400">
-                  <span>قيمة المنتجات:</span>
-                  <span className="font-mono-numbers text-white">{formatPrice(order.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-neutral-400">
-                  <span>الشحن لجميع المحافظات:</span>
-                  <span className="font-mono-numbers text-white">{formatPrice(order.shipping_fee)}</span>
-                </div>
-                <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
-                  <span>الإجمالي المطلوب سداده نقدًا عند الاستلام:</span>
-                  <span className="font-mono-numbers text-base text-emerald-400">
-                    {formatPrice(order.total)}
-                  </span>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Free Inspection reminder */}
-        {settings?.inspection_available && (
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 text-xs text-neutral-300">
-            <ShieldCheck className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
-            <div>
-              <h5 className="font-bold text-white mb-0.5">معاينة مجانية عند الاستلام</h5>
-              <p className="text-neutral-400 leading-relaxed">
-                تذكر: يمكنك فحص القطع والتأكد من مطابقة المقاس والخامة قبل تسليم المبلغ للمندوب.
-              </p>
-            </div>
+        {/* Minimal privacy notice when accessing without receipt token */}
+        {!hasFullDetails && !isLoading && (
+          <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 flex items-center gap-3 text-xs text-neutral-400">
+            <Lock className="w-4 h-4 text-neutral-500 shrink-0" />
+            <span>
+              تفاصيل العنوان والقطع مخفية لحماية خصوصية العميل. لمتابعة الطلب تواصل معنا عبر رقم WhatsApp المسجل أعلاه برقم طلبك.
+            </span>
           </div>
         )}
 
-        {/* Back to Home Button */}
-        <div className="pt-4 text-center">
+        {/* Brand Guarantees */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/60 flex items-center gap-2.5 text-neutral-300">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>معاينة وقياس قبل دفع أي جنيه للمندوب</span>
+          </div>
+          <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/60 flex items-center gap-2.5 text-neutral-300">
+            <Truck className="w-4 h-4 text-neutral-300 shrink-0" />
+            <span>استبدال المقاس متاح مجانًا خلال 14 يوم</span>
+          </div>
+        </div>
+
+        {/* Back to Home CTA */}
+        <div className="pt-2 text-center">
           <button
             onClick={() => onNavigate('/')}
-            className="py-3 px-8 bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white font-bold text-xs rounded-xl border border-neutral-800 transition-colors inline-flex items-center gap-2"
+            className="py-3 px-8 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs sm:text-sm rounded-xl border border-neutral-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <span>العودة للصفحة الرئيسية</span>
+            <span>العودة للرئيسية</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

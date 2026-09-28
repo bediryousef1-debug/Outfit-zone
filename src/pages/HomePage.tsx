@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Sparkles, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, ShieldCheck, Truck, MessageCircle, AlertCircle, RotateCcw } from 'lucide-react';
 import { Product } from '../types';
 import { api } from '../services/api';
 import { ProductCard } from '../components/product/ProductCard';
@@ -15,23 +15,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
   const { categories, content, settings, getWhatsAppUrl } = useStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (err: any) {
+      console.error('Error fetching homepage products:', err);
+      setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await api.getProducts();
-        setProducts(data);
-      } catch (err) {
-        console.error('Error fetching homepage products:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadProducts();
   }, []);
 
-  const featuredProducts = products.filter((p) => p.is_featured).slice(0, 4);
-  const newArrivals = products.filter((p) => p.is_new).slice(0, 4);
+  const featuredProducts = products.some((p) => p.is_featured)
+    ? products.filter((p) => p.is_featured).slice(0, 8)
+    : products.slice(0, 8);
+
+  const newArrivals = products.some((p) => p.is_new)
+    ? products.filter((p) => p.is_new).slice(0, 8)
+    : products.slice(0, 8);
 
   // Section visibility toggles from Supabase CMS
   const showHero = content ? content.show_hero : true;
@@ -104,7 +114,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
             <div className="lg:col-span-6 relative">
               <div className="relative aspect-[16/10] sm:aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-900">
                 <img
-                  src={resolveImageUrl(content?.hero_image_url || '/src/assets/images/hero_streetwear_editorial_1790342899745.jpg')}
+                  src={resolveImageUrl(content?.hero_image_url || '/images/hero_streetwear_editorial_1790342899745.jpg')}
                   alt="Outfit Zone Campaign"
                   className="w-full h-full object-cover object-center"
                   fetchPriority="high"
@@ -162,7 +172,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
         </section>
       )}
 
-      {/* 3. FEATURED PRODUCTS (2 cols mobile, 4 cols desktop) */}
+      {/* 3. FEATURED PRODUCTS */}
       {showFeatured && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-8">
@@ -188,6 +198,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="aspect-[3/4] bg-neutral-900/60 rounded-xl animate-pulse" />
               ))}
+            </div>
+          ) : error ? (
+            <div className="p-8 rounded-2xl bg-neutral-900/40 border border-neutral-800 text-center space-y-3">
+              <AlertCircle className="w-8 h-8 text-neutral-400 mx-auto" />
+              <p className="text-sm text-neutral-300">{error}</p>
+              <button
+                onClick={loadProducts}
+                className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>إعادة المحاولة</span>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -231,7 +253,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectProduct 
 
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-neutral-800">
               <img
-                src="/src/assets/images/product_interlock_polo_charcoal_1790342934447.jpg"
+                src={resolveImageUrl('/images/product_interlock_polo_charcoal_1790342934447.jpg')}
                 alt="Streetwear Knit Texture"
                 className="w-full h-full object-cover"
                 loading="lazy"

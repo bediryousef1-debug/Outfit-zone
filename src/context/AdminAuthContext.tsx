@@ -32,16 +32,17 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       try {
         const { data, error } = await supabase
           .from('admin_users')
-          .select('id, email')
+          .select('id, email, user_id')
           .ilike('email', cleanEmail)
           .maybeSingle();
 
         if (!error && data) {
           return true;
         }
-      } catch {
-        // Fall back to server verify
+      } catch (e) {
+        console.warn('verifyAdminApproval check failed:', e);
       }
+      return false;
     }
 
     try {
@@ -216,9 +217,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             return false;
           }
         }
+        return false;
       }
 
-      // 2. Call backend admin login endpoint (checks database admin_users table)
+      // 2. Call backend admin login endpoint (checks database admin_users table) - ONLY when Supabase is NOT configured
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

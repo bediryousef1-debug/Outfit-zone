@@ -6,7 +6,7 @@ import { api } from '../services/api';
 import { EGYPTIAN_GOVERNORATES, formatPrice, validateEgyptianPhone } from '../utils/constants';
 
 interface CheckoutPageProps {
-  onOrderSuccess: (orderNumber: string) => void;
+  onOrderSuccess: (orderNumber: string, receiptToken?: string) => void;
   onNavigate: (path: string) => void;
 }
 
@@ -98,7 +98,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
 
       if (res.success && res.order_number) {
         clearCart();
-        onOrderSuccess(res.order_number);
+        onOrderSuccess(res.order_number, res.receipt_token);
       } else {
         throw new Error(res.error || 'تعذر تأكيد الطلب، يرجى إعادة المحاولة.');
       }

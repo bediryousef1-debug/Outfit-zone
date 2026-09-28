@@ -20,6 +20,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const { categories } = useStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,6 +34,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     sortBy: 'newest',
   });
 
+  const loadProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (err: any) {
+      console.error('Failed to load products:', err);
+      setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (initialCategory) {
       setFilters((prev) => ({ ...prev, categoryId: initialCategory }));
@@ -40,17 +55,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   }, [initialCategory]);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      setIsLoading(true);
-      try {
-        const data = await api.getProducts();
-        setProducts(data);
-      } catch (err) {
-        console.error('Failed to load products:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadProducts();
   }, []);
 
@@ -230,7 +234,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       </div>
 
       {/* Product Grid (2 cols mobile, 3 cols tablet, 4 cols desktop) */}
-      {isLoading ? (
+      {error ? (
+        <div className="py-16 text-center border border-neutral-800/80 rounded-2xl bg-[#101014] p-8 space-y-4">
+          <p className="text-base font-bold text-neutral-300">
+            {error}
+          </p>
+          <button
+            onClick={loadProducts}
+            className="inline-flex items-center gap-2 py-2.5 px-6 bg-white text-black font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>إعادة المحاولة</span>
+          </button>
+        </div>
+      ) : isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <div key={n} className="aspect-[3/4] bg-neutral-900/60 rounded-xl animate-pulse" />

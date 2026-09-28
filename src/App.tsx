@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
@@ -14,17 +14,31 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
-import { AdminLoginPage } from './pages/admin/AdminLoginPage';
-import { AdminLayout, AdminTab } from './pages/admin/AdminLayout';
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
-import { AdminProductsPage } from './pages/admin/AdminProductsPage';
-import { AdminProductEditPage } from './pages/admin/AdminProductEditPage';
-import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
-import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
-import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
-import { AdminContentPage } from './pages/admin/AdminContentPage';
-import { AdminContactPage } from './pages/admin/AdminContactPage';
-import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import type { AdminTab } from './pages/admin/AdminLayout';
+
+// Performance optimization: Lazy-load admin bundle so customer storefront remains ultra-fast
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
+const AdminProductEditPage = lazy(() => import('./pages/admin/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
+const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })));
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
+const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage').then(m => ({ default: m.AdminContentPage })));
+const AdminContactPage = lazy(() => import('./pages/admin/AdminContactPage').then(m => ({ default: m.AdminContactPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+
+function AdminLoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-xs text-neutral-400">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <span>جاري تحميل لوحة التحكم...</span>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
@@ -83,24 +97,22 @@ function AppContent() {
   const isAdminRoute = currentPath.startsWith('/admin');
 
   // ==============================================================================
-  // ADMIN ROUTES (Strictly separate from customer interface)
+  // ADMIN ROUTES (Lazy-loaded and strictly isolated from customer interface)
   // ==============================================================================
   if (isAdminRoute) {
     if (authLoading) {
-      return (
-        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-xs text-neutral-400">
-          جاري التحقق من صلاحيات المسؤول...
-        </div>
-      );
+      return <AdminLoadingSpinner />;
     }
 
     // Unauthenticated admin route handling: redirect to /admin/login
     if (!isAuthenticated) {
       return (
-        <AdminLoginPage
-          onBackToStore={() => navigate('/')}
-          onLoginSuccess={() => navigate('/admin')}
-        />
+        <Suspense fallback={<AdminLoadingSpinner />}>
+          <AdminLoginPage
+            onBackToStore={() => navigate('/')}
+            onLoginSuccess={() => navigate('/admin')}
+          />
+        </Suspense>
       );
     }
 
@@ -137,110 +149,136 @@ function AppContent() {
     const orderDetailId = isOrderDetail ? currentPath.replace('/admin/orders/', '') : null;
 
     return (
-      <AdminLayout
-        currentTab={activeTab}
-        onSelectTab={(tab) => {
-          if (tab === 'dashboard') navigate('/admin');
-          if (tab === 'products') navigate('/admin/products');
-          if (tab === 'categories') navigate('/admin/categories');
-          if (tab === 'orders') navigate('/admin/orders');
-          if (tab === 'content') navigate('/admin/content');
-          if (tab === 'contact') navigate('/admin/contact');
-          if (tab === 'settings') navigate('/admin/settings');
-        }}
-        onExitAdmin={() => navigate('/')}
-      >
-        {/* /admin Dashboard */}
-        {activeTab === 'dashboard' && (
-          <AdminDashboardPage
-            onNavigateTab={(tab) => {
-              if (tab === 'dashboard') navigate('/admin');
-              if (tab === 'products') navigate('/admin/products');
-              if (tab === 'categories') navigate('/admin/categories');
-              if (tab === 'orders') navigate('/admin/orders');
-              if (tab === 'content') navigate('/admin/content');
-              if (tab === 'contact') navigate('/admin/contact');
-              if (tab === 'settings') navigate('/admin/settings');
-            }}
-            onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
-            onNewProduct={() => navigate('/admin/products/new')}
-          />
-        )}
+      <Suspense fallback={<AdminLoadingSpinner />}>
+        <AdminLayout
+          currentTab={activeTab}
+          onSelectTab={(tab) => {
+            if (tab === 'dashboard') navigate('/admin');
+            if (tab === 'products') navigate('/admin/products');
+            if (tab === 'categories') navigate('/admin/categories');
+            if (tab === 'orders') navigate('/admin/orders');
+            if (tab === 'content') navigate('/admin/content');
+            if (tab === 'contact') navigate('/admin/contact');
+            if (tab === 'settings') navigate('/admin/settings');
+          }}
+          onExitAdmin={() => navigate('/')}
+        >
+          {/* /admin Dashboard */}
+          {activeTab === 'dashboard' && (
+            <AdminDashboardPage
+              onNavigateTab={(tab) => {
+                if (tab === 'dashboard') navigate('/admin');
+                if (tab === 'products') navigate('/admin/products');
+                if (tab === 'categories') navigate('/admin/categories');
+                if (tab === 'orders') navigate('/admin/orders');
+                if (tab === 'content') navigate('/admin/content');
+                if (tab === 'contact') navigate('/admin/contact');
+                if (tab === 'settings') navigate('/admin/settings');
+              }}
+              onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
+              onNewProduct={() => navigate('/admin/products/new')}
+            />
+          )}
 
-        {/* /admin/products */}
-        {activeTab === 'products' && (
-          <>
-            {isNewProduct ? (
-              <AdminProductEditPage
-                productId={null}
-                onBack={() => navigate('/admin/products')}
-                onSaved={() => navigate('/admin/products')}
-              />
-            ) : isEditProduct && editProductId ? (
-              <AdminProductEditPage
-                productId={editProductId}
-                onBack={() => navigate('/admin/products')}
-                onSaved={() => navigate('/admin/products')}
-              />
-            ) : (
-              <AdminProductsPage
-                onNewProduct={() => navigate('/admin/products/new')}
-                onEditProduct={(id) => navigate(`/admin/products/${id}/edit`)}
-              />
-            )}
-          </>
-        )}
+          {/* /admin/products */}
+          {activeTab === 'products' && (
+            <>
+              {isNewProduct ? (
+                <AdminProductEditPage
+                  productId={null}
+                  onBack={() => navigate('/admin/products')}
+                  onSaved={() => navigate('/admin/products')}
+                />
+              ) : isEditProduct && editProductId ? (
+                <AdminProductEditPage
+                  productId={editProductId}
+                  onBack={() => navigate('/admin/products')}
+                  onSaved={() => navigate('/admin/products')}
+                />
+              ) : (
+                <AdminProductsPage
+                  onNewProduct={() => navigate('/admin/products/new')}
+                  onEditProduct={(id) => navigate(`/admin/products/${id}/edit`)}
+                />
+              )}
+            </>
+          )}
 
-        {/* /admin/categories */}
-        {activeTab === 'categories' && <AdminCategoriesPage />}
+          {/* /admin/categories */}
+          {activeTab === 'categories' && <AdminCategoriesPage />}
 
-        {/* /admin/orders */}
-        {activeTab === 'orders' && (
-          <>
-            {isOrderDetail && orderDetailId ? (
-              <AdminOrderDetailPage
-                orderId={orderDetailId}
-                onBack={() => navigate('/admin/orders')}
-              />
-            ) : (
-              <AdminOrdersPage onSelectOrder={(id) => navigate(`/admin/orders/${id}`)} />
-            )}
-          </>
-        )}
+          {/* /admin/orders */}
+          {activeTab === 'orders' && (
+            <>
+              {isOrderDetail && orderDetailId ? (
+                <AdminOrderDetailPage
+                  orderId={orderDetailId}
+                  onBack={() => navigate('/admin/orders')}
+                />
+              ) : (
+                <AdminOrdersPage
+                  onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
+                />
+              )}
+            </>
+          )}
 
-        {/* /admin/content */}
-        {activeTab === 'content' && <AdminContentPage />}
+          {/* /admin/content */}
+          {activeTab === 'content' && <AdminContentPage />}
 
-        {/* /admin/contact */}
-        {activeTab === 'contact' && <AdminContactPage />}
+          {/* /admin/contact */}
+          {activeTab === 'contact' && <AdminContactPage />}
 
-        {/* /admin/settings */}
-        {activeTab === 'settings' && <AdminSettingsPage />}
-      </AdminLayout>
+          {/* /admin/settings */}
+          {activeTab === 'settings' && <AdminSettingsPage />}
+        </AdminLayout>
+      </Suspense>
     );
   }
 
   // ==============================================================================
-  // CUSTOMER STOREFRONT ROUTES (Zero admin elements)
+  // CUSTOMER STOREFRONT ROUTES
   // ==============================================================================
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-[#ededed] flex flex-col justify-between selection:bg-neutral-800 selection:text-white">
+    <div className="min-h-screen bg-[#0a0a0c] text-white flex flex-col font-sans selection:bg-neutral-800 selection:text-white">
+      {/* Top Announcement Bar */}
+      {content?.announcement_text && (
+        <div className="bg-neutral-900 border-b border-neutral-800/80 px-4 py-2 text-center text-[11px] sm:text-xs text-neutral-300 font-medium">
+          {content.announcement_text}
+        </div>
+      )}
+
       {/* Customer Header */}
       <Header
-        currentPath={currentPath}
-        onNavigate={(path) => navigate(path)}
         itemCount={itemCount}
         setIsCartOpen={setIsCartOpen}
-        announcementText={content?.announcement_text}
+        onNavigate={(path) => navigate(path)}
+        currentPath={currentPath}
       />
 
-      {/* Customer Page Views */}
-      <main className="flex-1">
-        {/* / Home */}
+      {/* Main Storefront Views */}
+      <main className="flex-1 pb-16">
+        {/* / (Home) */}
         {currentPath === '/' && (
           <HomePage
             onNavigate={(path) => navigate(path)}
             onSelectProduct={(slug) => navigate(`/products/${slug}`)}
+          />
+        )}
+
+        {/* /products */}
+        {currentPath === '/products' && (
+          <ProductsPage
+            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
+          />
+        )}
+
+        {/* /products?category=... */}
+        {currentPath.startsWith('/products?') && !isProductDetail && (
+          <ProductsPage
+            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
+            initialCategory={new URLSearchParams(currentPath.split('?')[1]).get('category') || ''}
+            initialFilter={new URLSearchParams(currentPath.split('?')[1]).get('filter') || ''}
           />
         )}
 
@@ -250,13 +288,6 @@ function AppContent() {
             slug={productSlug}
             onBack={() => navigate('/products')}
             onNavigate={(path) => navigate(path)}
-          />
-        )}
-
-        {/* /products */}
-        {currentPath.startsWith('/products') && !isProductDetail && (
-          <ProductsPage
-            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
           />
         )}
 
@@ -271,7 +302,10 @@ function AppContent() {
         {currentPath === '/checkout' && (
           <CheckoutPage
             onNavigate={(path) => navigate(path)}
-            onOrderSuccess={(orderId) => navigate(`/order-success/${orderId}`)}
+            onOrderSuccess={(orderNum, token) => {
+              const url = token ? `/order-success/${orderNum}?t=${token}` : `/order-success/${orderNum}`;
+              navigate(url);
+            }}
           />
         )}
 

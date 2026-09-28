@@ -76,6 +76,8 @@ export interface OrderStatusHistory {
 export interface Order {
   id: string;
   order_number: string;
+  receipt_token?: string;
+  has_full_access?: boolean;
   customer_name: string;
   phone: string;
   governorate: string;
@@ -91,6 +93,13 @@ export interface Order {
   order_items?: OrderItem[];
   status_history?: OrderStatusHistory[];
 }
+
+export type OrderReceipt = Partial<Order> & {
+  order_number: string;
+  status: OrderStatus;
+  created_at: string;
+  has_full_access: boolean;
+};
 
 export interface StoreSettings {
   id: string;
@@ -186,6 +195,11 @@ export interface OrderCreateRequest {
 export interface OrderCreateResponse {
   success: boolean;
   order?: Order;
+  order_id?: string;
   order_number?: string;
+  receipt_token?: string;
+  subtotal?: number;
+  shipping_fee?: number;
+  total?: number;
   error?: string;
 }

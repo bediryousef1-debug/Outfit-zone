@@ -1,4 +1,4 @@
-import { Category, ContactSocialSettings, Order, OrderCreateRequest, OrderCreateResponse, Product, StoreContent, StoreSettings } from '../types';
+import { Category, ContactSocialSettings, Order, OrderCreateRequest, OrderCreateResponse, OrderReceipt, Product, StoreContent, StoreSettings } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const API_BASE = '/api';
@@ -69,20 +69,22 @@ export const api = {
   // 2. Fetch Categories
   async getCategories(): Promise<Category[]> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .neq('is_active', false)
-          .order('created_at', { ascending: true });
-        if (!error && data) return data;
-        if (error) {
-          console.warn('Supabase getCategories note (run schema.sql if tables not created yet):', error.message || error);
-        }
-      } catch (err) {
-        console.warn('Supabase getCategories notice:', err);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .neq('is_active', false)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        throw new Error(
+          error.code === 'PGRST205' || error.message.includes('schema cache')
+            ? 'جداول الأقسام غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
+            : error.message || 'تعذر جلب الأقسام من Supabase'
+        );
       }
+      return data || [];
     }
+
     try {
       const res = await fetch(`${API_BASE}/categories`);
       if (res.ok) return await res.json();
@@ -93,89 +95,44 @@ export const api = {
   // 3. Fetch Products (Single Source of Truth: Supabase or App Server)
   async getProducts(options?: { admin?: boolean }): Promise<Product[]> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        // Attempt 1: Standard join with custom alias
-        let query1 = supabase
-          .from('products')
-          .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)');
-
-        if (!options?.admin) {
-          query1 = query1.neq('is_active', false);
-        }
-
-        const res1 = await query1.order('created_at', { ascending: false });
-        if (!res1.error && res1.data && res1.data.length > 0) {
-          return res1.data.map((p: any) => ({
-            ...p,
-            category: p.category || (p.categories ? (Array.isArray(p.categories) ? p.categories[0] : p.categories) : undefined),
-            images: (p.images || p.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-            variants: p.variants || p.product_variants || [],
-          }));
-        }
-
-        // Attempt 2: Join without alias
-        let query2 = supabase
-          .from('products')
-          .select('*, categories(*), product_images(*), product_variants(*)');
-
-        if (!options?.admin) {
-          query2 = query2.neq('is_active', false);
-        }
-
-        const res2 = await query2.order('created_at', { ascending: false });
-        if (!res2.error && res2.data && res2.data.length > 0) {
-          return res2.data.map((p: any) => ({
-            ...p,
-            category: p.categories ? (Array.isArray(p.categories) ? p.categories[0] : p.categories) : undefined,
-            images: (p.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-            variants: p.product_variants || [],
-          }));
-        }
-
-        // Attempt 3: Flat queries (bypasses any PostgREST resource embedding schema cache issues)
-        let prodQuery = supabase.from('products').select('*');
-        if (!options?.admin) {
-          prodQuery = prodQuery.neq('is_active', false);
-        }
-
-        const [pRes, imgRes, varRes, catRes] = await Promise.all([
-          prodQuery.order('created_at', { ascending: false }),
-          supabase.from('product_images').select('*'),
-          supabase.from('product_variants').select('*'),
-          supabase.from('categories').select('*'),
-        ]);
-
-        if (!pRes.error && pRes.data && pRes.data.length > 0) {
-          const allImages = imgRes.data || [];
-          const allVariants = varRes.data || [];
-          const allCategories = catRes.data || [];
-
-          return pRes.data.map((p: any) => {
-            const category = allCategories.find((c: any) => c.id === p.category_id);
-            const images = allImages
-              .filter((img: any) => img.product_id === p.id)
-              .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-            const variants = allVariants.filter((v: any) => v.product_id === p.id);
-
-            return {
-              ...p,
-              category,
-              images,
-              variants,
-            };
-          });
-        }
-
-        if (res1.error || res2.error || pRes.error) {
-          console.warn('Supabase getProducts diagnostics:', {
-            err1: res1.error,
-            err2: res2.error,
-            pErr: pRes.error,
-          });
-        }
-      } catch (err) {
-        console.warn('Supabase getProducts notice:', err);
+      let prodQuery = supabase.from('products').select('*');
+      if (!options?.admin) {
+        prodQuery = prodQuery.neq('is_active', false);
       }
+
+      const [pRes, imgRes, varRes, catRes] = await Promise.all([
+        prodQuery.order('created_at', { ascending: false }),
+        supabase.from('product_images').select('*'),
+        supabase.from('product_variants').select('*'),
+        supabase.from('categories').select('*'),
+      ]);
+
+      if (pRes.error) {
+        throw new Error(
+          pRes.error.code === 'PGRST205' || pRes.error.message.includes('schema cache')
+            ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
+            : pRes.error.message || 'تعذر جلب المنتجات من Supabase'
+        );
+      }
+
+      const allImages = imgRes.data || [];
+      const allVariants = varRes.data || [];
+      const allCategories = catRes.data || [];
+
+      return (pRes.data || []).map((p: any) => {
+        const category = allCategories.find((c: any) => c.id === p.category_id);
+        const images = allImages
+          .filter((img: any) => img.product_id === p.id)
+          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const variants = allVariants.filter((v: any) => v.product_id === p.id);
+
+        return {
+          ...p,
+          category,
+          images,
+          variants,
+        };
+      });
     }
 
     try {
@@ -191,66 +148,33 @@ export const api = {
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        // Attempt 1: Joined query with aliases
-        const { data: d1, error: e1 } = await supabase
-          .from('products')
-          .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)')
-          .eq('slug', slug)
-          .neq('is_active', false)
-          .maybeSingle();
+      const { data: pData, error: pErr } = await supabase
+        .from('products')
+        .select('*')
+        .eq('slug', slug)
+        .neq('is_active', false)
+        .maybeSingle();
 
-        if (!e1 && d1) {
-          return {
-            ...d1,
-            category: d1.category || (d1.categories ? (Array.isArray(d1.categories) ? d1.categories[0] : d1.categories) : undefined),
-            images: (d1.images || d1.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-            variants: d1.variants || d1.product_variants || [],
-          };
-        }
-
-        // Attempt 2: Joined query without alias
-        const { data: d2, error: e2 } = await supabase
-          .from('products')
-          .select('*, categories(*), product_images(*), product_variants(*)')
-          .eq('slug', slug)
-          .neq('is_active', false)
-          .maybeSingle();
-
-        if (!e2 && d2) {
-          return {
-            ...d2,
-            category: d2.categories ? (Array.isArray(d2.categories) ? d2.categories[0] : d2.categories) : undefined,
-            images: (d2.product_images || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-            variants: d2.product_variants || [],
-          };
-        }
-
-        // Attempt 3: Flat query
-        const { data: pData } = await supabase
-          .from('products')
-          .select('*')
-          .eq('slug', slug)
-          .neq('is_active', false)
-          .maybeSingle();
-
-        if (pData) {
-          const [imgRes, varRes, catRes] = await Promise.all([
-            supabase.from('product_images').select('*').eq('product_id', pData.id),
-            supabase.from('product_variants').select('*').eq('product_id', pData.id),
-            pData.category_id ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle() : Promise.resolve({ data: null }),
-          ]);
-
-          return {
-            ...pData,
-            category: catRes.data || undefined,
-            images: (imgRes.data || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-            variants: varRes.data || [],
-          };
-        }
-      } catch (err) {
-        console.warn('Supabase getProductBySlug notice:', err);
+      if (pErr) {
+        throw new Error(pErr.message || 'تعذر جلب تفاصيل المنتج');
       }
+
+      if (!pData) {
+        throw new Error('المنتج غير متوفر أو تم إيقافه');
+      }
+
+      const [imgRes, varRes, catRes] = await Promise.all([
+        supabase.from('product_images').select('*').eq('product_id', pData.id),
+        supabase.from('product_variants').select('*').eq('product_id', pData.id),
+        pData.category_id ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+
+      return {
+        ...pData,
+        category: catRes.data || undefined,
+        images: (imgRes.data || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+        variants: varRes.data || [],
+      };
     }
 
     const res = await fetch(`${API_BASE}/products/${slug}`);
@@ -261,32 +185,31 @@ export const api = {
     return res.json();
   },
 
-  // 5. Submit Guest COD Order (Atomic Database RPC with seamless fallback)
+  // 5. Submit Guest COD Order (Atomic Database RPC)
   async submitGuestOrder(orderData: OrderCreateRequest): Promise<OrderCreateResponse> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.rpc('create_guest_order', {
-          p_customer_name: orderData.customer.customer_name,
-          p_phone: orderData.customer.phone,
-          p_governorate: orderData.customer.governorate,
-          p_city: orderData.customer.city,
-          p_address: orderData.customer.address,
-          p_notes: orderData.customer.notes || null,
-          p_items: orderData.items,
-        });
+      const { data, error } = await supabase.rpc('create_guest_order', {
+        p_customer_name: orderData.customer.customer_name,
+        p_phone: orderData.customer.phone,
+        p_governorate: orderData.customer.governorate,
+        p_city: orderData.customer.city,
+        p_address: orderData.customer.address,
+        p_notes: orderData.customer.notes || null,
+        p_items: orderData.items,
+      });
 
-        if (!error && data && data.success) {
-          return data;
-        }
-        if (error) {
-          console.warn('Supabase create_guest_order RPC failed, trying server API:', error);
-        }
-      } catch (rpcErr) {
-        console.warn('Supabase create_guest_order call failed:', rpcErr);
+      if (error) {
+        throw new Error(error.message || 'تعذر إتمام الطلب، يرجى المحاولة مرة أخرى.');
       }
+
+      if (data && data.success) {
+        return data;
+      }
+
+      throw new Error(data?.error || 'تعذر إتمام الطلب، يرجى المحاولة مرة أخرى.');
     }
 
-    // Server-side order endpoint (handles DB insertion and file persistence)
+    // Server-side fallback ONLY when Supabase is not configured
     const res = await fetch(`${API_BASE}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -300,21 +223,26 @@ export const api = {
     return data;
   },
 
-  // 6. Lookup Guest Order by Order Number (Secure receipt lookup)
-  async lookupOrder(orderNumber: string): Promise<Order> {
+  // 6. Lookup Guest Order by Order Number (Secure receipt lookup protected by token)
+  async lookupOrder(orderNumber: string, receiptToken?: string): Promise<OrderReceipt> {
     const cleanNum = orderNumber.trim();
+    const cleanToken = receiptToken?.trim() || null;
+
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.rpc('get_guest_order_receipt', {
-          p_order_number: cleanNum,
-        });
-        if (!error && data) return data;
-      } catch (err) {
-        console.warn('Supabase get_guest_order_receipt notice:', err);
+      const { data, error } = await supabase.rpc('get_guest_order_receipt', {
+        p_order_number: cleanNum,
+        p_receipt_token: cleanToken,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'الطلب غير موجود');
       }
+      if (data) return data;
+      throw new Error('الطلب غير موجود');
     }
 
-    const res = await fetch(`${API_BASE}/orders/lookup/${cleanNum}`);
+    const queryParam = cleanToken ? `?t=${encodeURIComponent(cleanToken)}` : '';
+    const res = await fetch(`${API_BASE}/orders/lookup/${cleanNum}${queryParam}`);
     if (!res.ok) throw new Error('الطلب غير موجود');
     return res.json();
   },
@@ -352,36 +280,34 @@ export const api = {
     return res.json();
   },
 
-  // 8. Admin: Get Orders (RLS Enforced with server fallback)
+  // 8. Admin: Get Orders (RLS Enforced)
   async adminGetOrders(filters?: { status?: string; search?: string }): Promise<Order[]> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        let query = supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
-        if (filters?.status && filters.status !== 'all') {
-          query = query.eq('status', filters.status);
-        }
-        const { data, error } = await query;
-        if (!error && data && Array.isArray(data)) {
-          let list = data;
-          if (filters?.search) {
-            const s = filters.search.toLowerCase().trim();
-            list = list.filter(
-              (o: any) =>
-                o.order_number?.toLowerCase().includes(s) ||
-                o.customer_name?.toLowerCase().includes(s) ||
-                o.phone?.includes(s) ||
-                o.city?.toLowerCase().includes(s) ||
-                o.governorate?.toLowerCase().includes(s)
-            );
-          }
-          return list;
-        }
-        if (error) {
-          console.warn('Supabase adminGetOrders query warning:', error);
-        }
-      } catch (err) {
-        console.warn('Supabase adminGetOrders call warning:', err);
+      let query = supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
       }
+      const { data, error } = await query;
+      if (error) {
+        throw new Error(
+          error.code === 'PGRST205' || error.message.includes('schema cache')
+            ? 'جدول الطلبات غير مهيأ بعد في Supabase. شغل supabase/schema.sql'
+            : error.message || 'فشل جلب الطلبات من Supabase'
+        );
+      }
+      let list = data || [];
+      if (filters?.search) {
+        const s = filters.search.toLowerCase().trim();
+        list = list.filter(
+          (o: any) =>
+            o.order_number?.toLowerCase().includes(s) ||
+            o.customer_name?.toLowerCase().includes(s) ||
+            o.phone?.includes(s) ||
+            o.city?.toLowerCase().includes(s) ||
+            o.governorate?.toLowerCase().includes(s)
+        );
+      }
+      return list;
     }
 
     const params = new URLSearchParams();

@@ -86,6 +86,7 @@ interface ProductVariantRecord {
 interface OrderRecord {
   id: string;
   order_number: string;
+  receipt_token?: string;
   customer_name: string;
   phone: string;
   governorate: string;
@@ -1075,10 +1076,12 @@ app.post('/api/orders', async (req: Request, res: Response) => {
   const total = subtotal + shippingFee;
   const orderNumber = generateOrderNumber();
   const orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const receiptToken = 'rec_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
 
   const newOrder: OrderRecord = {
     id: orderId,
     order_number: orderNumber,
+    receipt_token: receiptToken,
     customer_name: customer.customer_name.trim(),
     phone: cleanPhone,
     governorate: customer.governorate,
@@ -1132,6 +1135,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
     success: true,
     order_id: orderId,
     order_number: orderNumber,
+    receipt_token: receiptToken,
     subtotal,
     shipping_fee: shippingFee,
     total,
@@ -1141,11 +1145,13 @@ app.post('/api/orders', async (req: Request, res: Response) => {
 // 6. Get Order Receipt (Secure Guest Lookup)
 app.get('/api/orders/lookup/:orderNumber', async (req: Request, res: Response) => {
   const { orderNumber } = req.params;
+  const token = (req.query.t as string)?.trim() || null;
 
   if (supabaseClient) {
     try {
       const { data, error } = await supabaseClient.rpc('get_guest_order_receipt', {
         p_order_number: orderNumber.trim(),
+        p_receipt_token: token,
       });
       if (!error && data) return res.json(data);
     } catch {
@@ -1158,9 +1164,20 @@ app.get('/api/orders/lookup/:orderNumber', async (req: Request, res: Response) =
     return res.status(404).json({ error: 'الطلب غير موجود.' });
   }
 
+  const isAuthorized = Boolean(token && order.receipt_token && token === order.receipt_token);
+  if (!isAuthorized && order.receipt_token) {
+    return res.json({
+      order_number: order.order_number,
+      status: order.status,
+      created_at: order.created_at,
+      has_full_access: false,
+    });
+  }
+
   const items = db.order_items.filter((item) => item.order_id === order.id);
   res.json({
     ...order,
+    has_full_access: true,
     order_items: items,
   });
 });

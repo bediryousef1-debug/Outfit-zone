@@ -3,12 +3,14 @@
 -- Egyptian Streetwear E-Commerce Platform
 -- ==============================================================================
 
--- Enable UUID extension
+-- Enable UUID and cryptographic extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. admin_users
 CREATE TABLE IF NOT EXISTS public.admin_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -62,10 +64,11 @@ CREATE TABLE IF NOT EXISTS public.product_variants (
   CONSTRAINT unique_product_color_size UNIQUE(product_id, color, size)
 );
 
--- 6. orders
+-- 6. orders (includes secure receipt_token for guest verification)
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number TEXT UNIQUE NOT NULL,
+  receipt_token TEXT NOT NULL DEFAULT encode(gen_random_bytes(24), 'hex'),
   customer_name TEXT NOT NULL,
   phone TEXT NOT NULL,
   governorate TEXT NOT NULL,
@@ -79,6 +82,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_orders_receipt_token ON public.orders(order_number, receipt_token);
 
 -- 7. order_items
 CREATE TABLE IF NOT EXISTS public.order_items (
@@ -122,7 +127,7 @@ CREATE TABLE IF NOT EXISTS public.store_content (
   hero_title TEXT NOT NULL DEFAULT 'WEAR IN THE ZONE',
   hero_subtitle TEXT NOT NULL DEFAULT 'ستايل يومي بروح الشارع المصري',
   hero_button_text TEXT NOT NULL DEFAULT 'تسوق الآن',
-  hero_image_url TEXT NOT NULL DEFAULT '/src/assets/images/hero_streetwear_editorial_1790342899745.jpg',
+  hero_image_url TEXT NOT NULL DEFAULT '/images/hero_streetwear_editorial_1790342899745.jpg',
   featured_section_title TEXT NOT NULL DEFAULT 'الموديلات الأكثر طلباً',
   new_arrivals_section_title TEXT NOT NULL DEFAULT 'وصل حديثًا',
   categories_section_title TEXT NOT NULL DEFAULT 'تسوق حسب الستايل والقَصّة',
@@ -179,7 +184,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ------------------------------------------------------------------------------
--- SECURE ORDER CREATION RPC (ATOMIC TRANSACTION WITH STOCK VERIFICATION)
+-- SECURE ORDER CREATION RPC (ATOMIC TRANSACTION WITH STRICT VARIANT INTEGRITY)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_guest_order(
   p_customer_name TEXT,
@@ -194,6 +199,7 @@ RETURNS JSONB AS $$
 DECLARE
   v_order_id UUID;
   v_order_number TEXT;
+  v_receipt_token TEXT;
   v_subtotal NUMERIC(10, 2) := 0;
   v_shipping_fee NUMERIC(10, 2) := 65.00;
   v_total NUMERIC(10, 2) := 0;
@@ -212,7 +218,7 @@ BEGIN
     RAISE EXCEPTION 'Invalid Egyptian phone number.';
   END IF;
 
-  IF jsonb_array_length(p_items) = 0 THEN
+  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
     RAISE EXCEPTION 'Cart cannot be empty.';
   END IF;
 
@@ -226,11 +232,12 @@ BEGIN
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
     v_qty := (v_item->>'quantity')::INT;
-    IF v_qty <= 0 THEN
+    IF v_qty IS NULL OR v_qty <= 0 THEN
       RAISE EXCEPTION 'Invalid item quantity.';
     END IF;
 
-    -- Safely find variant by UUID or text
+    -- Strict variant lookup: Match variant strictly by UUID or exact product_id + color + size
+    -- NO fallback to "first variant" or another variant is permitted!
     IF (v_item->>'variant_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
       SELECT * INTO v_variant 
       FROM public.product_variants 
@@ -239,25 +246,16 @@ BEGIN
     ELSE
       SELECT * INTO v_variant 
       FROM public.product_variants 
-      WHERE (v_item->>'variant_id') IS NOT NULL AND (
-        id::TEXT = (v_item->>'variant_id') OR 
-        (color = trim(v_item->>'color') AND size = trim(v_item->>'size'))
-      )
+      WHERE (v_item->>'product_id') IS NOT NULL 
+        AND product_id::TEXT = trim(v_item->>'product_id')
+        AND color = trim(v_item->>'color')
+        AND size = trim(v_item->>'size')
       LIMIT 1
       FOR UPDATE;
     END IF;
 
     IF NOT FOUND THEN
-      -- If variant not found by ID, match first available variant for product
-      SELECT * INTO v_variant
-      FROM public.product_variants
-      WHERE product_id::TEXT = trim(v_item->>'product_id')
-      LIMIT 1
-      FOR UPDATE;
-    END IF;
-
-    IF NOT FOUND THEN
-      RAISE EXCEPTION 'Product variant not found: %', (v_item->>'variant_id');
+      RAISE EXCEPTION 'Product variant not found or invalid: %', COALESCE(v_item->>'variant_id', 'unknown');
     END IF;
 
     IF v_variant.stock_quantity < v_qty THEN
@@ -265,7 +263,7 @@ BEGIN
         v_variant.color, v_variant.size, v_variant.stock_quantity, v_qty;
     END IF;
 
-    -- Fetch product to get authoritative price and snapshot name
+    -- Fetch product to get authoritative price and active status
     SELECT * INTO v_product 
     FROM public.products 
     WHERE id = v_variant.product_id AND is_active = true;
@@ -280,10 +278,12 @@ BEGIN
 
   v_total := v_subtotal + v_shipping_fee;
   v_order_number := generate_order_number();
+  v_receipt_token := encode(gen_random_bytes(24), 'hex');
 
-  -- 4. Insert into orders table
+  -- 4. Insert into orders table with receipt_token
   INSERT INTO public.orders (
     order_number,
+    receipt_token,
     customer_name,
     phone,
     governorate,
@@ -296,6 +296,7 @@ BEGIN
     status
   ) VALUES (
     v_order_number,
+    v_receipt_token,
     trim(p_customer_name),
     trim(p_phone),
     p_governorate,
@@ -324,17 +325,14 @@ BEGIN
       INTO v_variant
       FROM public.product_variants pv
       JOIN public.products p ON p.id = pv.product_id
-      WHERE pv.id::TEXT = (v_item->>'variant_id') 
-         OR (pv.color = trim(v_item->>'color') AND pv.size = trim(v_item->>'size'))
+      WHERE pv.product_id::TEXT = trim(v_item->>'product_id')
+        AND pv.color = trim(v_item->>'color')
+        AND pv.size = trim(v_item->>'size')
       LIMIT 1;
     END IF;
 
     IF NOT FOUND THEN
-      SELECT pv.*, p.name AS product_name, p.price AS current_price
-      INTO v_variant
-      FROM public.product_variants pv
-      JOIN public.products p ON p.id = pv.product_id
-      LIMIT 1;
+      RAISE EXCEPTION 'Variant integrity check failed during item insertion: %', COALESCE(v_item->>'variant_id', 'unknown');
     END IF;
 
     v_line_total := v_variant.current_price * v_qty;
@@ -381,6 +379,7 @@ BEGIN
     'success', true,
     'order_id', v_order_id,
     'order_number', v_order_number,
+    'receipt_token', v_receipt_token,
     'subtotal', v_subtotal,
     'shipping_fee', v_shipping_fee,
     'total', v_total
@@ -389,9 +388,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ------------------------------------------------------------------------------
--- SECURE GUEST ORDER RECEIPT LOOKUP (NO DIRECT SELECT ON ORDERS TABLE)
+-- SECURE GUEST ORDER RECEIPT LOOKUP (PROTECTED BY RECEIPT TOKEN)
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.get_guest_order_receipt(p_order_number TEXT)
+CREATE OR REPLACE FUNCTION public.get_guest_order_receipt(
+  p_order_number TEXT,
+  p_receipt_token TEXT DEFAULT NULL
+)
 RETURNS JSONB AS $$
 DECLARE
   v_order RECORD;
@@ -402,41 +404,53 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  SELECT jsonb_agg(
-    jsonb_build_object(
-      'id', id,
-      'product_name_snapshot', product_name_snapshot,
-      'color', color,
-      'size', size,
-      'quantity', quantity,
-      'unit_price', unit_price,
-      'line_total', line_total
-    )
-  ) INTO v_items
-  FROM public.order_items
-  WHERE order_id = v_order.id;
+  -- If valid receipt token is provided and matches, return full receipt details
+  IF p_receipt_token IS NOT NULL AND trim(p_receipt_token) = v_order.receipt_token THEN
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'id', id,
+        'product_name_snapshot', product_name_snapshot,
+        'color', color,
+        'size', size,
+        'quantity', quantity,
+        'unit_price', unit_price,
+        'line_total', line_total
+      )
+    ) INTO v_items
+    FROM public.order_items
+    WHERE order_id = v_order.id;
 
+    RETURN jsonb_build_object(
+      'id', v_order.id,
+      'order_number', v_order.order_number,
+      'customer_name', v_order.customer_name,
+      'phone', v_order.phone,
+      'governorate', v_order.governorate,
+      'city', v_order.city,
+      'address', v_order.address,
+      'notes', v_order.notes,
+      'subtotal', v_order.subtotal,
+      'shipping_fee', v_order.shipping_fee,
+      'total', v_order.total,
+      'status', v_order.status,
+      'created_at', v_order.created_at,
+      'order_items', COALESCE(v_items, '[]'::jsonb),
+      'has_full_access', true
+    );
+  END IF;
+
+  -- Without matching receipt token: return minimal non-sensitive confirmation ONLY
   RETURN jsonb_build_object(
-    'id', v_order.id,
     'order_number', v_order.order_number,
-    'customer_name', v_order.customer_name,
-    'phone', v_order.phone,
-    'governorate', v_order.governorate,
-    'city', v_order.city,
-    'address', v_order.address,
-    'notes', v_order.notes,
-    'subtotal', v_order.subtotal,
-    'shipping_fee', v_order.shipping_fee,
-    'total', v_order.total,
     'status', v_order.status,
     'created_at', v_order.created_at,
-    'order_items', COALESCE(v_items, '[]'::jsonb)
+    'has_full_access', false
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.create_guest_order(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_guest_order_receipt(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_guest_order_receipt(TEXT, TEXT) TO anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -454,22 +468,27 @@ ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_social_settings ENABLE ROW LEVEL SECURITY;
 
--- Case-insensitive helper function to check if current authenticated user is an approved admin
+-- Helper function to check if current authenticated user is an approved admin via auth.uid() or email
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.admin_users 
-    WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email')
+    WHERE (user_id IS NOT NULL AND user_id = auth.uid())
+       OR (LOWER(email) = LOWER(auth.jwt() ->> 'email'))
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
 -- 1. admin_users policies:
--- Authenticated users can check if their own email exists in admin_users (case-insensitive)
 CREATE POLICY "Users can check their own admin status" ON public.admin_users
   FOR SELECT TO authenticated
-  USING (LOWER(email) = LOWER(auth.jwt() ->> 'email'));
+  USING (
+    (user_id IS NOT NULL AND user_id = auth.uid()) OR
+    (LOWER(email) = LOWER(auth.jwt() ->> 'email'))
+  );
 
 CREATE POLICY "Admins can manage admin_users" ON public.admin_users
   FOR ALL TO authenticated
@@ -487,9 +506,6 @@ CREATE POLICY "Admins can manage categories" ON public.categories
   WITH CHECK (public.is_admin());
 
 -- 3. products policies:
-DROP POLICY IF EXISTS "Public can view active products" ON public.products;
-DROP POLICY IF EXISTS "Admins can view all products" ON public.products;
-
 CREATE POLICY "Public can view active products" ON public.products
   FOR SELECT TO anon, authenticated
   USING (is_active = true OR is_active IS NULL);

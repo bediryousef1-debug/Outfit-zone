@@ -85,7 +85,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onBa
 
   const images = product.images && product.images.length > 0
     ? product.images
-    : [{ id: 'fallback', image_url: '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg', sort_order: 0, is_primary: true }];
+    : [{ id: 'fallback', image_url: '/images/product_boxfit_tee_black_1790342911897.jpg', sort_order: 0, is_primary: true }];
 
   const currentImage = images[selectedImageIndex] || images[0];
 
