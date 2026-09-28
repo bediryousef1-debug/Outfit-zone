@@ -1,16 +1,24 @@
+```tsx
 import React, { useState } from 'react';
 import { ShieldCheck, Truck, ArrowRight, Lock, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { api } from '../services/api';
-import { EGYPTIAN_GOVERNORATES, formatPrice, validateEgyptianPhone } from '../utils/constants';
+import {
+  EGYPTIAN_GOVERNORATES,
+  formatPrice,
+  validateEgyptianPhone,
+} from '../utils/constants';
 
 interface CheckoutPageProps {
   onOrderSuccess: (orderNumber: string, receiptToken?: string) => void;
   onNavigate: (path: string) => void;
 }
 
-export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNavigate }) => {
+export const CheckoutPage: React.FC<CheckoutPageProps> = ({
+  onOrderSuccess,
+  onNavigate,
+}) => {
   const { items, subtotal, clearCart } = useCart();
   const { settings } = useStore();
 
@@ -33,14 +41,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
   const validateForm = (): boolean => {
     const errs: Record<string, string> = {};
 
-    if (!formData.customer_name.trim() || formData.customer_name.trim().length < 3) {
+    if (
+      !formData.customer_name.trim() ||
+      formData.customer_name.trim().length < 3
+    ) {
       errs.customer_name = 'يرجى كتابة الاسم الثلاثي بالكامل.';
     }
 
     if (!formData.phone.trim()) {
       errs.phone = 'رقم الهاتف مطلوب لتأكيد الشحن.';
     } else if (!validateEgyptianPhone(formData.phone)) {
-      errs.phone = 'يرجى إدخال رقم محمول مصري صحيح يبدأ بـ 010 أو 011 أو 012 أو 015.';
+      errs.phone =
+        'يرجى إدخال رقم محمول مصري صحيح يبدأ بـ 010 أو 011 أو 012 أو 015.';
     }
 
     if (!formData.governorate) {
@@ -52,7 +64,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
     }
 
     if (!formData.address.trim() || formData.address.trim().length < 5) {
-      errs.address = 'يرجى كتابة العنوان التفصيلي (اسم الشارع، رقم العمارة، الشقة).';
+      errs.address =
+        'يرجى كتابة العنوان التفصيلي (اسم الشارع، رقم العمارة، الشقة).';
     }
 
     setErrors(errs);
@@ -75,8 +88,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
     setIsSubmitting(true);
 
     try {
-      const selectedGovObj = EGYPTIAN_GOVERNORATES.find((g) => g.id === formData.governorate);
-      const governorateName = selectedGovObj ? selectedGovObj.nameAr : formData.governorate;
+      const selectedGovObj = EGYPTIAN_GOVERNORATES.find(
+        (g) => g.id === formData.governorate
+      );
+
+      const governorateName = selectedGovObj
+        ? selectedGovObj.nameAr
+        : formData.governorate;
 
       const orderPayload = {
         customer: {
@@ -100,11 +118,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
         clearCart();
         onOrderSuccess(res.order_number, res.receipt_token);
       } else {
-        throw new Error(res.error || 'تعذر تأكيد الطلب، يرجى إعادة المحاولة.');
+        throw new Error(
+          res.error || 'تعذر تأكيد الطلب، يرجى إعادة المحاولة.'
+        );
       }
     } catch (err: any) {
       console.error('Order submission error:', err);
-      setSubmitError(err.message || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
+      setSubmitError(
+        err.message || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -113,10 +135,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center text-right">
-        <h2 className="text-xl font-bold text-white mb-2">سلتك فارغة حاليًا</h2>
+        <h2 className="text-xl font-bold text-white mb-2">
+          سلتك فارغة حاليًا
+        </h2>
+
         <p className="text-xs text-neutral-400 mb-6">
           أضف بعض قطع الستريت وير إلى سلتك للمتابعة لإتمام الطلب.
         </p>
+
         <button
           onClick={() => onNavigate('/products')}
           className="py-2.5 px-6 bg-white text-black font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors"
@@ -142,6 +168,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
           إتمام الطلب (الدفع عند الاستلام)
         </h1>
+
         <p className="text-xs text-neutral-400 mt-1">
           لا تحتاج لإنشاء حساب. فقط املأ بيانات التوصيل وسنقوم بتجهيز شحنتك فورًا.
         </p>
@@ -153,74 +180,110 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
         </div>
       )}
 
-      <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* Left (8 cols): Delivery Details Form */}
+      <form
+        noValidate
+        onSubmit={handleSubmitOrder}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+      >
+        {/* Left: Delivery Details Form */}
         <div className="lg:col-span-7 space-y-6">
-          
           <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
             <h2 className="text-base font-bold text-white border-b border-neutral-800/80 pb-3 flex items-center gap-2">
               <Truck className="w-4 h-4 text-neutral-300" />
               <span>بيانات التوصيل والشحن</span>
             </h2>
 
-            {/* 1. Customer Name */}
+            {/* Customer Name */}
             <div>
               <label className="block text-xs font-bold text-neutral-300 mb-1.5">
                 الاسم بالكامل <span className="text-red-400">*</span>
               </label>
+
               <input
                 type="text"
                 required
                 placeholder="الاسم بالكامل"
                 value={formData.customer_name}
-                onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    customer_name: e.target.value,
+                  })
+                }
                 className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                  errors.customer_name ? 'border-red-500' : 'border-neutral-800 focus:border-white'
+                  errors.customer_name
+                    ? 'border-red-500'
+                    : 'border-neutral-800 focus:border-white'
                 }`}
               />
+
               {errors.customer_name && (
-                <p className="text-[11px] text-red-400 mt-1">{errors.customer_name}</p>
+                <p className="text-[11px] text-red-400 mt-1">
+                  {errors.customer_name}
+                </p>
               )}
             </div>
 
-            {/* 2. Phone Number */}
+            {/* Phone */}
             <div>
               <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                رقم الهاتف المحمول (لتأكيد الشحن) <span className="text-red-400">*</span>
+                رقم الهاتف المحمول (لتأكيد الشحن){' '}
+                <span className="text-red-400">*</span>
               </label>
+
               <input
                 type="tel"
                 required
                 placeholder="01012345678"
                 dir="ltr"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    phone: e.target.value,
+                  })
+                }
                 className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 text-right focus:outline-none transition-colors font-mono ${
-                  errors.phone ? 'border-red-500' : 'border-neutral-800 focus:border-white'
+                  errors.phone
+                    ? 'border-red-500'
+                    : 'border-neutral-800 focus:border-white'
                 }`}
               />
+
               {errors.phone && (
-                <p className="text-[11px] text-red-400 mt-1">{errors.phone}</p>
+                <p className="text-[11px] text-red-400 mt-1">
+                  {errors.phone}
+                </p>
               )}
+
               <p className="text-[10px] text-neutral-500 mt-1">
                 سيتصل بك مندوب الشحن على هذا الرقم لتنسيق ميعاد التسليم.
               </p>
             </div>
 
-            {/* 3. Governorate & City */}
+            {/* Governorate & City */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1.5">
                   المحافظة <span className="text-red-400">*</span>
                 </label>
+
                 <select
                   value={formData.governorate}
-                  onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      governorate: e.target.value,
+                    })
+                  }
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2.5 px-3 text-xs text-white focus:outline-none focus:border-white"
                 >
                   {EGYPTIAN_GOVERNORATES.map((gov) => (
-                    <option key={gov.id} value={gov.id} className="bg-neutral-900 text-white">
+                    <option
+                      key={gov.id}
+                      value={gov.id}
+                      className="bg-neutral-900 text-white"
+                    >
                       {gov.nameAr}
                     </option>
                   ))}
@@ -229,54 +292,83 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
 
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                  المدينة / المركز / الحي <span className="text-red-400">*</span>
+                  المدينة / المركز / الحي{' '}
+                  <span className="text-red-400">*</span>
                 </label>
+
                 <input
                   type="text"
                   required
                   placeholder="مثال: مدينة نصر / الدقي / سموحة"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      city: e.target.value,
+                    })
+                  }
                   className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                    errors.city ? 'border-red-500' : 'border-neutral-800 focus:border-white'
+                    errors.city
+                      ? 'border-red-500'
+                      : 'border-neutral-800 focus:border-white'
                   }`}
                 />
+
                 {errors.city && (
-                  <p className="text-[11px] text-red-400 mt-1">{errors.city}</p>
+                  <p className="text-[11px] text-red-400 mt-1">
+                    {errors.city}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* 4. Detailed Address */}
+            {/* Detailed Address */}
             <div>
               <label className="block text-xs font-bold text-neutral-300 mb-1.5">
                 العنوان بالتفصيل <span className="text-red-400">*</span>
               </label>
+
               <textarea
                 rows={2}
                 required
                 placeholder="اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة قريبة..."
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: e.target.value,
+                  })
+                }
                 className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                  errors.address ? 'border-red-500' : 'border-neutral-800 focus:border-white'
+                  errors.address
+                    ? 'border-red-500'
+                    : 'border-neutral-800 focus:border-white'
                 }`}
               />
+
               {errors.address && (
-                <p className="text-[11px] text-red-400 mt-1">{errors.address}</p>
+                <p className="text-[11px] text-red-400 mt-1">
+                  {errors.address}
+                </p>
               )}
             </div>
 
-            {/* 5. Order Notes */}
+            {/* Order Notes */}
             <div>
               <label className="block text-xs font-bold text-neutral-400 mb-1.5">
                 ملاحظات خاصة بالشحن (اختياري)
               </label>
+
               <input
                 type="text"
                 placeholder="مثال: الاتصال قبل الوصول بنصف ساعة، التوصيل بعد الساعة 3 مساءً..."
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    notes: e.target.value,
+                  })
+                }
                 className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
               />
             </div>
@@ -294,6 +386,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
                 <CheckCircle2 className="w-4 h-4" />
                 <span>لا تحتاج لبطاقة بنكية أو دفع إلكتروني مسبق.</span>
               </div>
+
               <p className="text-neutral-400 leading-relaxed">
                 ستقوم بسداد قيمة الطلب نقدًا للمندوب عند وصول الشحنة لك.
               </p>
@@ -301,15 +394,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
               {settings?.inspection_available && (
                 <div className="pt-2 border-t border-neutral-900 text-neutral-300 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>معاينة مجانية: يحق لك فتح الكيس والتأكد من الخامة والمقاس قبل دفع أي جنيه.</span>
+                  <span>
+                    معاينة مجانية: يحق لك فتح الكيس والتأكد من الخامة والمقاس قبل
+                    دفع أي جنيه.
+                  </span>
                 </div>
               )}
             </div>
           </div>
-
         </div>
 
-        {/* Right (5 cols): Order Summary */}
+        {/* Right: Order Summary */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
             <h2 className="text-base font-bold text-white border-b border-neutral-800 pb-3">
@@ -328,9 +423,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
                     alt={item.product.name}
                     className="w-12 h-14 object-cover rounded bg-neutral-950 border border-neutral-800 shrink-0"
                   />
+
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-bold text-white line-clamp-1">{item.product.name}</h4>
+                      <h4 className="font-bold text-white line-clamp-1">
+                        {item.product.name}
+                      </h4>
+
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
                         <span>{item.color}</span>
                         <span>·</span>
@@ -339,6 +438,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
                         <span>الكمية: {item.quantity}</span>
                       </div>
                     </div>
+
                     <div className="font-mono-numbers font-bold text-white">
                       {formatPrice(item.unitPrice * item.quantity)}
                     </div>
@@ -351,6 +451,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
             <div className="pt-3 border-t border-neutral-800/80 space-y-2 text-xs">
               <div className="flex justify-between text-neutral-400">
                 <span>قيمة المشتريات:</span>
+
                 <span className="font-mono-numbers text-white font-medium">
                   {formatPrice(subtotal)}
                 </span>
@@ -358,6 +459,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
 
               <div className="flex justify-between text-neutral-400">
                 <span>مصاريف الشحن لجميع المحافظات:</span>
+
                 <span className="font-mono-numbers text-white font-medium">
                   {formatPrice(shippingFee)}
                 </span>
@@ -365,6 +467,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
 
               <div className="pt-2 border-t border-neutral-800 flex justify-between text-base font-extrabold text-white">
                 <span>الإجمالي عند الاستلام:</span>
+
                 <span className="font-mono-numbers text-lg text-white">
                   {formatPrice(grandTotal)}
                 </span>
@@ -388,12 +491,23 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onNa
             </button>
 
             <p className="text-[11px] text-center text-neutral-500">
-              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع الخاصة بـ Outfit Zone.
+              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع
+              الخاصة بـ Outfit Zone.
             </p>
           </div>
         </div>
-
       </form>
     </div>
   );
 };
+```
+
+**التغيير الوظيفي الوحيد** عن ملفك الأصلي هو إضافة:
+
+```tsx
+noValidate
+```
+
+إلى `<form>`.
+
+بعد وضعه في `CheckoutPage.tsx`، شغّل المشروع. لو ظهر **حتى Error واحد**، ابعت نص الـError نفسه بدل ما نغير كود إضافي.
