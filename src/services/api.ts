@@ -20,20 +20,6 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     }
   }
 
-  // Fallback to local admin token from localStorage
-  if (typeof window !== 'undefined') {
-    const localToken = localStorage.getItem('outfit_zone_admin_token');
-    if (localToken) {
-      headers['Authorization'] = `Bearer ${localToken}`;
-      return headers;
-    }
-    const adminEmail = localStorage.getItem('outfit_zone_admin_email');
-    if (adminEmail) {
-      headers['Authorization'] = `Bearer admin_token_${adminEmail}`;
-      return headers;
-    }
-  }
-
   return headers;
 }
 
@@ -248,36 +234,20 @@ export const api = {
   },
 
   // 7. Verify Admin User
-  async verifyAdmin(email: string): Promise<{ authorized: boolean; user?: any; error?: string }> {
-    const cleanEmail = email.toLowerCase().trim();
+  async verifyAdmin(email?: string): Promise<{ authorized: boolean; user?: any; error?: string }> {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id, email, created_at')
-          .ilike('email', cleanEmail)
-          .maybeSingle();
-
+        const { data, error } = await supabase.rpc('is_admin');
         if (!error && data) {
-          return { authorized: true, user: data };
+          return { authorized: true };
         }
       } catch (err) {
-        console.warn('Supabase admin_users check notice:', err);
+        console.warn('Supabase is_admin check notice:', err);
       }
+      return { authorized: false, error: 'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.' };
     }
 
-    const authHeaders = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/admin/verify`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({ email: cleanEmail }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return { authorized: false, error: err.error || 'غير مصرح لك بالوصول إلى لوحة التحكم.' };
-    }
-    return res.json();
+    return { authorized: false, error: 'قاعدة بيانات Supabase غير متصلة.' };
   },
 
   // 8. Admin: Get Orders (RLS Enforced)

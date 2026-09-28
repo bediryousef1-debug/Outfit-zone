@@ -241,19 +241,13 @@ function AppContent() {
   // ==============================================================================
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-white flex flex-col font-sans selection:bg-neutral-800 selection:text-white">
-      {/* Top Announcement Bar */}
-      {content?.announcement_text && (
-        <div className="bg-neutral-900 border-b border-neutral-800/80 px-4 py-2 text-center text-[11px] sm:text-xs text-neutral-300 font-medium">
-          {content.announcement_text}
-        </div>
-      )}
-
       {/* Customer Header */}
       <Header
         itemCount={itemCount}
         setIsCartOpen={setIsCartOpen}
         onNavigate={(path) => navigate(path)}
         currentPath={currentPath}
+        announcementText={content?.announcement_text}
       />
 
       {/* Main Storefront Views */}

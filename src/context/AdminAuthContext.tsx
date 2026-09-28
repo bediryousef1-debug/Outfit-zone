@@ -13,158 +13,95 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-const ADMIN_TOKEN_KEY = 'outfit_zone_admin_token';
-const ADMIN_EMAIL_KEY = 'outfit_zone_admin_email';
+// Clean up legacy auth keys once at initialization (no localStorage fallback)
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('outfit_zone_admin_token');
+    localStorage.removeItem('outfit_zone_admin_email');
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('admin_token_')) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [adminEmail, setAdminEmail] = useState<string | null>(() => {
-    return localStorage.getItem(ADMIN_EMAIL_KEY) || null;
-  });
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Authoritative check: verify that the user's email is present in the admin_users table
-  const verifyAdminApproval = async (email: string): Promise<boolean> => {
-    const cleanEmail = email.toLowerCase().trim();
-    if (!cleanEmail) return false;
-
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id, email, user_id')
-          .ilike('email', cleanEmail)
-          .maybeSingle();
-
-        if (!error && data) {
-          return true;
-        }
-      } catch (e) {
-        console.warn('verifyAdminApproval check failed:', e);
-      }
-      return false;
-    }
-
+  // Authoritative admin verification via Supabase RPC is_admin()
+  const verifyIsAdmin = async (): Promise<boolean> => {
+    if (!isSupabaseConfigured || !supabase) return false;
     try {
-      const token = localStorage.getItem(ADMIN_TOKEN_KEY) || cleanEmail;
-      const res = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: cleanEmail }),
-      });
-      const data = await res.json().catch(() => ({}));
-      return Boolean(res.ok && data.authorized);
-    } catch {
+      const { data, error } = await supabase.rpc('is_admin');
+      if (error) {
+        console.warn('is_admin RPC returned error:', error.message);
+        return false;
+      }
+      return Boolean(data);
+    } catch (err) {
+      console.warn('verifyIsAdmin exception:', err);
       return false;
     }
   };
 
-  // Check initial session from Supabase Auth or Local Storage
-  useEffect(() => {
-    let isMounted = true;
+  // Restore session from Supabase Auth
+  const checkSession = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAdminEmail(null);
+      setIsLoading(false);
+      return;
+    }
 
-    const initAuth = async () => {
-      setIsLoading(true);
-      try {
-        if (isSupabaseConfigured && supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.email) {
-            const isApproved = await verifyAdminApproval(session.user.email);
-            if (isMounted) {
-              if (isApproved) {
-                setAdminEmail(session.user.email);
-                localStorage.setItem(ADMIN_EMAIL_KEY, session.user.email);
-                if (session.access_token) {
-                  localStorage.setItem(ADMIN_TOKEN_KEY, session.access_token);
-                }
-                setAuthError(null);
-                setIsLoading(false);
-                return;
-              } else {
-                await supabase.auth.signOut();
-                localStorage.removeItem(ADMIN_TOKEN_KEY);
-                localStorage.removeItem(ADMIN_EMAIL_KEY);
-                setAdminEmail(null);
-                setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
-                setIsLoading(false);
-                return;
-              }
-            }
-          }
-        }
-
-        // Check stored admin token & email
-        const storedEmail = localStorage.getItem(ADMIN_EMAIL_KEY);
-        const storedToken = localStorage.getItem(ADMIN_TOKEN_KEY);
-
-        if (storedEmail && storedToken) {
-          const isApproved = await verifyAdminApproval(storedEmail);
-          if (isMounted) {
-            if (isApproved) {
-              setAdminEmail(storedEmail);
-              setAuthError(null);
-            } else {
-              localStorage.removeItem(ADMIN_TOKEN_KEY);
-              localStorage.removeItem(ADMIN_EMAIL_KEY);
-              setAdminEmail(null);
-            }
-          }
-        } else if (isMounted) {
-          setAdminEmail(null);
-        }
-      } catch (err: any) {
-        console.error('Auth verification error:', err);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        setAdminEmail(null);
+        return;
       }
-    };
 
-    initAuth();
+      const isAdmin = await verifyIsAdmin();
+      if (isAdmin) {
+        setAdminEmail(session.user?.email || null);
+        setAuthError(null);
+      } else {
+        await supabase.auth.signOut();
+        setAdminEmail(null);
+      }
+    } catch (err) {
+      console.error('Session restoration error:', err);
+      setAdminEmail(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Listen to real Supabase auth events if configured
-    let authListenerSub: { unsubscribe: () => void } | null = null;
+  useEffect(() => {
+    checkSession();
+
+    let subscription: { unsubscribe: () => void } | null = null;
     if (isSupabaseConfigured && supabase) {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          if (isMounted) {
-            localStorage.removeItem(ADMIN_TOKEN_KEY);
-            localStorage.removeItem(ADMIN_EMAIL_KEY);
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        // Deferred execution to avoid calling Supabase synchronously inside callback
+        setTimeout(() => {
+          if (event === 'SIGNED_OUT' || !session) {
             setAdminEmail(null);
+            setIsLoading(false);
+            return;
           }
-          return;
-        }
-
-        if (session?.user?.email) {
-          const isApproved = await verifyAdminApproval(session.user.email);
-          if (isMounted) {
-            if (isApproved) {
-              setAdminEmail(session.user.email);
-              localStorage.setItem(ADMIN_EMAIL_KEY, session.user.email);
-              if (session.access_token) {
-                localStorage.setItem(ADMIN_TOKEN_KEY, session.access_token);
-              }
-              setAuthError(null);
-            } else {
-              await supabase?.auth.signOut();
-              localStorage.removeItem(ADMIN_TOKEN_KEY);
-              localStorage.removeItem(ADMIN_EMAIL_KEY);
-              setAdminEmail(null);
-              setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
-            }
-          }
-        }
+          checkSession();
+        }, 0);
       });
-      authListenerSub = data.subscription;
+      subscription = data.subscription;
     }
 
     return () => {
-      isMounted = false;
-      authListenerSub?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -179,73 +116,54 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return false;
     }
 
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthError('قاعدة بيانات Supabase غير متصلة.');
+      setIsLoading(false);
+      return false;
+    }
+
     try {
-      // 1. If remote Supabase is configured, authenticate strictly via Supabase Auth
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-
-        if (error) {
-          // Supabase Auth rejected the password or credentials
-          setAuthError(
-            error.message === 'Invalid login credentials'
-              ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
-              : error.message || 'فشل تسجيل الدخول.'
-          );
-          return false;
-        }
-
-        if (data?.user?.email) {
-          const isApproved = await verifyAdminApproval(data.user.email);
-          if (isApproved) {
-            setAdminEmail(data.user.email);
-            localStorage.setItem(ADMIN_EMAIL_KEY, data.user.email);
-            if (data.session?.access_token) {
-              localStorage.setItem(ADMIN_TOKEN_KEY, data.session.access_token);
-            }
-            setAuthError(null);
-            return true;
-          } else {
-            // Authenticated user is not an approved admin
-            await supabase.auth.signOut();
-            localStorage.removeItem(ADMIN_TOKEN_KEY);
-            localStorage.removeItem(ADMIN_EMAIL_KEY);
-            setAdminEmail(null);
-            setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
-            return false;
-          }
-        }
-        return false;
-      }
-
-      // 2. Call backend admin login endpoint (checks database admin_users table) - ONLY when Supabase is NOT configured
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password }),
+      // 1. Supabase Auth signInWithPassword
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
       });
 
-      const result = await res.json().catch(() => ({}));
-
-      if (res.ok && result.authorized && result.email) {
-        setAdminEmail(result.email);
-        localStorage.setItem(ADMIN_EMAIL_KEY, result.email);
-        const token = result.token || `admin_token_${result.email}`;
-        localStorage.setItem(ADMIN_TOKEN_KEY, token);
-        setAuthError(null);
-        return true;
-      } else {
-        setAuthError(result.error || 'بيانات الدخول غير صحيحة أو هذا الحساب غير مصرح له.');
+      if (error) {
+        setAuthError(
+          error.message === 'Invalid login credentials'
+            ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
+            : error.message || 'فشل تسجيل الدخول.'
+        );
+        setIsLoading(false);
         return false;
       }
+
+      // 2. Verify admin via supabase.rpc('is_admin')
+      if (data?.session) {
+        const isAdmin = await verifyIsAdmin();
+        if (isAdmin) {
+          setAdminEmail(data.user?.email || cleanEmail);
+          setAuthError(null);
+          setIsLoading(false);
+          return true;
+        } else {
+          await supabase.auth.signOut();
+          setAdminEmail(null);
+          setAuthError('هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.');
+          setIsLoading(false);
+          return false;
+        }
+      }
+
+      setAuthError('فشل تسجيل الدخول.');
+      setIsLoading(false);
+      return false;
     } catch (err: any) {
       console.error('Login error:', err);
       setAuthError('حدث خطأ أثناء محاولة تسجيل الدخول. يرجى إعادة المحاولة.');
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
     }
   };
 
@@ -253,15 +171,13 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.auth.signOut();
-        } catch {}
+        await supabase.auth.signOut();
       }
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      localStorage.removeItem(ADMIN_EMAIL_KEY);
+    } catch (err) {
+      console.warn('SignOut error:', err);
+    } finally {
       setAdminEmail(null);
       setAuthError(null);
-    } finally {
       setIsLoading(false);
     }
   };
