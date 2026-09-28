@@ -1012,6 +1012,22 @@ app.post('/api/orders', async (req: Request, res: Response) => {
         };
         db.orders.unshift(orderRecord);
         saveToFile('orders.json', db.orders);
+
+        // Telegram notification is best-effort and must never block a successful order.
+        void sendTelegramOrderNotification({
+          order_number: data.order_number,
+          customer_name: customer.customer_name.trim(),
+          phone: cleanPhone,
+          governorate: customer.governorate,
+          city: customer.city.trim(),
+          address: customer.address.trim(),
+          notes: customer.notes?.trim() || null,
+          subtotal: Number(data.subtotal) || 0,
+          shipping_fee: Number(data.shipping_fee) || 0,
+          total: Number(data.total) || 0,
+          items,
+        });
+
         return res.json(data);
       }
     } catch (rpcErr) {
@@ -1132,6 +1148,28 @@ app.post('/api/orders', async (req: Request, res: Response) => {
   saveToFile('order_items.json', db.order_items);
   saveToFile('order_status_history.json', db.order_status_history);
   saveToFile('product_variants.json', db.product_variants);
+
+  // Telegram notification is best-effort and must never block a successful order.
+  void sendTelegramOrderNotification({
+    order_number: orderNumber,
+    customer_name: customer.customer_name.trim(),
+    phone: cleanPhone,
+    governorate: customer.governorate,
+    city: customer.city.trim(),
+    address: customer.address.trim(),
+    notes: customer.notes?.trim() || null,
+    subtotal,
+    shipping_fee: shippingFee,
+    total,
+    items: validatedItems.map((val) => ({
+      product_name: val.product.name,
+      color: val.variant.color,
+      size: val.variant.size,
+      quantity: val.quantity,
+      unit_price: val.unit_price,
+      line_total: val.line_total,
+    })),
+  });
 
   res.json({
     success: true,
@@ -1745,4 +1783,95 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer()
+// ==============================================================================
+// Telegram Order Notifications
+// ==============================================================================
+
+async function sendTelegramOrderNotification(order: {
+  order_number: string;
+  customer_name: string;
+  phone: string;
+  governorate: string;
+  city: string;
+  address: string;
+  notes?: string | null;
+  subtotal: number;
+  shipping_fee: number;
+  total: number;
+  items?: any[];
+}) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+
+  if (!botToken || !chatId) {
+    console.warn('[Telegram] Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID. Notification skipped.');
+    return;
+  }
+
+  const itemsText = (order.items || []).map((item: any, index: number) => {
+    const productName = item.product_name || item.product_name_snapshot || item.name || item.product_id || 'منتج';
+    const color = item.color ? ` | اللون: ${item.color}` : '';
+    const size = item.size ? ` | المقاس: ${item.size}` : '';
+    const quantity = Number(item.quantity) || 1;
+    const unitPrice = Number(item.unit_price);
+    const lineTotal = Number(item.line_total);
+
+    const priceText = Number.isFinite(lineTotal)
+      ? ` | ${lineTotal} ج`
+      : Number.isFinite(unitPrice)
+        ? ` | ${unitPrice * quantity} ج`
+        : '';
+
+    return `${index + 1}. ${productName}${color}${size} | الكمية: ${quantity}${priceText}`;
+  }).join('\n');
+
+  const message = [
+    '🔔 طلب جديد - Outfit Zone',
+    '',
+    `📦 رقم الطلب: ${order.order_number}`,
+    '',
+    `👤 العميل: ${order.customer_name}`,
+    `📱 الهاتف: ${order.phone}`,
+    `📍 المحافظة: ${order.governorate}`,
+    `🏙️ المدينة: ${order.city}`,
+    `🏠 العنوان: ${order.address}`,
+    order.notes ? `📝 ملاحظات: ${order.notes}` : null,
+    '',
+    '🛍️ المنتجات:',
+    itemsText || 'لا توجد تفاصيل منتجات متاحة.',
+    '',
+    `💰 المجموع: ${Number(order.subtotal).toFixed(2)} جنيه`,
+    `🚚 الشحن: ${Number(order.shipping_fee).toFixed(2)} جنيه`,
+    `💵 الإجمالي: ${Number(order.total).toFixed(2)} جنيه`,
+    '',
+    '💳 الدفع: عند الاستلام',
+    '⏳ الحالة: قيد المراجعة',
+  ].filter(Boolean).join('\n');
+
+  try {
+    const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const response = await fetch(telegramUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[Telegram] Failed to send order notification (${response.status}): ${errorText}`);
+      return;
+    }
+
+    console.log(`[Telegram] Order notification sent for ${order.order_number}`);
+  } catch (error) {
+    console.warn('[Telegram] Notification error:', error);
+  }
+}
+
+;
