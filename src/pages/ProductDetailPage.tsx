@@ -52,6 +52,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
 
+  // Review form
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+
+  // Comment form
   const [commentName, setCommentName] = useState('');
   const [commentText, setCommentText] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -190,7 +198,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     product.compare_at_price !== undefined &&
     product.compare_at_price > product.price;
 
-  // Simple calculation - no useMemo needed
   const averageRating =
     reviews.length > 0
       ? reviews.reduce(
@@ -213,6 +220,54 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
     addItem(product, selectedVariant, quantity);
     setIsCartOpen(true);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setReviewMessage(null);
+
+    if (!reviewName.trim()) {
+      setReviewMessage('اكتب اسمك أولًا.');
+      return;
+    }
+
+    if (!reviewText.trim()) {
+      setReviewMessage('اكتب تقييمك أولًا.');
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewMessage('اختر تقييمًا من نجمة إلى 5 نجوم.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+
+    try {
+      await api.createProductReview({
+        product_id: product.id,
+        customer_name: reviewName.trim(),
+        rating: reviewRating,
+        review_text: reviewText.trim(),
+      });
+
+      setReviewName('');
+      setReviewText('');
+      setReviewRating(5);
+
+      setReviewMessage(
+        'تم إرسال تقييمك بنجاح وسيظهر بعد مراجعته من فريق Outfit Zone.'
+      );
+    } catch (err: any) {
+      console.error('Failed to submit review:', err);
+
+      setReviewMessage(
+        err.message || 'تعذر إرسال التقييم. حاول مرة أخرى.'
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -448,8 +503,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
 
               <span>
-                توصيل لجميع المحافظات خلال 2 - 4 أيام عمل (
-                {settings?.shipping_fee || 65} جنيه فقط)
+                توصيل لجميع المحافظات خلال 2 - 4 أيام عمل
               </span>
             </div>
 
@@ -502,9 +556,184 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
       </div>
 
-      {/* Comments */}
+      {/* Reviews & Comments */}
       <section className="mt-12 sm:mt-16 border-t border-neutral-800 pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          {/* Reviews */}
+          <div className="lg:col-span-7">
+            <div className="flex items-center gap-2 mb-6">
+              <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-white">
+                  تقييمات العملاء
+                </h2>
+
+                <p className="text-xs text-neutral-500 mt-1">
+                  تجارب وآراء العملاء حول هذا المنتج
+                </p>
+              </div>
+            </div>
+
+            {reviewsLoading ? (
+              <div className="space-y-3">
+                <div className="h-28 rounded-xl bg-neutral-900 animate-pulse" />
+                <div className="h-28 rounded-xl bg-neutral-900 animate-pulse" />
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-6 text-center">
+                <Star className="w-7 h-7 text-neutral-600 mx-auto mb-2" />
+
+                <p className="text-sm font-bold text-neutral-300">
+                  لا توجد تقييمات حتى الآن
+                </p>
+
+                <p className="text-xs text-neutral-500 mt-1">
+                  كن أول من يقيّم هذا المنتج.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reviews.map((review) => (
+                  <article
+                    key={review.id}
+                    className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4 sm:p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-white mb-1">
+                          {review.customer_name}
+                        </h3>
+
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-3.5 h-3.5 ${
+                                star <= Number(review.rating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-neutral-700'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] text-neutral-600 shrink-0">
+                        {new Date(
+                          review.created_at
+                        ).toLocaleDateString('ar-EG')}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-neutral-300 leading-7">
+                      {review.review_text}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Review Form */}
+          <div className="lg:col-span-5">
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Star className="w-5 h-5 text-yellow-400" />
+
+                <h3 className="text-lg font-black text-white">
+                  قيّم المنتج
+                </h3>
+              </div>
+
+              <p className="text-xs text-neutral-500 mb-5">
+                شاركنا رأيك في المنتج وتجربتك معه.
+              </p>
+
+              <form
+                onSubmit={handleSubmitReview}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 mb-2">
+                    الاسم
+                  </label>
+
+                  <input
+                    type="text"
+                    value={reviewName}
+                    onChange={(e) => setReviewName(e.target.value)}
+                    maxLength={100}
+                    placeholder="اكتب اسمك"
+                    className="w-full rounded-xl bg-neutral-950 border border-neutral-800 text-white text-sm px-4 py-3 outline-none focus:border-neutral-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 mb-2">
+                    التقييم
+                  </label>
+
+                  <div className="flex items-center gap-1.5" dir="rtl">
+                    {[5, 4, 3, 2, 1].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        onClick={() => setReviewRating(rating)}
+                        aria-label={`تقييم ${rating} نجوم`}
+                        className="p-1 rounded-lg hover:bg-neutral-800 transition-colors"
+                      >
+                        <Star
+                          className={`w-7 h-7 transition-colors ${
+                            rating <= reviewRating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-neutral-700 hover:text-neutral-500'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 mb-2">
+                    التقييم
+                  </label>
+
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    maxLength={2000}
+                    rows={4}
+                    placeholder="اكتب رأيك في المنتج..."
+                    className="w-full rounded-xl bg-neutral-950 border border-neutral-800 text-white text-sm px-4 py-3 outline-none resize-none focus:border-neutral-500 transition-colors"
+                  />
+                </div>
+
+                {reviewMessage && (
+                  <div className="rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-300">
+                    {reviewMessage}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting}
+                  className="w-full rounded-xl bg-white text-black py-3.5 px-4 text-sm font-black hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+
+                  {reviewSubmitting
+                    ? 'جاري الإرسال...'
+                    : 'إرسال التقييم'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Comments */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mt-12 pt-10 border-t border-neutral-800">
           {/* Comments List */}
           <div className="lg:col-span-7">
             <div className="flex items-center gap-2 mb-6">
