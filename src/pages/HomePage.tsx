@@ -10,8 +10,9 @@ import {
   Headphones,
   RotateCcw,
   AlertCircle,
+  Star,
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, ProductReview } from '../types';
 import { api } from '../services/api';
 import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
@@ -23,6 +24,14 @@ interface HomePageProps {
   onSelectProduct: (slug: string) => void;
 }
 
+interface HomepageReview extends ProductReview {
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
 export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
   onSelectProduct,
@@ -31,7 +40,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { isDark } = useTheme();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<HomepageReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -137,22 +148,73 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
-   * LOAD PRODUCTS
+   * LOAD PRODUCTS + HOMEPAGE REVIEWS
    * ==========================================================================
    */
 
   const loadProducts = async () => {
     setIsLoading(true);
+    setReviewsLoading(true);
     setError(null);
 
     try {
       const data = await api.getProducts();
       setProducts(data);
+
+      /*
+       * Reviews are already connected to products through product_id.
+       *
+       * We fetch reviews for the products currently available to the
+       * homepage in parallel instead of making sequential requests.
+       *
+       * Only approved reviews are returned by api.getProductReviews().
+       */
+      try {
+        const reviewResults = await Promise.all(
+          data.slice(0, 12).map(async (product) => {
+            try {
+              const productReviews = await api.getProductReviews(product.id);
+
+              return productReviews.map((review) => ({
+                ...review,
+                product: {
+                  id: product.id,
+                  name: product.name,
+                  slug: product.slug,
+                },
+              }));
+            } catch (reviewError) {
+              console.error(
+                `Error fetching reviews for product ${product.id}:`,
+                reviewError
+              );
+
+              return [];
+            }
+          })
+        );
+
+        const mergedReviews = reviewResults
+          .flat()
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          )
+          .slice(0, 6);
+
+        setReviews(mergedReviews);
+      } catch (reviewError) {
+        console.error('Error fetching homepage reviews:', reviewError);
+        setReviews([]);
+      }
     } catch (err: any) {
       console.error('Error fetching homepage products:', err);
       setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+      setReviews([]);
     } finally {
       setIsLoading(false);
+      setReviewsLoading(false);
     }
   };
 
@@ -168,14 +230,6 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * REAL CATEGORIES
    * ==========================================================================
-   *
-   * Categories now come directly from StoreContext / Supabase.
-   *
-   * - Inactive categories are hidden.
-   * - No fake categories.
-   * - No hardcoded category images.
-   * - Category image comes from category.image_url.
-   * - Clicking a category uses its real slug.
    */
 
   const activeCategories = (categories || []).filter(
@@ -225,6 +279,18 @@ export const HomePage: React.FC<HomePageProps> = ({
     onNavigate(`/products?category=${encodeURIComponent(slug)}`);
   };
 
+  /*
+   * ==========================================================================
+   * REVIEW NAVIGATION
+   * ==========================================================================
+   */
+
+  const handleReviewProduct = (slug?: string) => {
+    if (!slug) return;
+
+    onSelectProduct(slug);
+  };
+
   return (
     <div className="space-y-12 sm:space-y-16">
       {/* =====================================================================
@@ -251,6 +317,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-[1px] bg-neutral-500" />
+
                   <span className="font-mono tracking-wider">
                     {currentSlide.tag}
                   </span>
@@ -554,7 +621,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                       </div>
                     )}
 
-                    {/* Subtle image overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
@@ -708,6 +774,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
+
               <span>إعادة المحاولة</span>
             </button>
           </div>
@@ -730,6 +797,144 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onSelect={(slug) => onSelectProduct(slug)}
               />
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* =====================================================================
+          6. CUSTOMER REVIEWS
+          ===================================================================== */}
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-end justify-between mb-8">
+          <div className="text-right">
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+              آراء عملائنا
+            </span>
+
+            <h2
+              className={`text-xl sm:text-2xl font-black ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
+              الناس بتقول إيه عن Outfit Zone؟
+            </h2>
+          </div>
+        </div>
+
+        {reviewsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`h-44 rounded-2xl animate-pulse ${
+                  isDark ? 'bg-neutral-900/60' : 'bg-neutral-100'
+                }`}
+              />
+            ))}
+          </div>
+        ) : reviews.length === 0 ? (
+          <div
+            className={`rounded-2xl border p-8 text-center ${
+              isDark
+                ? 'bg-[#111115] border-neutral-800 text-neutral-400'
+                : 'bg-white border-neutral-200 text-neutral-500'
+            }`}
+          >
+            <Star className="w-7 h-7 mx-auto mb-3 text-neutral-400" />
+
+            <p className="text-sm font-bold">
+              آراء العملاء هتظهر هنا قريبًا.
+            </p>
+
+            <p className="text-xs mt-1 text-neutral-400">
+              أول ما يكون عندنا تقييمات معتمدة، هتظهر تلقائيًا هنا.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reviews.map((review) => {
+              const productSlug = review.product?.slug;
+
+              return (
+                <article
+                  key={review.id}
+                  onClick={() => handleReviewProduct(productSlug)}
+                  className={`group rounded-2xl border p-5 transition-all duration-300 ${
+                    productSlug ? 'cursor-pointer' : ''
+                  } ${
+                    isDark
+                      ? 'bg-[#111115] border-neutral-800 hover:border-neutral-600'
+                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                  }`}
+                >
+                  {/* Stars */}
+                  <div
+                    className="flex items-center gap-0.5 mb-4"
+                    dir="ltr"
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= Number(review.rating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : isDark
+                            ? 'text-neutral-700'
+                            : 'text-neutral-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Review */}
+                  <p
+                    className={`text-sm leading-7 min-h-[84px] ${
+                      isDark ? 'text-neutral-200' : 'text-neutral-700'
+                    }`}
+                  >
+                    "{review.review_text}"
+                  </p>
+
+                  {/* Customer */}
+                  <div
+                    className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
+                      isDark
+                        ? 'border-neutral-800'
+                        : 'border-neutral-200'
+                    }`}
+                  >
+                    <div className="text-right min-w-0">
+                      <p
+                        className={`text-sm font-bold truncate ${
+                          isDark ? 'text-white' : 'text-black'
+                        }`}
+                      >
+                        {review.customer_name}
+                      </p>
+
+                      {review.product?.name && (
+                        <p className="text-[10px] text-neutral-400 truncate mt-0.5">
+                          {review.product.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {productSlug && (
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                          isDark
+                            ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
+                            : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
+                        }`}
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
