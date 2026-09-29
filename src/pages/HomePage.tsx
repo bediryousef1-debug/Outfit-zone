@@ -164,7 +164,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
-   * LOAD PRODUCTS + HOMEPAGE REVIEWS
+   * LOAD PRODUCTS
    * ==========================================================================
    */
 
@@ -176,52 +176,57 @@ export const HomePage: React.FC<HomePageProps> = ({
     try {
       const data = await api.getProducts();
       setProducts(data);
-
-      try {
-        const reviewResults = await Promise.all(
-          data.slice(0, 12).map(async (product) => {
-            try {
-              const productReviews = await api.getProductReviews(product.id);
-
-              return productReviews.map((review) => ({
-                ...review,
-                product: {
-                  id: product.id,
-                  name: product.name,
-                  slug: product.slug,
-                },
-              }));
-            } catch (reviewError) {
-              console.error(
-                `Error fetching reviews for product ${product.id}:`,
-                reviewError
-              );
-
-              return [];
-            }
-          })
-        );
-
-        const mergedReviews = reviewResults
-          .flat()
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )
-          .slice(0, 6);
-
-        setReviews(mergedReviews);
-      } catch (reviewError) {
-        console.error('Error fetching homepage reviews:', reviewError);
-        setReviews([]);
-      }
     } catch (err: any) {
       console.error('Error fetching homepage products:', err);
       setError(err.message || 'تعذر تحميل المنتجات حاليًا');
-      setReviews([]);
+      setProducts([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /*
+   * ==========================================================================
+   * LOAD PUBLIC HOMEPAGE REVIEWS
+   * ==========================================================================
+   *
+   * Reviews are loaded once through getPublicReviews().
+   * General reviews have product_id = null.
+   * Product-specific reviews are matched locally against the already-loaded
+   * products instead of making one request per product.
+   */
+
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+
+    try {
+      const publicReviews = await api.getPublicReviews();
+
+      const productMap = new Map(
+        products.map((product) => [
+          product.id,
+          {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+          },
+        ])
+      );
+
+      const homepageReviews: HomepageReview[] = publicReviews
+        .map((review) => ({
+          ...review,
+          product: review.product_id
+            ? productMap.get(review.product_id)
+            : undefined,
+        }))
+        .slice(0, 6);
+
+      setReviews(homepageReviews);
+    } catch (err) {
+      console.error('Error fetching homepage reviews:', err);
+      setReviews([]);
+    } finally {
       setReviewsLoading(false);
     }
   };
@@ -229,6 +234,12 @@ export const HomePage: React.FC<HomePageProps> = ({
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      loadReviews();
+    }
+  }, [isLoading, products]);
 
   const featuredProducts = products.some((p) => p.is_featured)
     ? products.filter((p) => p.is_featured).slice(0, 8)
@@ -356,7 +367,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     try {
       const result = await api.createProductReview({
-        product_id: products[0]?.id || '',
+        product_id: null,
         customer_name: cleanName,
         rating: reviewRating,
         review_text: cleanText,
@@ -370,6 +381,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       setReviewRating(5);
       setReviewText('');
       setShowReviewForm(false);
+
       setReviewMessage(
         'شكرًا لرأيك ❤️ سيتم مراجعته واعتماده قبل ظهوره على الموقع.'
       );
@@ -1030,8 +1042,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                             selected
                               ? 'fill-yellow-400 text-yellow-400'
                               : isDark
-                              ? 'text-neutral-700'
-                              : 'text-neutral-300'
+                                ? 'text-neutral-700'
+                                : 'text-neutral-300'
                           }`}
                         />
                       </button>
@@ -1191,8 +1203,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                           star <= Number(review.rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : isDark
-                            ? 'text-neutral-700'
-                            : 'text-neutral-300'
+                              ? 'text-neutral-700'
+                              : 'text-neutral-300'
                         }`}
                       />
                     ))}
