@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
   ShoppingBag,
@@ -9,7 +9,12 @@ import {
   Star,
   Send,
 } from 'lucide-react';
-import { Product, ProductVariant, ProductReview, ProductComment } from '../types';
+import {
+  Product,
+  ProductVariant,
+  ProductReview,
+  ProductComment,
+} from '../types';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
@@ -58,6 +63,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentMessage, setCommentMessage] = useState<string | null>(null);
 
+  // Load product
   useEffect(() => {
     const loadProduct = async () => {
       setIsLoading(true);
@@ -85,6 +91,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     loadProduct();
   }, [slug]);
 
+  // Load approved reviews/comments
   useEffect(() => {
     if (!product?.id) return;
 
@@ -113,11 +120,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     loadReviewsAndComments();
   }, [product?.id]);
 
+  /*
+   * IMPORTANT:
+   * All hooks are above this point.
+   * Do not add hooks below these conditional returns.
+   */
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-pulse">
           <div className="lg:col-span-7 aspect-[3/4] bg-neutral-900 rounded-2xl" />
+
           <div className="lg:col-span-5 space-y-4">
             <div className="h-6 w-32 bg-neutral-900 rounded" />
             <div className="h-10 w-full bg-neutral-900 rounded" />
@@ -182,14 +196,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     product.compare_at_price !== undefined &&
     product.compare_at_price > product.price;
 
-  const averageRating = useMemo(() => {
-    if (reviews.length === 0) return 0;
-
-    return (
-      reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
-      reviews.length
-    );
-  }, [reviews]);
+  // Simple calculation - no useMemo needed
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce(
+          (sum, review) => sum + Number(review.rating || 0),
+          0
+        ) / reviews.length
+      : 0;
 
   const handleAddToCart = () => {
     if (!selectedVariant || !canAddToCart) return;
@@ -240,6 +254,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       setReviewName('');
       setReviewRating(5);
       setReviewText('');
+
       setReviewMessage(
         'تم إرسال تقييمك بنجاح وسيظهر بعد مراجعته من فريق Outfit Zone.'
       );
@@ -280,6 +295,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
       setCommentName('');
       setCommentText('');
+
       setCommentMessage(
         'تم إرسال تعليقك بنجاح وسيظهر بعد مراجعته من فريق Outfit Zone.'
       );
@@ -300,18 +316,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 text-right">
-      {/* Back button breadcrumb */}
+      {/* Back button */}
       <button
         onClick={onBack}
         className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-400 hover:text-white transition-colors mb-6 group"
       >
         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+
         <span>العودة لجميع المنتجات</span>
       </button>
 
-      {/* Main PDP Grid */}
+      {/* Main PDP */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-        {/* Left: Image Gallery */}
+        {/* Image Gallery */}
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-[#141418] border border-neutral-800 shadow-xl">
             <img
@@ -357,7 +374,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           )}
         </div>
 
-        {/* Right: Purchase Module */}
+        {/* Purchase Module */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           {/* Category & Title */}
           <div>
@@ -474,6 +491,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               className="w-full py-2.5 text-center text-xs text-neutral-400 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
             >
               <MessageCircle className="w-4 h-4 text-[#25D366]" />
+
               <span>مساعدة في اختيار المقاس عبر WhatsApp</span>
             </a>
           </div>
@@ -482,6 +500,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="p-4 rounded-xl bg-[#121216] border border-neutral-800/80 space-y-3 text-xs">
             <div className="flex items-center gap-2.5 text-neutral-300">
               <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
+
               <span>
                 توصيل لجميع المحافظات خلال 2 - 4 أيام عمل (
                 {settings?.shipping_fee || 65} جنيه فقط)
@@ -491,6 +510,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             {settings?.inspection_available && (
               <div className="flex items-center gap-2.5 text-neutral-300">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+
                 <span className="font-semibold text-white">
                   معاينة مجانية عند الاستلام قبل دفع أي جنيه
                 </span>
@@ -499,6 +519,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
             <div className="flex items-center gap-2.5 text-neutral-300">
               <RotateCcw className="w-4 h-4 text-neutral-400 shrink-0" />
+
               <span>
                 {settings?.exchange_policy ||
                   'استبدال المقاس متاح خلال 14 يوم'}
@@ -514,7 +535,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   وصف الموديل والقصة:
                 </h4>
 
-                <p className="text-neutral-400">{product.description}</p>
+                <p className="text-neutral-400">
+                  {product.description}
+                </p>
               </div>
             )}
 
@@ -536,7 +559,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       {/* Reviews & Comments */}
       <section className="mt-12 sm:mt-16 border-t border-neutral-800 pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-          {/* Reviews */}
+          {/* Reviews List */}
           <div className="lg:col-span-7">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
@@ -605,9 +628,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       </div>
 
                       <span className="text-[10px] text-neutral-600">
-                        {new Date(review.created_at).toLocaleDateString(
-                          'ar-EG'
-                        )}
+                        {new Date(
+                          review.created_at
+                        ).toLocaleDateString('ar-EG')}
                       </span>
                     </div>
 
@@ -631,7 +654,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 شاركنا رأيك في الموديل بعد تجربته.
               </p>
 
-              <form onSubmit={handleSubmitReview} className="space-y-4">
+              <form
+                onSubmit={handleSubmitReview}
+                className="space-y-4"
+              >
                 <div>
                   <label className="block text-xs font-bold text-neutral-300 mb-2">
                     الاسم
@@ -652,7 +678,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     التقييم
                   </label>
 
-                  <div className="flex items-center gap-1" dir="ltr">
+                  <div
+                    className="flex items-center gap-1"
+                    dir="ltr"
+                  >
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
@@ -700,7 +729,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   className="w-full rounded-xl bg-white text-black py-3.5 px-4 text-sm font-black hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  {reviewSubmitting ? 'جاري الإرسال...' : 'إرسال التقييم'}
+
+                  {reviewSubmitting
+                    ? 'جاري الإرسال...'
+                    : 'إرسال التقييم'}
                 </button>
               </form>
             </div>
@@ -709,6 +741,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
         {/* Comments */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mt-12 pt-10 border-t border-neutral-800">
+          {/* Comments List */}
           <div className="lg:col-span-7">
             <div className="flex items-center gap-2 mb-6">
               <MessageCircle className="w-5 h-5 text-neutral-400" />
@@ -754,9 +787,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       </h3>
 
                       <span className="text-[10px] text-neutral-600">
-                        {new Date(comment.created_at).toLocaleDateString(
-                          'ar-EG'
-                        )}
+                        {new Date(
+                          comment.created_at
+                        ).toLocaleDateString('ar-EG')}
                       </span>
                     </div>
 
@@ -780,7 +813,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 اكتب تعليقك أو سؤالك عن المنتج.
               </p>
 
-              <form onSubmit={handleSubmitComment} className="space-y-4">
+              <form
+                onSubmit={handleSubmitComment}
+                className="space-y-4"
+              >
                 <div>
                   <label className="block text-xs font-bold text-neutral-300 mb-2">
                     الاسم
@@ -823,7 +859,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   className="w-full rounded-xl bg-white text-black py-3.5 px-4 text-sm font-black hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  {commentSubmitting ? 'جاري الإرسال...' : 'إرسال التعليق'}
+
+                  {commentSubmitting
+                    ? 'جاري الإرسال...'
+                    : 'إرسال التعليق'}
                 </button>
               </form>
             </div>
@@ -854,7 +893,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         >
           <ShoppingBag className="w-4 h-4" />
 
-          <span>{!selectedSize ? 'حدد المقاس' : 'أضف للطلب'}</span>
+          <span>
+            {!selectedSize ? 'حدد المقاس' : 'أضف للطلب'}
+          </span>
         </button>
       </div>
     </div>
