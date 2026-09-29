@@ -72,10 +72,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             </span>
           </div>
 
-          {/* User Info & Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3 text-xs shrink-0">
+          {/* Desktop User Actions */}
+          <div className="hidden sm:flex items-center gap-2 lg:gap-3 text-xs shrink-0">
 
-            {/* Admin Email */}
             <span
               className="hidden lg:inline text-neutral-400 font-mono text-[11px] bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md"
               dir="ltr"
@@ -83,22 +82,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               {adminEmail}
             </span>
 
-            {/* Store Button */}
             <button
               type="button"
               onClick={onExitAdmin}
-              className="flex items-center gap-1 py-1.5 px-2 sm:gap-1.5 sm:px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-colors cursor-pointer whitespace-nowrap"
               title="معاينة المتجر كعميل"
             >
               <span>المتجر</span>
               <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
 
-            {/* Logout Button */}
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1 py-1.5 px-2 sm:gap-1.5 sm:px-3 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 hover:text-white transition-colors font-semibold cursor-pointer shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 hover:text-white transition-colors font-semibold cursor-pointer whitespace-nowrap"
               title="تسجيل الخروج"
             >
               <LogOut className="w-3.5 h-3.5 shrink-0" />
@@ -136,9 +133,36 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl min-w-0 mx-auto p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+      <main className="flex-1 w-full max-w-7xl min-w-0 mx-auto p-4 sm:p-6 lg:p-8 overflow-x-hidden pb-24 sm:pb-8">
         {children}
       </main>
+
+      {/* Mobile Bottom Actions */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0e0e12]/95 backdrop-blur-md border-t border-neutral-800 px-3 py-3">
+        <div className="flex items-center gap-2 max-w-md mx-auto">
+
+          <button
+            type="button"
+            onClick={onExitAdmin}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 transition-colors cursor-pointer font-semibold"
+            title="معاينة المتجر كعميل"
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>المتجر</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 transition-colors font-semibold cursor-pointer"
+            title="تسجيل الخروج"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>تسجيل الخروج</span>
+          </button>
+
+        </div>
+      </div>
 
     </div>
   );
