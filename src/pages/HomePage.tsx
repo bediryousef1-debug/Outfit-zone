@@ -11,6 +11,8 @@ import {
   RotateCcw,
   AlertCircle,
   Star,
+  Send,
+  X,
 } from 'lucide-react';
 import { Product, ProductReview } from '../types';
 import { api } from '../services/api';
@@ -46,6 +48,20 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
+
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   /*
    * ==========================================================================
@@ -161,14 +177,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       const data = await api.getProducts();
       setProducts(data);
 
-      /*
-       * Reviews are already connected to products through product_id.
-       *
-       * We fetch reviews for the products currently available to the
-       * homepage in parallel instead of making sequential requests.
-       *
-       * Only approved reviews are returned by api.getProductReviews().
-       */
       try {
         const reviewResults = await Promise.all(
           data.slice(0, 12).map(async (product) => {
@@ -289,6 +297,91 @@ export const HomePage: React.FC<HomePageProps> = ({
     if (!slug) return;
 
     onSelectProduct(slug);
+  };
+
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
+
+  const openReviewForm = () => {
+    setReviewMessage(null);
+    setReviewError(null);
+    setShowReviewForm(true);
+  };
+
+  const closeReviewForm = () => {
+    if (reviewSubmitting) return;
+
+    setShowReviewForm(false);
+    setReviewError(null);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setReviewMessage(null);
+    setReviewError(null);
+
+    const cleanName = reviewName.trim();
+    const cleanText = reviewText.trim();
+
+    if (!cleanName) {
+      setReviewError('من فضلك اكتب اسمك.');
+      return;
+    }
+
+    if (cleanName.length < 2) {
+      setReviewError('الاسم يجب أن يكون حرفين على الأقل.');
+      return;
+    }
+
+    if (!cleanText) {
+      setReviewError('من فضلك اكتب رأيك.');
+      return;
+    }
+
+    if (cleanText.length < 5) {
+      setReviewError('اكتب رأيك في 5 أحرف على الأقل.');
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewError('اختار تقييم من نجمة إلى 5 نجوم.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+
+    try {
+      const result = await api.createProductReview({
+        product_id: products[0]?.id || '',
+        customer_name: cleanName,
+        rating: reviewRating,
+        review_text: cleanText,
+      });
+
+      if (!result.success) {
+        throw new Error('تعذر إرسال رأيك حاليًا.');
+      }
+
+      setReviewName('');
+      setReviewRating(5);
+      setReviewText('');
+      setShowReviewForm(false);
+      setReviewMessage(
+        'شكرًا لرأيك ❤️ سيتم مراجعته واعتماده قبل ظهوره على الموقع.'
+      );
+    } catch (err: any) {
+      console.error('Error submitting homepage review:', err);
+
+      setReviewError(
+        err.message || 'تعذر إرسال رأيك حاليًا. حاول مرة أخرى.'
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   return (
@@ -594,7 +687,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                   }}
                   aria-label={`تصفح فئة ${cat.name}`}
                 >
-                  {/* Category Image */}
                   <div className="relative aspect-[4/4.5] sm:aspect-[4/5] w-full overflow-hidden bg-neutral-900/10">
                     {categoryImage ? (
                       <img
@@ -624,7 +716,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
-                  {/* Category Footer */}
                   <div className="p-3.5 sm:p-4 flex items-center justify-between">
                     <div className="text-right min-w-0">
                       <h3
@@ -806,7 +897,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           ===================================================================== */}
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
           <div className="text-right">
             <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
               آراء عملائنا
@@ -817,10 +908,211 @@ export const HomePage: React.FC<HomePageProps> = ({
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
-              الناس بتقول إيه عن Outfit Zone؟
+              تجارب حقيقية من عملائنا
             </h2>
           </div>
+
+          {!showReviewForm && (
+            <button
+              type="button"
+              onClick={openReviewForm}
+              className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                isDark
+                  ? 'bg-white text-black hover:bg-neutral-200'
+                  : 'bg-black text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              <span>شاركنا رأيك</span>
+            </button>
+          )}
         </div>
+
+        {reviewMessage && (
+          <div
+            className={`mb-6 rounded-2xl border p-4 text-sm text-right ${
+              isDark
+                ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
+                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+            }`}
+          >
+            {reviewMessage}
+          </div>
+        )}
+
+        {showReviewForm && (
+          <div
+            className={`mb-8 rounded-3xl border p-5 sm:p-7 ${
+              isDark
+                ? 'bg-[#111115] border-neutral-800'
+                : 'bg-white border-neutral-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="text-right">
+                <h3
+                  className={`text-lg font-black ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  شاركنا تجربتك
+                </h3>
+
+                <p className="text-xs text-neutral-400 mt-1">
+                  رأيك يهمنا ويساعد عملاءنا يعرفوا تجربتك.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeReviewForm}
+                disabled={reviewSubmitting}
+                aria-label="إغلاق نموذج الرأي"
+                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
+                  isDark
+                    ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+                    : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="space-y-5" dir="rtl">
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  الاسم
+                </label>
+
+                <input
+                  type="text"
+                  value={reviewName}
+                  onChange={(e) => setReviewName(e.target.value)}
+                  placeholder="اكتب اسمك"
+                  maxLength={100}
+                  disabled={reviewSubmitting}
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-3 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  تقييمك
+                </label>
+
+                <div className="flex items-center gap-1" dir="ltr">
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const selected = star <= reviewRating;
+
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        disabled={reviewSubmitting}
+                        aria-label={`تقييم ${star} من 5`}
+                        className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                      >
+                        <Star
+                          className={`w-7 h-7 transition-colors ${
+                            selected
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : isDark
+                              ? 'text-neutral-700'
+                              : 'text-neutral-300'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  رأيك
+                </label>
+
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="اكتب تجربتك مع Outfit Zone..."
+                  maxLength={1000}
+                  rows={5}
+                  disabled={reviewSubmitting}
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none resize-none transition-colors ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                  }`}
+                />
+
+                <div className="text-[10px] text-neutral-400 mt-1 text-left">
+                  {reviewText.length}/1000
+                </div>
+              </div>
+
+              {reviewError && (
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    isDark
+                      ? 'bg-red-950/20 border-red-900/50 text-red-300'
+                      : 'bg-red-50 border-red-200 text-red-600'
+                  }`}
+                >
+                  {reviewError}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeReviewForm}
+                  disabled={reviewSubmitting}
+                  className={`py-3 px-6 rounded-xl border font-bold text-sm transition-colors cursor-pointer ${
+                    isDark
+                      ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-900'
+                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting}
+                  className={`py-3 px-7 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200'
+                      : 'bg-black text-white hover:bg-neutral-800'
+                  }`}
+                >
+                  <Send className="w-4 h-4" />
+
+                  <span>
+                    {reviewSubmitting ? 'جاري الإرسال...' : 'إرسال رأيي'}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {reviewsLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -841,15 +1133,35 @@ export const HomePage: React.FC<HomePageProps> = ({
                 : 'bg-white border-neutral-200 text-neutral-500'
             }`}
           >
-            <Star className="w-7 h-7 mx-auto mb-3 text-neutral-400" />
+            <Star className="w-8 h-8 mx-auto mb-4 text-neutral-400" />
 
-            <p className="text-sm font-bold">
-              آراء العملاء هتظهر هنا قريبًا.
+            <h3
+              className={`text-base font-black ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
+              كن أول من يشارك تجربته
+            </h3>
+
+            <p className="text-xs mt-2 text-neutral-400">
+              جربت Outfit Zone؟ شاركنا رأيك وتقييمك، ويمكن لرأيك يظهر هنا بعد
+              اعتماده.
             </p>
 
-            <p className="text-xs mt-1 text-neutral-400">
-              أول ما يكون عندنا تقييمات معتمدة، هتظهر تلقائيًا هنا.
-            </p>
+            {!showReviewForm && (
+              <button
+                type="button"
+                onClick={openReviewForm}
+                className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                  isDark
+                    ? 'bg-white text-black hover:bg-neutral-200'
+                    : 'bg-black text-white hover:bg-neutral-800'
+                }`}
+              >
+                <Star className="w-4 h-4" />
+                <span>شاركنا رأيك</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -868,7 +1180,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                       : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
                   }`}
                 >
-                  {/* Stars */}
                   <div
                     className="flex items-center gap-0.5 mb-4"
                     dir="ltr"
@@ -887,7 +1198,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     ))}
                   </div>
 
-                  {/* Review */}
                   <p
                     className={`text-sm leading-7 min-h-[84px] ${
                       isDark ? 'text-neutral-200' : 'text-neutral-700'
@@ -896,7 +1206,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     "{review.review_text}"
                   </p>
 
-                  {/* Customer */}
                   <div
                     className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
                       isDark
