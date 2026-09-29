@@ -795,11 +795,14 @@ async function requireAdmin(
   res: Response,
   next: express.NextFunction
 ) {
-  const authHeader = req.headers.authorization;
+  const authHeader =
+    req.headers.authorization;
 
   if (
     !authHeader ||
-    !authHeader.startsWith('Bearer ')
+    !authHeader.startsWith(
+      'Bearer '
+    )
   ) {
     return res.status(401).json({
       error:
@@ -807,38 +810,93 @@ async function requireAdmin(
     });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token =
+    authHeader
+      .slice(7)
+      .trim();
 
-  if (supabaseClient) {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabaseClient.auth.getUser(token);
-
-      if (!error && user?.email) {
-        const { data: adminRecord } =
-          await supabaseClient
-            .from('admin_users')
-            .select('id, email')
-            .ilike('email', user.email)
-            .maybeSingle();
-
-        if (adminRecord) {
-          (req as any).adminUser = adminRecord;
-          return next();
-        }
-      }
-    } catch {
-      // Continue to local verification
-    }
+  if (!token) {
+    return res.status(401).json({
+      error:
+        'جلسة الدخول غير صالحة.',
+    });
   }
 
-  
-  return res.status(403).json({
-    error:
-      'غير مصرح لك بالوصول إلى لوحة التحكم.',
-  });
+  if (!supabaseClient) {
+    return res.status(503).json({
+      error:
+        'خدمة المصادقة غير متاحة.',
+    });
+  }
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } =
+      await supabaseClient.auth.getUser(
+        token
+      );
+
+    if (
+      authError ||
+      !user?.email
+    ) {
+      return res.status(401).json({
+        error:
+          'جلسة الدخول غير صالحة.',
+      });
+    }
+
+    const {
+      data: adminRecord,
+      error: adminError,
+    } =
+      await supabaseClient
+        .from('admin_users')
+        .select(
+          'id, email'
+        )
+        .ilike(
+          'email',
+          user.email
+        )
+        .maybeSingle();
+
+    if (adminError) {
+      console.error(
+        '[Admin Authorization] Supabase error:',
+        adminError
+      );
+
+      return res.status(500).json({
+        error:
+          'تعذر التحقق من صلاحيات الأدمن.',
+      });
+    }
+
+    if (!adminRecord) {
+      return res.status(403).json({
+        error:
+          'غير مصرح لك بالوصول إلى لوحة التحكم.',
+      });
+    }
+
+    (req as any).adminUser =
+      adminRecord;
+
+    return next();
+  } catch (error) {
+    console.error(
+      '[Admin Authorization] Unexpected error:',
+      error
+    );
+
+    return res.status(500).json({
+      error:
+        'حدث خطأ أثناء التحقق من صلاحيات الأدمن.',
+    });
+  }
 }
 
 // ==============================================================================
@@ -872,179 +930,164 @@ app.get(
 app.get(
   '/api/shipping-rates',
   async (req: Request, res: Response) => {
-    const includeInactive = req.query.all === 'true';
+    const includeInactive =
+      req.query.all === 'true';
+
+    // Inactive shipping rates are admin-only.
+    if (includeInactive) {
+      const authHeader =
+        req.headers.authorization;
+
+      if (
+        !authHeader?.startsWith(
+          'Bearer '
+        )
+      ) {
+        return res.status(401).json({
+          error:
+            'غير مصرح لك بالوصول إلى أسعار الشحن غير النشطة.',
+        });
+      }
+
+      const accessToken =
+        authHeader
+          .slice(7)
+          .trim();
+
+      if (
+        !accessToken ||
+        !supabaseClient
+      ) {
+        return res.status(401).json({
+          error:
+            'جلسة الأدمن غير صالحة.',
+        });
+      }
+
+      try {
+        const {
+          data: {
+            user,
+          },
+          error: authError,
+        } =
+          await supabaseClient.auth.getUser(
+            accessToken
+          );
+
+        if (
+          authError ||
+          !user?.email
+        ) {
+          return res.status(401).json({
+            error:
+              'جلسة الأدمن غير صالحة.',
+          });
+        }
+
+        const {
+          data: adminRecord,
+          error: adminError,
+        } =
+          await supabaseClient
+            .from('admin_users')
+            .select('id, email')
+            .ilike(
+              'email',
+              user.email
+            )
+            .maybeSingle();
+
+        if (adminError) {
+          console.error(
+            '[Shipping Rates Admin Auth] Supabase error:',
+            adminError
+          );
+
+          return res.status(500).json({
+            error:
+              'تعذر التحقق من صلاحيات الأدمن.',
+          });
+        }
+
+        if (!adminRecord) {
+          return res.status(403).json({
+            error:
+              'غير مصرح لك بالوصول إلى أسعار الشحن غير النشطة.',
+          });
+        }
+      } catch (authErr) {
+        console.error(
+          '[Shipping Rates Admin Auth] Unexpected error:',
+          authErr
+        );
+
+        return res.status(500).json({
+          error:
+            'حدث خطأ أثناء التحقق من صلاحيات الأدمن.',
+        });
+      }
+    }
 
     if (supabaseClient) {
       try {
         let query = supabaseClient
           .from('shipping_rates')
           .select('*')
-          .order('governorate', { ascending: true });
+          .order(
+            'governorate',
+            {
+              ascending: true,
+            }
+          );
 
         if (!includeInactive) {
-          query = query.eq('is_active', true);
+          query = query.eq(
+            'is_active',
+            true
+          );
         }
 
-        const { data, error } = await query;
+        const {
+          data,
+          error,
+        } = await query;
 
-        if (!error && data && data.length > 0) {
+        if (error) {
+          console.error(
+            '[Shipping Rates] Supabase error:',
+            error
+          );
+
+          return res.status(500).json({
+            error:
+              'تعذر جلب أسعار الشحن.',
+          });
+        }
+
+        if (data) {
           return res.json(data);
         }
       } catch (err) {
-        console.warn('Supabase shipping_rates query notice:', err);
+        console.error(
+          '[Shipping Rates] Query failed:',
+          err
+        );
+
+        return res.status(500).json({
+          error:
+            'تعذر جلب أسعار الشحن.',
+        });
       }
     }
 
     const rates = includeInactive
       ? db.shipping_rates
-      : db.shipping_rates.filter((r) => r.is_active);
+      : db.shipping_rates.filter(
+          (r) => r.is_active
+        );
 
     res.json(rates);
-  }
-);
-
-app.put(
-  '/api/admin/shipping-rates/:id',
-  requireAdmin,
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { shipping_fee, is_active } = req.body;
-
-    if (supabaseClient) {
-      try {
-        const updates: any = {
-          updated_at: new Date().toISOString(),
-        };
-        if (shipping_fee !== undefined) {
-          updates.shipping_fee = Number(shipping_fee);
-        }
-        if (is_active !== undefined) {
-          updates.is_active = Boolean(is_active);
-        }
-
-        const { data, error } = await supabaseClient
-          .from('shipping_rates')
-          .update(updates)
-          .eq('id', id)
-          .select()
-          .single();
-
-        if (!error && data) {
-          const idx = db.shipping_rates.findIndex((r) => r.id === id);
-          if (idx > -1) db.shipping_rates[idx] = data;
-          saveToFile('shipping_rates.json', db.shipping_rates);
-          return res.json(data);
-        }
-      } catch (err) {
-        console.warn('Supabase update shipping_rates notice:', err);
-      }
-    }
-
-    const rate = db.shipping_rates.find((r) => r.id === id);
-    if (!rate) {
-      return res.status(404).json({ error: 'سعر الشحن غير موجود' });
-    }
-
-    if (shipping_fee !== undefined) {
-      rate.shipping_fee = Number(shipping_fee);
-    }
-    if (is_active !== undefined) {
-      rate.is_active = Boolean(is_active);
-    }
-    rate.updated_at = new Date().toISOString();
-
-    saveToFile('shipping_rates.json', db.shipping_rates);
-    res.json(rate);
-  }
-);
-
-app.put(
-  '/api/admin/settings',
-  requireAdmin,
-  async (req: Request, res: Response) => {
-    const {
-      store_name,
-      shipping_fee,
-      whatsapp_number,
-      phone_number,
-      inspection_available,
-      exchange_policy,
-      return_policy,
-      cod_message,
-    } = req.body;
-
-    if (supabaseClient) {
-      const { data, error } =
-        await supabaseClient
-          .from('store_settings')
-          .update({
-            store_name,
-            shipping_fee: Number(shipping_fee),
-            whatsapp_number,
-            phone_number:
-              phone_number || '01012345678',
-            inspection_available:
-              Boolean(inspection_available),
-            exchange_policy,
-            return_policy,
-            cod_message:
-              cod_message ||
-              'الدفع عند الاستلام فقط لجميع المحافظات داخل مصر.',
-            updated_at: new Date().toISOString(),
-          })
-          .neq(
-            'id',
-            '00000000-0000-0000-0000-000000000000'
-          )
-          .select()
-          .single();
-
-      if (!error && data) {
-        db.store_settings = data;
-        saveToFile(
-          'store_settings.json',
-          db.store_settings
-        );
-        return res.json(data);
-      }
-    }
-
-    db.store_settings = {
-      ...db.store_settings,
-      store_name:
-        store_name ?? db.store_settings.store_name,
-      shipping_fee:
-        shipping_fee !== undefined
-          ? Number(shipping_fee)
-          : db.store_settings.shipping_fee,
-      whatsapp_number:
-        whatsapp_number ??
-        db.store_settings.whatsapp_number,
-      phone_number:
-        phone_number ??
-        db.store_settings.phone_number,
-      inspection_available:
-        inspection_available !== undefined
-          ? Boolean(inspection_available)
-          : db.store_settings.inspection_available,
-      exchange_policy:
-        exchange_policy ??
-        db.store_settings.exchange_policy,
-      return_policy:
-        return_policy ??
-        db.store_settings.return_policy,
-      cod_message:
-        cod_message ??
-        db.store_settings.cod_message,
-      updated_at: new Date().toISOString(),
-    };
-
-    saveToFile(
-      'store_settings.json',
-      db.store_settings
-    );
-
-    res.json(db.store_settings);
   }
 );
 
@@ -1495,37 +1538,47 @@ app.post(
     const cleanEmail =
       email.toLowerCase().trim();
 
-    if (supabaseClient) {
-      try {
-        const {
-          data: authData,
-          error: authErr,
-        } =
-          await supabaseClient.auth.signInWithPassword(
-            {
-              email: cleanEmail,
-              password,
-            }
-          );
+    if (!supabaseClient) {
+      return res.status(503).json({
+        authorized: false,
+        error:
+          'خدمة المصادقة غير متاحة.',
+      });
+    }
 
-        if (
-          authErr ||
-          !authData?.user
-        ) {
-          return res.status(401).json({
-            authorized: false,
-            error:
-              authErr?.message ===
-              'Invalid login credentials'
-                ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
-                : authErr?.message ||
-                  'فشل التحقق من كلمة المرور.',
-          });
-        }
+    try {
+      const {
+        data: authData,
+        error: authErr,
+      } =
+        await supabaseClient.auth.signInWithPassword(
+          {
+            email: cleanEmail,
+            password,
+          }
+        );
 
-        const {
-          data: adminRecord,
-        } = await supabaseClient
+      if (
+        authErr ||
+        !authData?.user ||
+        !authData.session?.access_token
+      ) {
+        return res.status(401).json({
+          authorized: false,
+          error:
+            authErr?.message ===
+            'Invalid login credentials'
+              ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
+              : authErr?.message ||
+                'فشل التحقق من جلسة الدخول.',
+        });
+      }
+
+      const {
+        data: adminRecord,
+        error: adminError,
+      } =
+        await supabaseClient
           .from('admin_users')
           .select(
             'id, email, created_at'
@@ -1536,114 +1589,24 @@ app.post(
           )
           .maybeSingle();
 
-        if (adminRecord) {
-          return res.json({
-            authorized: true,
-            email: adminRecord.email,
-            token:
-              authData.session
-                ?.access_token ||
-              `admin_token_${adminRecord.email}`,
-          });
-        }
+      if (adminError) {
+        console.error(
+          '[Admin Login] Supabase admin check error:',
+          adminError
+        );
 
         await supabaseClient.auth.signOut();
 
-        return res.status(403).json({
-          authorized: false,
-          error:
-            'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.',
-        });
-      } catch (err: any) {
         return res.status(500).json({
           authorized: false,
           error:
-            err.message ||
-            'حدث خطأ في الخادم.',
-        });
-      }
-    }
-
-    return res.status(403).json({
-      authorized: false,
-      error:
-        'الاتصال بقاعدة بيانات Supabase غير مهيأ بعد.',
-    });
-  }
-);
-
-// Admin Verify
-
-app.post(
-  '/api/admin/verify',
-  async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        authorized: false,
-        error: 'غير مصرح لك بالوصول.',
-      });
-    }
-
-    const accessToken = authHeader
-      .slice(7)
-      .trim();
-
-    if (!accessToken) {
-      return res.status(401).json({
-        authorized: false,
-        error: 'جلسة الدخول غير صالحة.',
-      });
-    }
-
-    if (!supabaseClient) {
-      return res.status(503).json({
-        authorized: false,
-        error: 'خدمة المصادقة غير متاحة.',
-      });
-    }
-
-    try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabaseClient.auth.getUser(
-        accessToken
-      );
-
-      if (authError || !user?.email) {
-        return res.status(401).json({
-          authorized: false,
-          error: 'جلسة الدخول غير صالحة.',
-        });
-      }
-
-      const { data: adminRecord, error } =
-        await supabaseClient
-          .from('admin_users')
-          .select(
-            'id, email, created_at'
-          )
-          .ilike(
-            'email',
-            user.email
-          )
-          .maybeSingle();
-
-      if (error) {
-        console.error(
-          '[Admin Verify] Supabase error:',
-          error
-        );
-
-        return res.status(500).json({
-          authorized: false,
-          error: 'تعذر التحقق من صلاحيات الأدمن.',
+            'تعذر التحقق من صلاحيات الأدمن.',
         });
       }
 
       if (!adminRecord) {
+        await supabaseClient.auth.signOut();
+
         return res.status(403).json({
           authorized: false,
           error:
@@ -1653,17 +1616,21 @@ app.post(
 
       return res.json({
         authorized: true,
-        user: adminRecord,
+        email: adminRecord.email,
+        token:
+          authData.session.access_token,
       });
-    } catch (error) {
+    } catch (err: any) {
       console.error(
-        '[Admin Verify] Unexpected error:',
-        error
+        '[Admin Login] Unexpected error:',
+        err
       );
 
       return res.status(500).json({
         authorized: false,
-        error: 'حدث خطأ أثناء التحقق من الصلاحيات.',
+        error:
+          err.message ||
+          'حدث خطأ في الخادم.',
       });
     }
   }
@@ -1677,6 +1644,102 @@ app.get(
   async (req: Request, res: Response) => {
     const includeInactive =
       req.query.admin === 'true';
+
+    // Admin-only access for inactive products.
+    if (includeInactive) {
+      const authHeader =
+        req.headers.authorization;
+
+      if (
+        !authHeader?.startsWith(
+          'Bearer '
+        )
+      ) {
+        return res.status(401).json({
+          error:
+            'غير مصرح لك بالوصول إلى المنتجات غير النشطة.',
+        });
+      }
+
+      const accessToken =
+        authHeader
+          .slice(7)
+          .trim();
+
+      if (
+        !accessToken ||
+        !supabaseClient
+      ) {
+        return res.status(401).json({
+          error:
+            'جلسة الأدمن غير صالحة.',
+        });
+      }
+
+      try {
+        const {
+          data: {
+            user,
+          },
+          error: authError,
+        } =
+          await supabaseClient.auth.getUser(
+            accessToken
+          );
+
+        if (
+          authError ||
+          !user?.email
+        ) {
+          return res.status(401).json({
+            error:
+              'جلسة الأدمن غير صالحة.',
+          });
+        }
+
+        const {
+          data: adminRecord,
+          error: adminError,
+        } =
+          await supabaseClient
+            .from('admin_users')
+            .select('id, email')
+            .ilike(
+              'email',
+              user.email
+            )
+            .maybeSingle();
+
+        if (adminError) {
+          console.error(
+            '[Products Admin Auth] Supabase error:',
+            adminError
+          );
+
+          return res.status(500).json({
+            error:
+              'تعذر التحقق من صلاحيات الأدمن.',
+          });
+        }
+
+        if (!adminRecord) {
+          return res.status(403).json({
+            error:
+              'غير مصرح لك بالوصول إلى المنتجات غير النشطة.',
+          });
+        }
+      } catch (authErr) {
+        console.error(
+          '[Products Admin Auth] Unexpected error:',
+          authErr
+        );
+
+        return res.status(500).json({
+          error:
+            'حدث خطأ أثناء التحقق من صلاحيات الأدمن.',
+        });
+      }
+    }
 
     if (supabaseClient) {
       let query = supabaseClient
@@ -1692,19 +1755,29 @@ app.get(
         );
       }
 
-      const { data, error } =
-        await query.order(
-          'created_at',
-          {
-            ascending: false,
-          }
+      const {
+        data,
+        error,
+      } = await query.order(
+        'created_at',
+        {
+          ascending: false,
+        }
+      );
+
+      if (error) {
+        console.error(
+          '[Products] Supabase error:',
+          error
         );
 
-      if (
-        !error &&
-        data &&
-        data.length > 0
-      ) {
+        return res.status(500).json({
+          error:
+            'تعذر جلب المنتجات.',
+        });
+      }
+
+      if (data) {
         const enriched =
           data.map((p: any) => ({
             ...p,
@@ -1934,147 +2007,177 @@ app.post(
     }
 
     // ==========================================================================
-    // Supabase RPC
-    // ==========================================================================
+// Supabase RPC
+// ==========================================================================
 
-    if (supabaseClient) {
-      try {
-        const {
-          data,
-          error,
-        } =
-          await supabaseClient.rpc(
-            'create_guest_order',
-            {
-              p_customer_name:
-                customer.customer_name,
-              p_phone: cleanPhone,
-              p_governorate:
-                customer.governorate,
-              p_city:
-                customer.city,
-              p_address:
-                customer.address,
-              p_notes:
-                customer.notes ||
-                null,
-              p_items: items,
-            }
-          );
+if (supabaseClient) {
+  try {
+    const {
+      data,
+      error,
+    } = await supabaseClient.rpc(
+      'create_guest_order',
+      {
+        p_customer_name:
+          customer.customer_name,
+        p_phone:
+          cleanPhone,
+        p_governorate:
+          customer.governorate,
+        p_city:
+          customer.city,
+        p_address:
+          customer.address,
+        p_notes:
+          customer.notes ||
+          null,
+        p_items:
+          items,
+      }
+    );
 
-        if (
-          !error &&
-          data &&
-          data.success
-        ) {
-          const orderRecord: OrderRecord =
-            {
-              id:
-                data.order_id ||
-                `ord_${Date.now()}`,
-              order_number:
-                data.order_number,
-              customer_name:
-                customer.customer_name.trim(),
-              phone: cleanPhone,
-              governorate:
-                customer.governorate,
-              city:
-                customer.city.trim(),
-              address:
-                customer.address.trim(),
-              notes:
-                customer.notes?.trim() ||
-                null,
-              subtotal:
-                data.subtotal,
-              shipping_fee:
-                data.shipping_fee,
-              total:
-                data.total,
-              status: 'pending',
-              created_at:
-                new Date().toISOString(),
-              updated_at:
-                new Date().toISOString(),
-            };
+    if (
+      !error &&
+      data &&
+      data.success
+    ) {
+      const orderRecord: OrderRecord = {
+        id:
+          data.order_id ||
+          `ord_${Date.now()}`,
+        order_number:
+          data.order_number,
+        customer_name:
+          customer.customer_name.trim(),
+        phone:
+          cleanPhone,
+        governorate:
+          customer.governorate,
+        city:
+          customer.city.trim(),
+        address:
+          customer.address.trim(),
+        notes:
+          customer.notes?.trim() ||
+          null,
+        subtotal:
+          data.subtotal,
+        shipping_fee:
+          data.shipping_fee,
+        total:
+          data.total,
+        status:
+          'pending',
+        created_at:
+          new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
+      };
 
-          db.orders.unshift(
-            orderRecord
-          );
+      db.orders.unshift(
+        orderRecord
+      );
 
-          saveToFile(
-            'orders.json',
-            db.orders
-          );
+      saveToFile(
+        'orders.json',
+        db.orders
+      );
 
-          // IMPORTANT:
-          // Await Telegram so the serverless function has time to complete
-          // the notification before returning the response.
-          await sendTelegramOrderNotification(
-            {
-              order_number:
-                data.order_number,
-              customer_name:
-                customer.customer_name.trim(),
-              phone: cleanPhone,
-              governorate:
-                customer.governorate,
-              city:
-                customer.city.trim(),
-              address:
-                customer.address.trim(),
-              notes:
-                customer.notes?.trim() ||
-                null,
-              subtotal:
-                Number(
-                  data.subtotal
-                ) || 0,
-              shipping_fee:
-                Number(
-                  data.shipping_fee
-                ) || 0,
-              total:
-                Number(
-                  data.total
-                ) || 0,
-              items,
-            }
-          );
-
-          return res.json(data);
+      // IMPORTANT:
+      // Await Telegram so the serverless function has time to complete
+      // the notification before returning the response.
+      await sendTelegramOrderNotification(
+        {
+          order_number:
+            data.order_number,
+          customer_name:
+            customer.customer_name.trim(),
+          phone:
+            cleanPhone,
+          governorate:
+            customer.governorate,
+          city:
+            customer.city.trim(),
+          address:
+            customer.address.trim(),
+          notes:
+            customer.notes?.trim() ||
+            null,
+          subtotal:
+            Number(
+              data.subtotal
+            ) || 0,
+          shipping_fee:
+            Number(
+              data.shipping_fee
+            ) || 0,
+          total:
+            Number(
+              data.total
+            ) || 0,
+          items,
         }
+      );
 
-        if (error) {
-          const errMsg = error.message || '';
-          if (
-            errMsg.includes('OZ_SHIPPING_GOVERNORATE_UNAVAILABLE') ||
-            errMsg.includes('OZ_SHIPPING_SETTINGS_MISSING')
-          ) {
-            return res.status(400).json({
-              error:
-                'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
-            });
-          }
-          if (errMsg.includes('OZ_INSUFFICIENT_STOCK')) {
-            return res.status(400).json({
-              error: 'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
-            });
-          }
-        }
-      } catch (rpcErr) {
-  console.error(
-    '[Orders] Supabase RPC execution failed:',
-    rpcErr
-  );
+      return res.json(data);
+    }
 
-  return res.status(500).json({
-    error:
-      'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
-  });
+    if (error) {
+      const errMsg =
+        error.message || '';
+
+      if (
+        errMsg.includes(
+          'OZ_SHIPPING_GOVERNORATE_UNAVAILABLE'
+        ) ||
+        errMsg.includes(
+          'OZ_SHIPPING_SETTINGS_MISSING'
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+        });
+      }
+
+      if (
+        errMsg.includes(
+          'OZ_INSUFFICIENT_STOCK'
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
+        });
+      }
+
+      console.error(
+        '[Orders] Supabase RPC error:',
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
+      });
+    }
+
+    return res.status(500).json({
+      error:
+        'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
+    });
+  } catch (rpcErr) {
+    console.error(
+      '[Orders] Supabase RPC execution failed:',
+      rpcErr
+    );
+
+    return res.status(500).json({
+      error:
+        'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
+    });
+  }
 }
-
     // ==========================================================================
 // Authoritative server-side stock & price verification
 // ==========================================================================

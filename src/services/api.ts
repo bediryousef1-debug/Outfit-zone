@@ -186,73 +186,166 @@ export const api = {
   },
 
   // 3. Fetch Products
-  async getProducts(options?: { admin?: boolean }): Promise<Product[]> {
-    if (isSupabaseConfigured && supabase) {
-      let prodQuery = supabase.from('products').select('*');
+async getProducts(
+  options?: { admin?: boolean }
+): Promise<Product[]> {
+  if (isSupabaseConfigured && supabase) {
+    let prodQuery = supabase
+      .from('products')
+      .select('*');
 
-      if (!options?.admin) {
-        prodQuery = prodQuery.neq('is_active', false);
-      }
-
-      const [pRes, imgRes, varRes, catRes] = await Promise.all([
-        prodQuery.order('created_at', { ascending: false }),
-        supabase.from('product_images').select('*'),
-        supabase.from('product_variants').select('*'),
-        supabase.from('categories').select('*'),
-      ]);
-
-      if (pRes.error) {
-        throw new Error(
-          pRes.error.code === 'PGRST205' ||
-          pRes.error.message.includes('schema cache')
-            ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
-            : pRes.error.message || 'تعذر جلب المنتجات من Supabase'
-        );
-      }
-
-      const allImages = imgRes.data || [];
-      const allVariants = varRes.data || [];
-      const allCategories = catRes.data || [];
-
-      return (pRes.data || []).map((p: any) => {
-        const category = allCategories.find(
-          (c: any) => c.id === p.category_id
-        );
-
-        const images = allImages
-          .filter((img: any) => img.product_id === p.id)
-          .sort(
-            (a: any, b: any) =>
-              (a.sort_order ?? 0) - (b.sort_order ?? 0)
-          );
-
-        const variants = allVariants.filter(
-          (v: any) => v.product_id === p.id
-        );
-
-        return {
-          ...p,
-          category,
-          images,
-          variants,
-        };
-      });
+    if (!options?.admin) {
+      prodQuery = prodQuery.neq(
+        'is_active',
+        false
+      );
     }
 
-    try {
-      const res = await fetch(
-        `${API_BASE}/products${
-          options?.admin ? '?admin=true' : ''
-        }`
+    const [
+      pRes,
+      imgRes,
+      varRes,
+      catRes,
+    ] = await Promise.all([
+      prodQuery.order(
+        'created_at',
+        { ascending: false }
+      ),
+      supabase
+        .from('product_images')
+        .select('*'),
+      supabase
+        .from('product_variants')
+        .select('*'),
+      supabase
+        .from('categories')
+        .select('*'),
+    ]);
+
+    if (pRes.error) {
+      throw new Error(
+        pRes.error.code ===
+          'PGRST205' ||
+        pRes.error.message.includes(
+          'schema cache'
+        )
+          ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
+          : pRes.error.message ||
+            'تعذر جلب المنتجات من Supabase'
       );
+    }
 
-      if (res.ok) {
-        return await res.json();
+    const allImages =
+      imgRes.data || [];
+    const allVariants =
+      varRes.data || [];
+    const allCategories =
+      catRes.data || [];
+
+    return (
+      pRes.data || []
+    ).map((p: any) => {
+      const category =
+        allCategories.find(
+          (c: any) =>
+            c.id ===
+            p.category_id
+        );
+
+      const images =
+        allImages
+          .filter(
+            (img: any) =>
+              img.product_id ===
+              p.id
+          )
+          .sort(
+            (
+              a: any,
+              b: any
+            ) =>
+              (a.sort_order ?? 0) -
+              (b.sort_order ?? 0)
+          );
+
+      const variants =
+        allVariants.filter(
+          (v: any) =>
+            v.product_id ===
+            p.id
+        );
+
+      return {
+        ...p,
+        category,
+        images,
+        variants,
+      };
+    });
+  }
+
+  try {
+    const headers: HeadersInit = {
+      'Content-Type':
+        'application/json',
+    };
+
+    if (options?.admin) {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase?.auth.getSession() ||
+        { data: { session: null } };
+
+      if (
+        !session?.access_token
+      ) {
+        throw new Error(
+          'جلسة الأدمن غير صالحة.'
+        );
       }
-    } catch {}
 
-    return [];
-  },
+      headers.Authorization =
+        `Bearer ${session.access_token}`;
+    }
+
+    const res = await fetch(
+      `${API_BASE}/products${
+        options?.admin
+          ? '?admin=true'
+          : ''
+      }`,
+      {
+        headers,
+      }
+    );
+
+    if (res.ok) {
+      return await res.json();
+    }
+
+    if (
+      options?.admin &&
+      (res.status === 401 ||
+        res.status === 403)
+    ) {
+      throw new Error(
+        'غير مصرح لك بالوصول إلى المنتجات غير النشطة.'
+      );
+    }
+  } catch (error) {
+    if (
+      options?.admin &&
+      error instanceof Error
+    ) {
+      throw error;
+    }
+  }
+
+  return [];
+},
 
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
