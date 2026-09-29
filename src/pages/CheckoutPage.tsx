@@ -260,7 +260,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="مثال: يوسف أحمد البدير"
+                  placeholder="مثال:  أكتب اسمك بالكامل "
                   value={formData.customer_name}
                   onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
