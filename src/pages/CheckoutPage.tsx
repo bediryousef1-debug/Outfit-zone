@@ -121,6 +121,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return Object.keys(errs).length === 0;
   };
 
+  const playOrderSuccessSound = () => {
+    try {
+      const audio = new Audio('/sounds/order-success.mp3');
+      audio.volume = 1;
+
+      audio.play().catch((audioError) => {
+        console.warn('Order success sound could not be played:', audioError);
+      });
+    } catch (audioError) {
+      console.warn('Order success sound could not be initialized:', audioError);
+    }
+  };
+
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -163,6 +176,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const res = await api.submitGuestOrder(orderPayload);
 
       if (res.success && res.order_number) {
+        // Play success sound only after the order has actually been created.
+        playOrderSuccessSound();
+
         clearCart();
         onOrderSuccess(res.order_number, res.receipt_token);
       } else {
@@ -193,7 +209,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center text-right">
-        <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>
+        <h2
+          className={`text-xl font-bold mb-2 ${
+            isDark ? 'text-white' : 'text-black'
+          }`}
+        >
           سلتك فارغة حاليًا
         </h2>
         <p className="text-xs text-neutral-400 mb-6">
@@ -202,7 +222,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <button
           onClick={() => onNavigate('/products')}
           className={`py-3 px-6 rounded-full font-bold text-xs transition-all shadow-md cursor-pointer ${
-            isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'
+            isDark
+              ? 'bg-white text-black hover:bg-neutral-200'
+              : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
           تصفح الموديلات الآن
@@ -222,7 +244,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           <ArrowRight className="w-4 h-4" />
           <span>الرجوع إلى سلة المشتريات</span>
         </button>
-        <h1 className={`text-2xl sm:text-3xl font-black ${isDark ? 'text-white' : 'text-black'}`}>
+        <h1
+          className={`text-2xl sm:text-3xl font-black ${
+            isDark ? 'text-white' : 'text-black'
+          }`}
+        >
           إتمام الطلب
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
@@ -237,24 +263,37 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <form
+        onSubmit={handleSubmitOrder}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+      >
         {/* Left: Customer & Delivery Info */}
         <div className="lg:col-span-7 space-y-6">
           <div
             className={`p-5 sm:p-6 rounded-2xl border transition-colors ${
-              isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+              isDark
+                ? 'bg-[#121216] border-neutral-800'
+                : 'bg-white border-neutral-200 shadow-sm'
             }`}
           >
-            <h2 className={`text-base font-bold pb-3 border-b mb-5 ${
-              isDark ? 'text-white border-neutral-800' : 'text-black border-neutral-100'
-            }`}>
+            <h2
+              className={`text-base font-bold pb-3 border-b mb-5 ${
+                isDark
+                  ? 'text-white border-neutral-800'
+                  : 'text-black border-neutral-100'
+              }`}
+            >
               بيانات المستلم وعنوان التوصيل
             </h2>
 
             <div className="space-y-4">
               {/* Full Name */}
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                <label
+                  className={`block text-xs font-bold mb-1.5 ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                  }`}
+                >
                   الاسم بالكامل (ثلاثي) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -262,7 +301,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   required
                   placeholder="مثال:  أكتب اسمك بالكامل "
                   value={formData.customer_name}
-                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      customer_name: e.target.value,
+                    })
+                  }
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
                     errors.customer_name
                       ? 'border-red-500'
@@ -272,13 +316,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   }`}
                 />
                 {errors.customer_name && (
-                  <p className="text-[11px] text-red-400 mt-1">{errors.customer_name}</p>
+                  <p className="text-[11px] text-red-400 mt-1">
+                    {errors.customer_name}
+                  </p>
                 )}
               </div>
 
               {/* Egyptian Mobile Phone */}
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                <label
+                  className={`block text-xs font-bold mb-1.5 ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                  }`}
+                >
                   رقم الهاتف المحمول <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -287,7 +337,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   placeholder="01012345678"
                   dir="ltr"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right font-mono focus:outline-none transition-colors border ${
                     errors.phone
                       ? 'border-red-500'
@@ -297,7 +349,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   }`}
                 />
                 {errors.phone && (
-                  <p className="text-[11px] text-red-400 mt-1">{errors.phone}</p>
+                  <p className="text-[11px] text-red-400 mt-1">
+                    {errors.phone}
+                  </p>
                 )}
                 <p className="text-[10px] text-neutral-400 mt-1">
                   سيتصل بك مندوب الشحن على هذا الرقم لتنسيق ميعاد التسليم.
@@ -307,12 +361,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {/* Governorate (Dynamic shipping rate) & City */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                  <label
+                    className={`block text-xs font-bold mb-1.5 ${
+                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    }`}
+                  >
                     المحافظة <span className="text-red-400">*</span>
                   </label>
                   <select
                     value={formData.governorate}
-                    onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        governorate: e.target.value,
+                      })
+                    }
                     className={`w-full rounded-xl py-2.5 px-3 text-xs focus:outline-none border transition-colors ${
                       errors.governorate
                         ? 'border-red-500'
@@ -322,15 +385,24 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     }`}
                   >
                     {EGYPTIAN_GOVERNORATES.map((gov) => {
-                      const rate = shippingRates.find((r) => r.governorate === gov.nameAr);
-                      const feeText = rate ? ` · ${rate.shipping_fee} ج.م` : '';
-                      const inactiveText = rate && !rate.is_active ? ' (غير متاح)' : '';
+                      const rate = shippingRates.find(
+                        (r) => r.governorate === gov.nameAr
+                      );
+                      const feeText = rate
+                        ? ` · ${rate.shipping_fee} ج.م`
+                        : '';
+                      const inactiveText =
+                        rate && !rate.is_active ? ' (غير متاح)' : '';
                       return (
                         <option
                           key={gov.id}
                           value={gov.id}
                           disabled={rate && !rate.is_active}
-                          className={isDark ? 'bg-neutral-900 text-white' : 'bg-white text-black'}
+                          className={
+                            isDark
+                              ? 'bg-neutral-900 text-white'
+                              : 'bg-white text-black'
+                          }
                         >
                           {gov.nameAr} {feeText} {inactiveText}
                         </option>
@@ -338,7 +410,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     })}
                   </select>
                   {errors.governorate && (
-                    <p className="text-[11px] text-red-400 mt-1">{errors.governorate}</p>
+                    <p className="text-[11px] text-red-400 mt-1">
+                      {errors.governorate}
+                    </p>
                   )}
                   {!isGovAvailable && (
                     <p className="text-[11px] text-red-400 mt-1">
@@ -348,15 +422,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                    المدينة / المركز / الحي <span className="text-red-400">*</span>
+                  <label
+                    className={`block text-xs font-bold mb-1.5 ${
+                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    }`}
+                  >
+                    المدينة / المركز / الحي{' '}
+                    <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="مثال: مدينة نصر / المنصورة / سموحة"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
                     className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
                       errors.city
                         ? 'border-red-500'
@@ -366,14 +447,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     }`}
                   />
                   {errors.city && (
-                    <p className="text-[11px] text-red-400 mt-1">{errors.city}</p>
+                    <p className="text-[11px] text-red-400 mt-1">
+                      {errors.city}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Detailed Street Address */}
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                <label
+                  className={`block text-xs font-bold mb-1.5 ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                  }`}
+                >
                   العنوان بالتفصيل <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -381,7 +468,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   required
                   placeholder="اسم الشارع، رقم العمارة، الدور، رقم الشقة، علامة مميزة"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
                     errors.address
                       ? 'border-red-500'
@@ -391,20 +480,28 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   }`}
                 />
                 {errors.address && (
-                  <p className="text-[11px] text-red-400 mt-1">{errors.address}</p>
+                  <p className="text-[11px] text-red-400 mt-1">
+                    {errors.address}
+                  </p>
                 )}
               </div>
 
               {/* Notes */}
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                <label
+                  className={`block text-xs font-bold mb-1.5 ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                  }`}
+                >
                   ملاحظات إضافية للتوصيل (اختياري)
                 </label>
                 <textarea
                   rows={2}
                   placeholder="أي تعليمات للمندوب مثل مواعيد الاتصال أو علامة مميزة بجوار المنزل"
                   value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                   className={`w-full rounded-xl py-2 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
                     isDark
                       ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
@@ -418,14 +515,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           {/* Payment Method Badge */}
           <div
             className={`p-4 rounded-2xl border flex items-center justify-between ${
-              isDark ? 'bg-neutral-900/50 border-neutral-800 text-white' : 'bg-neutral-50 border-neutral-200 text-black'
+              isDark
+                ? 'bg-neutral-900/50 border-neutral-800 text-white'
+                : 'bg-neutral-50 border-neutral-200 text-black'
             }`}
           >
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
               <div>
-                <span className="text-xs font-bold block">الدفع عند الاستلام كاش (COD)</span>
-                <span className="text-[11px] text-neutral-400">تدفع ثمن طلبك للمندوب بعد معاينة الشحنة والتأكد من مطابقتها.</span>
+                <span className="text-xs font-bold block">
+                  الدفع عند الاستلام كاش (COD)
+                </span>
+                <span className="text-[11px] text-neutral-400">
+                  تدفع ثمن طلبك للمندوب بعد معاينة الشحنة والتأكد من مطابقتها.
+                </span>
               </div>
             </div>
             <Lock className="w-4 h-4 text-neutral-400" />
@@ -436,12 +539,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div
             className={`p-5 sm:p-6 rounded-2xl border space-y-4 transition-colors ${
-              isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+              isDark
+                ? 'bg-[#121216] border-neutral-800'
+                : 'bg-white border-neutral-200 shadow-sm'
             }`}
           >
-            <h2 className={`text-base font-bold pb-3 border-b ${
-              isDark ? 'text-white border-neutral-800' : 'text-black border-neutral-100'
-            }`}>
+            <h2
+              className={`text-base font-bold pb-3 border-b ${
+                isDark
+                  ? 'text-white border-neutral-800'
+                  : 'text-black border-neutral-100'
+              }`}
+            >
               ملخص طلبك ({items.length} منتجات)
             </h2>
 
@@ -459,7 +568,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   />
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className={`font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-black'}`}>
+                      <h4
+                        className={`font-bold line-clamp-1 ${
+                          isDark ? 'text-white' : 'text-black'
+                        }`}
+                      >
                         {item.product.name}
                       </h4>
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
@@ -479,26 +592,42 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </div>
 
             {/* Dynamic Cost breakdown */}
-            <div className={`pt-3 border-t space-y-2 text-xs ${
-              isDark ? 'border-neutral-800/80 text-neutral-400' : 'border-neutral-100 text-neutral-600'
-            }`}>
+            <div
+              className={`pt-3 border-t space-y-2 text-xs ${
+                isDark
+                  ? 'border-neutral-800/80 text-neutral-400'
+                  : 'border-neutral-100 text-neutral-600'
+              }`}
+            >
               <div className="flex justify-between">
                 <span>قيمة المشتريات:</span>
-                <span className={`font-mono-numbers font-medium ${isDark ? 'text-white' : 'text-black'}`}>
+                <span
+                  className={`font-mono-numbers font-medium ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
                   {formatPrice(subtotal)}
                 </span>
               </div>
 
               <div className="flex justify-between">
                 <span>مصاريف الشحن ({selectedGovNameAr}):</span>
-                <span className={`font-mono-numbers font-medium ${isDark ? 'text-white' : 'text-black'}`}>
+                <span
+                  className={`font-mono-numbers font-medium ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
                   {ratesLoading ? 'جاري الحساب...' : formatPrice(shippingFee)}
                 </span>
               </div>
 
-              <div className={`pt-2 border-t flex justify-between text-base font-extrabold ${
-                isDark ? 'border-neutral-800 text-white' : 'border-neutral-100 text-black'
-              }`}>
+              <div
+                className={`pt-2 border-t flex justify-between text-base font-extrabold ${
+                  isDark
+                    ? 'border-neutral-800 text-white'
+                    : 'border-neutral-100 text-black'
+                }`}
+              >
                 <span>الإجمالي عند الاستلام:</span>
                 <span className="font-mono-numbers text-lg">
                   {formatPrice(grandTotal)}
@@ -527,7 +656,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </button>
 
             <p className="text-[10px] text-center text-neutral-400">
-              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع الخاصة بـ Outfit Zone.
+              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع
+              الخاصة بـ Outfit Zone.
             </p>
           </div>
         </div>
