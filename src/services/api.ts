@@ -2444,6 +2444,7 @@ export const api = {
     updates: Partial<
       Pick<
         ProductReview,
+        | 'product_id'
         | 'customer_name'
         | 'rating'
         | 'review_text'
@@ -2462,6 +2463,14 @@ export const api = {
         updated_at:
           new Date().toISOString(),
       };
+
+      if (
+        updates.product_id !==
+        undefined
+      ) {
+        payload.product_id =
+          updates.product_id;
+      }
 
       if (
         updates.customer_name !==
