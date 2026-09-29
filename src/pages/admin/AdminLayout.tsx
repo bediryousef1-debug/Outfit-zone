@@ -58,7 +58,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
       {/* Admin Top Bar */}
       <header className="sticky top-0 z-30 w-full max-w-full bg-[#0e0e12] border-b border-neutral-800">
-        <div className="h-16 px-3 sm:px-6 flex items-center justify-between gap-3 overflow-hidden">
+        <div className="h-16 px-3 sm:px-6 flex items-center justify-between gap-2 overflow-hidden">
 
           {/* Brand */}
           <div className="flex items-center gap-2 shrink-0 min-w-0">
@@ -73,8 +73,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </div>
 
           {/* User Info & Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 text-xs shrink-0">
 
+            {/* Admin Email */}
             <span
               className="hidden lg:inline text-neutral-400 font-mono text-[11px] bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md"
               dir="ltr"
@@ -82,24 +83,26 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               {adminEmail}
             </span>
 
+            {/* Store Button */}
             <button
               type="button"
               onClick={onExitAdmin}
-              className="flex items-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-colors cursor-pointer shrink-0"
+              className="flex items-center gap-1 py-1.5 px-2 sm:gap-1.5 sm:px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap"
               title="معاينة المتجر كعميل"
             >
-              <span className="hidden sm:inline">المتجر</span>
+              <span>المتجر</span>
               <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
 
+            {/* Logout Button */}
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 hover:text-white transition-colors font-semibold cursor-pointer shrink-0"
+              className="flex items-center gap-1 py-1.5 px-2 sm:gap-1.5 sm:px-3 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 hover:text-white transition-colors font-semibold cursor-pointer shrink-0 whitespace-nowrap"
               title="تسجيل الخروج"
             >
               <LogOut className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">تسجيل الخروج</span>
+              <span>تسجيل الخروج</span>
             </button>
 
           </div>
