@@ -6,6 +6,8 @@ import {
   OrderCreateResponse,
   OrderReceipt,
   Product,
+  ProductComment,
+  ProductReview,
   ShippingRate,
   StoreContent,
   StoreSettings,
@@ -100,10 +102,16 @@ export const api = {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`);
+      const res = await fetch(
+        `${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`
+      );
+
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json) && json.length > 0) return json;
+
+        if (Array.isArray(json) && json.length > 0) {
+          return json;
+        }
       }
     } catch {}
 
@@ -134,24 +142,39 @@ export const api = {
           .single();
 
         if (!error && data) return data;
-        if (error) throw new Error(error.message);
+
+        if (error) {
+          throw new Error(error.message);
+        }
       } catch (err: any) {
-        console.warn('Supabase adminUpdateShippingRate notice:', err);
+        console.warn(
+          'Supabase adminUpdateShippingRate notice:',
+          err
+        );
+
         if (err?.message) throw err;
       }
     }
 
     const authHeaders = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/admin/shipping-rates/${id}`, {
-      method: 'PUT',
-      headers: authHeaders,
-      body: JSON.stringify(updates),
-    });
+
+    const res = await fetch(
+      `${API_BASE}/admin/shipping-rates/${id}`,
+      {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify(updates),
+      }
+    );
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'فشل تحديث سعر الشحن');
+
+      throw new Error(
+        err.error || 'فشل تحديث سعر الشحن'
+      );
     }
+
     return await res.json();
   },
 
@@ -186,186 +209,198 @@ export const api = {
   },
 
   // 3. Fetch Products
-async getProducts(
-  options?: { admin?: boolean }
-): Promise<Product[]> {
-  if (isSupabaseConfigured && supabase) {
-    let prodQuery = supabase
-      .from('products')
-      .select('*');
+  async getProducts(
+    options?: { admin?: boolean }
+  ): Promise<Product[]> {
+    if (isSupabaseConfigured && supabase) {
+      let prodQuery = supabase
+        .from('products')
+        .select('*');
 
-    if (!options?.admin) {
-      prodQuery = prodQuery.neq(
-        'is_active',
-        false
-      );
-    }
-
-    const [
-      pRes,
-      imgRes,
-      varRes,
-      catRes,
-    ] = await Promise.all([
-      prodQuery.order(
-        'created_at',
-        { ascending: false }
-      ),
-      supabase
-        .from('product_images')
-        .select('*'),
-      supabase
-        .from('product_variants')
-        .select('*'),
-      supabase
-        .from('categories')
-        .select('*'),
-    ]);
-
-    if (pRes.error) {
-      throw new Error(
-        pRes.error.code ===
-          'PGRST205' ||
-        pRes.error.message.includes(
-          'schema cache'
-        )
-          ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
-          : pRes.error.message ||
-            'تعذر جلب المنتجات من Supabase'
-      );
-    }
-
-    const allImages =
-      imgRes.data || [];
-    const allVariants =
-      varRes.data || [];
-    const allCategories =
-      catRes.data || [];
-
-    return (
-      pRes.data || []
-    ).map((p: any) => {
-      const category =
-        allCategories.find(
-          (c: any) =>
-            c.id ===
-            p.category_id
+      if (!options?.admin) {
+        prodQuery = prodQuery.neq(
+          'is_active',
+          false
         );
+      }
 
-      const images =
-        allImages
-          .filter(
-            (img: any) =>
-              img.product_id ===
-              p.id
+      const [
+        pRes,
+        imgRes,
+        varRes,
+        catRes,
+      ] = await Promise.all([
+        prodQuery.order(
+          'created_at',
+          { ascending: false }
+        ),
+        supabase
+          .from('product_images')
+          .select('*'),
+        supabase
+          .from('product_variants')
+          .select('*'),
+        supabase
+          .from('categories')
+          .select('*'),
+      ]);
+
+      if (pRes.error) {
+        throw new Error(
+          pRes.error.code ===
+            'PGRST205' ||
+          pRes.error.message.includes(
+            'schema cache'
           )
-          .sort(
-            (
-              a: any,
-              b: any
-            ) =>
-              (a.sort_order ?? 0) -
-              (b.sort_order ?? 0)
+            ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
+            : pRes.error.message ||
+              'تعذر جلب المنتجات من Supabase'
+        );
+      }
+
+      const allImages =
+        imgRes.data || [];
+
+      const allVariants =
+        varRes.data || [];
+
+      const allCategories =
+        catRes.data || [];
+
+      return (
+        pRes.data || []
+      ).map((p: any) => {
+        const category =
+          allCategories.find(
+            (c: any) =>
+              c.id ===
+              p.category_id
           );
 
-      const variants =
-        allVariants.filter(
-          (v: any) =>
-            v.product_id ===
-            p.id
-        );
+        const images =
+          allImages
+            .filter(
+              (img: any) =>
+                img.product_id ===
+                p.id
+            )
+            .sort(
+              (
+                a: any,
+                b: any
+              ) =>
+                (a.sort_order ?? 0) -
+                (b.sort_order ?? 0)
+            );
 
-      return {
-        ...p,
-        category,
-        images,
-        variants,
+        const variants =
+          allVariants.filter(
+            (v: any) =>
+              v.product_id ===
+              p.id
+          );
+
+        return {
+          ...p,
+          category,
+          images,
+          variants,
+        };
+      });
+    }
+
+    try {
+      const headers: HeadersInit = {
+        'Content-Type':
+          'application/json',
       };
-    });
-  }
 
-  try {
-    const headers: HeadersInit = {
-      'Content-Type':
-        'application/json',
-    };
+      if (options?.admin) {
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase?.auth.getSession() ||
+          { data: { session: null } };
 
-    if (options?.admin) {
-      const {
-        data: {
-          session,
-        },
-      } =
-        await supabase?.auth.getSession() ||
-        { data: { session: null } };
+        if (
+          !session?.access_token
+        ) {
+          throw new Error(
+            'جلسة الأدمن غير صالحة.'
+          );
+        }
+
+        headers.Authorization =
+          `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch(
+        `${API_BASE}/products${
+          options?.admin
+            ? '?admin=true'
+            : ''
+        }`,
+        {
+          headers,
+        }
+      );
+
+      if (res.ok) {
+        return await res.json();
+      }
 
       if (
-        !session?.access_token
+        options?.admin &&
+        (res.status === 401 ||
+          res.status === 403)
       ) {
         throw new Error(
-          'جلسة الأدمن غير صالحة.'
+          'غير مصرح لك بالوصول إلى المنتجات غير النشطة.'
         );
       }
-
-      headers.Authorization =
-        `Bearer ${session.access_token}`;
-    }
-
-    const res = await fetch(
-      `${API_BASE}/products${
-        options?.admin
-          ? '?admin=true'
-          : ''
-      }`,
-      {
-        headers,
+    } catch (error) {
+      if (
+        options?.admin &&
+        error instanceof Error
+      ) {
+        throw error;
       }
-    );
-
-    if (res.ok) {
-      return await res.json();
     }
 
-    if (
-      options?.admin &&
-      (res.status === 401 ||
-        res.status === 403)
-    ) {
-      throw new Error(
-        'غير مصرح لك بالوصول إلى المنتجات غير النشطة.'
-      );
-    }
-  } catch (error) {
-    if (
-      options?.admin &&
-      error instanceof Error
-    ) {
-      throw error;
-    }
-  }
-
-  return [];
-},
+    return [];
+  },
 
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
     if (isSupabaseConfigured && supabase) {
-      const { data: pData, error: pErr } = await supabase
-        .from('products')
-        .select('*')
-        .eq('slug', slug)
-        .neq('is_active', false)
-        .maybeSingle();
+      const { data: pData, error: pErr } =
+        await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', slug)
+          .neq('is_active', false)
+          .maybeSingle();
 
       if (pErr) {
-        throw new Error(pErr.message || 'تعذر جلب تفاصيل المنتج');
+        throw new Error(
+          pErr.message ||
+            'تعذر جلب تفاصيل المنتج'
+        );
       }
 
       if (!pData) {
-        throw new Error('المنتج غير متوفر أو تم إيقافه');
+        throw new Error(
+          'المنتج غير متوفر أو تم إيقافه'
+        );
       }
 
-      const [imgRes, varRes, catRes] = await Promise.all([
+      const [
+        imgRes,
+        varRes,
+        catRes,
+      ] = await Promise.all([
         supabase
           .from('product_images')
           .select('*')
@@ -382,25 +417,45 @@ async getProducts(
               .select('*')
               .eq('id', pData.category_id)
               .maybeSingle()
-          : Promise.resolve({ data: null }),
+          : Promise.resolve({
+              data: null,
+            }),
       ]);
 
       return {
         ...pData,
-        category: catRes.data || undefined,
-        images: (imgRes.data || []).sort(
-          (a: any, b: any) =>
-            (a.sort_order ?? 0) - (b.sort_order ?? 0)
-        ),
-        variants: varRes.data || [],
+        category:
+          catRes.data ||
+          undefined,
+        images:
+          (imgRes.data || [])
+            .sort(
+              (
+                a: any,
+                b: any
+              ) =>
+                (a.sort_order ?? 0) -
+                (b.sort_order ?? 0)
+            ),
+        variants:
+          varRes.data || [],
       };
     }
 
-    const res = await fetch(`${API_BASE}/products/${slug}`);
+    const res = await fetch(
+      `${API_BASE}/products/${slug}`
+    );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'المنتج غير متوفر');
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
+
+      throw new Error(
+        err.error ||
+          'المنتج غير متوفر'
+      );
     }
 
     return res.json();
@@ -411,19 +466,30 @@ async getProducts(
   async submitGuestOrder(
     orderData: OrderCreateRequest
   ): Promise<OrderCreateResponse> {
-    const res = await fetch(`${API_BASE}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
+    const res = await fetch(
+      `${API_BASE}/orders`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify(orderData),
+      }
+    );
 
-    const data = await res.json().catch(() => ({}));
+    const data =
+      await res
+        .json()
+        .catch(() => ({}));
 
-    if (!res.ok || !data.success) {
+    if (
+      !res.ok ||
+      !data.success
+    ) {
       throw new Error(
-        data.error || 'تعذر إتمام الطلب، يرجى المحاولة مرة أخرى.'
+        data.error ||
+          'تعذر إتمام الطلب، يرجى المحاولة مرة أخرى.'
       );
     }
 
@@ -435,37 +501,59 @@ async getProducts(
     orderNumber: string,
     receiptToken?: string
   ): Promise<OrderReceipt> {
-    const cleanNum = orderNumber.trim();
-    const cleanToken = receiptToken?.trim() || null;
+    const cleanNum =
+      orderNumber.trim();
 
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.rpc(
+    const cleanToken =
+      receiptToken?.trim() ||
+      null;
+
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data,
+        error,
+      } = await supabase.rpc(
         'get_guest_order_receipt',
         {
-          p_order_number: cleanNum,
-          p_receipt_token: cleanToken,
+          p_order_number:
+            cleanNum,
+          p_receipt_token:
+            cleanToken,
         }
       );
 
       if (error) {
-        throw new Error(error.message || 'الطلب غير موجود');
+        throw new Error(
+          error.message ||
+            'الطلب غير موجود'
+        );
       }
 
       if (data) return data;
 
-      throw new Error('الطلب غير موجود');
+      throw new Error(
+        'الطلب غير موجود'
+      );
     }
 
-    const queryParam = cleanToken
-      ? `?t=${encodeURIComponent(cleanToken)}`
-      : '';
+    const queryParam =
+      cleanToken
+        ? `?t=${encodeURIComponent(
+            cleanToken
+          )}`
+        : '';
 
     const res = await fetch(
       `${API_BASE}/orders/lookup/${cleanNum}${queryParam}`
     );
 
     if (!res.ok) {
-      throw new Error('الطلب غير موجود');
+      throw new Error(
+        'الطلب غير موجود'
+      );
     }
 
     return res.json();
@@ -479,12 +567,22 @@ async getProducts(
     user?: any;
     error?: string;
   }> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } = await supabase.rpc('is_admin');
+        const {
+          data,
+          error,
+        } = await supabase.rpc(
+          'is_admin'
+        );
 
         if (!error && data) {
-          return { authorized: true };
+          return {
+            authorized: true,
+          };
         }
       } catch (err) {
         console.warn(
@@ -502,7 +600,8 @@ async getProducts(
 
     return {
       authorized: false,
-      error: 'قاعدة بيانات Supabase غير متصلة.',
+      error:
+        'قاعدة بيانات Supabase غير متصلة.',
     };
   },
 
@@ -511,64 +610,115 @@ async getProducts(
     status?: string;
     search?: string;
   }): Promise<Order[]> {
-    if (isSupabaseConfigured && supabase) {
-      let query = supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .order('created_at', { ascending: false });
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      let query =
+        supabase
+          .from('orders')
+          .select(
+            '*, order_items(*)'
+          )
+          .order(
+            'created_at',
+            {
+              ascending: false,
+            }
+          );
 
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+      if (
+        filters?.status &&
+        filters.status !== 'all'
+      ) {
+        query =
+          query.eq(
+            'status',
+            filters.status
+          );
       }
 
-      const { data, error } = await query;
+      const {
+        data,
+        error,
+      } = await query;
 
       if (error) {
         throw new Error(
           error.code === 'PGRST205' ||
-          error.message.includes('schema cache')
+          error.message.includes(
+            'schema cache'
+          )
             ? 'جدول الطلبات غير مهيأ بعد في Supabase. شغل supabase/schema.sql'
-            : error.message || 'فشل جلب الطلبات من Supabase'
+            : error.message ||
+              'فشل جلب الطلبات من Supabase'
         );
       }
 
-      let list = data || [];
+      let list =
+        data || [];
 
-      if (filters?.search) {
-        const s = filters.search.toLowerCase().trim();
+      if (
+        filters?.search
+      ) {
+        const s =
+          filters.search
+            .toLowerCase()
+            .trim();
 
-        list = list.filter(
-          (o: any) =>
-            o.order_number?.toLowerCase().includes(s) ||
-            o.customer_name?.toLowerCase().includes(s) ||
-            o.phone?.includes(s) ||
-            o.city?.toLowerCase().includes(s) ||
-            o.governorate?.toLowerCase().includes(s)
-        );
+        list =
+          list.filter(
+            (o: any) =>
+              o.order_number
+                ?.toLowerCase()
+                .includes(s) ||
+              o.customer_name
+                ?.toLowerCase()
+                .includes(s) ||
+              o.phone?.includes(
+                s
+              ) ||
+              o.city
+                ?.toLowerCase()
+                .includes(s) ||
+              o.governorate
+                ?.toLowerCase()
+                .includes(s)
+          );
       }
 
       return list;
     }
 
-    const params = new URLSearchParams();
+    const params =
+      new URLSearchParams();
 
     if (filters?.status) {
-      params.append('status', filters.status);
+      params.append(
+        'status',
+        filters.status
+      );
     }
 
     if (filters?.search) {
-      params.append('search', filters.search);
+      params.append(
+        'search',
+        filters.search
+      );
     }
 
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders =
+        await getAuthHeaders();
 
-      const res = await fetch(
-        `${API_BASE}/admin/orders?${params.toString()}`,
-        {
-          headers: authHeaders,
-        }
-      );
+      const res =
+        await fetch(
+          `${API_BASE}/admin/orders?${params.toString()}`,
+          {
+            headers:
+              authHeaders,
+          }
+        );
 
       if (res.ok) {
         return await res.json();
@@ -584,18 +734,33 @@ async getProducts(
   },
 
   // 8.1 Admin: Get Order By ID
-  async adminGetOrderById(orderId: string): Promise<Order> {
-    if (isSupabaseConfigured && supabase) {
+  async adminGetOrderById(
+    orderId: string
+  ): Promise<Order> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } = await supabase
+        const {
+          data,
+          error,
+        } = await supabase
           .from('orders')
-          .select('*, order_items(*)')
+          .select(
+            '*, order_items(*)'
+          )
           .or(
             `id.eq.${orderId},order_number.eq.${orderId}`
           )
           .maybeSingle();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase getOrderById notice:',
@@ -604,28 +769,38 @@ async getProducts(
       }
     }
 
-    const authHeaders = await getAuthHeaders();
+    const authHeaders =
+      await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/orders/${orderId}`,
-      {
-        headers: authHeaders,
-      }
+    const res =
+      await fetch(
+        `${API_BASE}/admin/orders/${orderId}`,
+        {
+          headers:
+            authHeaders,
+        }
+      );
+
+    if (res.ok)
+      return res.json();
+
+    const all =
+      await this.adminGetOrders();
+
+    const found =
+      all.find(
+        (o) =>
+          o.id === orderId ||
+          o.order_number ===
+            orderId
+      );
+
+    if (found)
+      return found;
+
+    throw new Error(
+      'الطلب غير موجود'
     );
-
-    if (res.ok) return res.json();
-
-    const all = await this.adminGetOrders();
-
-    const found = all.find(
-      (o) =>
-        o.id === orderId ||
-        o.order_number === orderId
-    );
-
-    if (found) return found;
-
-    throw new Error('الطلب غير موجود');
   },
 
   // 9. Admin: Update Order Status
@@ -634,25 +809,41 @@ async getProducts(
     status: string,
     changedBy = 'admin'
   ): Promise<Order> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } = await supabase
+        const {
+          data,
+          error,
+        } = await supabase
           .from('orders')
           .update({
             status,
-            updated_at: new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
           })
           .eq('id', orderId)
-          .select('*, order_items(*)')
+          .select(
+            '*, order_items(*)'
+          )
           .single();
 
-        if (!error && data) {
+        if (
+          !error &&
+          data
+        ) {
           await supabase
-            .from('order_status_history')
+            .from(
+              'order_status_history'
+            )
             .insert({
-              order_id: orderId,
+              order_id:
+                orderId,
               status,
-              changed_by: changedBy,
+              changed_by:
+                changedBy,
             });
 
           return data;
@@ -665,25 +856,34 @@ async getProducts(
       }
     }
 
-    const authHeaders = await getAuthHeaders();
+    const authHeaders =
+      await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/orders/${orderId}/status`,
-      {
-        method: 'PATCH',
-        headers: authHeaders,
-        body: JSON.stringify({
-          status,
-          changed_by: changedBy,
-        }),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/orders/${orderId}/status`,
+        {
+          method:
+            'PATCH',
+          headers:
+            authHeaders,
+          body: JSON.stringify({
+            status,
+            changed_by:
+              changedBy,
+          }),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل تحديث حالة الطلب'
+        err.error ||
+          'فشل تحديث حالة الطلب'
       );
     }
 
@@ -697,32 +897,54 @@ async getProducts(
     success: boolean;
     message?: string;
   }> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data: ord } = await supabase
+        const {
+          data: ord,
+        } = await supabase
           .from('orders')
-          .select('id, order_number')
+          .select(
+            'id, order_number'
+          )
           .or(
             `id.eq.${orderId},order_number.eq.${orderId}`
           )
           .maybeSingle();
 
-        const targetId = ord?.id || orderId;
+        const targetId =
+          ord?.id ||
+          orderId;
 
         await supabase
-          .from('order_status_history')
+          .from(
+            'order_status_history'
+          )
           .delete()
-          .eq('order_id', targetId);
+          .eq(
+            'order_id',
+            targetId
+          );
 
         await supabase
           .from('order_items')
           .delete()
-          .eq('order_id', targetId);
+          .eq(
+            'order_id',
+            targetId
+          );
 
-        const { error: delErr } = await supabase
+        const {
+          error: delErr,
+        } = await supabase
           .from('orders')
           .delete()
-          .eq('id', targetId);
+          .eq(
+            'id',
+            targetId
+          );
 
         if (delErr) {
           console.warn(
@@ -738,21 +960,29 @@ async getProducts(
       }
     }
 
-    const authHeaders = await getAuthHeaders();
+    const authHeaders =
+      await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/orders/${orderId}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/orders/${orderId}`,
+        {
+          method:
+            'DELETE',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل حذف الطلب'
+        err.error ||
+          'فشل حذف الطلب'
       );
     }
 
@@ -763,7 +993,10 @@ async getProducts(
   async adminCreateProduct(
     productData: any
   ): Promise<Product> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
         const {
           data: newProd,
@@ -771,38 +1004,63 @@ async getProducts(
         } = await supabase
           .from('products')
           .insert({
-            name: productData.name,
-            slug: productData.slug,
-            description: productData.description || '',
+            name:
+              productData.name,
+            slug:
+              productData.slug,
+            description:
+              productData.description ||
+              '',
             fabric_details:
-              productData.fabric_details || '',
-            price: productData.price,
+              productData.fabric_details ||
+              '',
+            price:
+              productData.price,
             compare_at_price:
-              productData.compare_at_price || null,
-            category_id: productData.category_id,
+              productData.compare_at_price ||
+              null,
+            category_id:
+              productData.category_id,
             is_active:
-              productData.is_active ?? true,
+              productData.is_active ??
+              true,
             is_featured:
-              productData.is_featured ?? false,
+              productData.is_featured ??
+              false,
             is_new:
-              productData.is_new ?? false,
+              productData.is_new ??
+              false,
           })
           .select()
           .single();
 
-        if (!prodErr && newProd) {
+        if (
+          !prodErr &&
+          newProd
+        ) {
           if (
-            Array.isArray(productData.images) &&
-            productData.images.length > 0
+            Array.isArray(
+              productData.images
+            ) &&
+            productData.images.length >
+              0
           ) {
             await supabase
-              .from('product_images')
+              .from(
+                'product_images'
+              )
               .insert(
                 productData.images.map(
-                  (img: any, idx: number) => ({
-                    product_id: newProd.id,
-                    image_url: img.image_url,
-                    sort_order: idx,
+                  (
+                    img: any,
+                    idx: number
+                  ) => ({
+                    product_id:
+                      newProd.id,
+                    image_url:
+                      img.image_url,
+                    sort_order:
+                      idx,
                     is_primary:
                       idx === 0 ||
                       img.is_primary,
@@ -812,21 +1070,32 @@ async getProducts(
           }
 
           if (
-            Array.isArray(productData.variants) &&
-            productData.variants.length > 0
+            Array.isArray(
+              productData.variants
+            ) &&
+            productData.variants.length >
+              0
           ) {
             await supabase
-              .from('product_variants')
+              .from(
+                'product_variants'
+              )
               .insert(
                 productData.variants.map(
                   (v: any) => ({
-                    product_id: newProd.id,
-                    color: v.color,
+                    product_id:
+                      newProd.id,
+                    color:
+                      v.color,
                     color_hex:
-                      v.color_hex || '#333333',
-                    size: v.size,
+                      v.color_hex ||
+                      '#333333',
+                    size:
+                      v.size,
                     stock_quantity:
-                      Number(v.stock_quantity) || 0,
+                      Number(
+                        v.stock_quantity
+                      ) || 0,
                   })
                 )
               );
@@ -845,20 +1114,29 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/products`,
-      {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(productData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/products`,
+        {
+          method:
+            'POST',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            productData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل إنشاء المنتج'
+        err.error ||
+          'فشل إنشاء المنتج'
       );
     }
 
@@ -870,7 +1148,10 @@ async getProducts(
     id: string,
     productData: any
   ): Promise<Product> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
         const {
           data: updatedProd,
@@ -878,13 +1159,16 @@ async getProducts(
         } = await supabase
           .from('products')
           .update({
-            name: productData.name,
-            slug: productData.slug,
+            name:
+              productData.name,
+            slug:
+              productData.slug,
             description:
               productData.description,
             fabric_details:
               productData.fabric_details,
-            price: productData.price,
+            price:
+              productData.price,
             compare_at_price:
               productData.compare_at_price,
             category_id:
@@ -902,22 +1186,45 @@ async getProducts(
           .select()
           .single();
 
-        if (!prodErr && updatedProd) {
-          if (Array.isArray(productData.images)) {
+        if (
+          !prodErr &&
+          updatedProd
+        ) {
+          if (
+            Array.isArray(
+              productData.images
+            )
+          ) {
             await supabase
-              .from('product_images')
+              .from(
+                'product_images'
+              )
               .delete()
-              .eq('product_id', id);
+              .eq(
+                'product_id',
+                id
+              );
 
-            if (productData.images.length > 0) {
+            if (
+              productData.images.length >
+                0
+            ) {
               await supabase
-                .from('product_images')
+                .from(
+                  'product_images'
+                )
                 .insert(
                   productData.images.map(
-                    (img: any, idx: number) => ({
-                      product_id: id,
-                      image_url: img.image_url,
-                      sort_order: idx,
+                    (
+                      img: any,
+                      idx: number
+                    ) => ({
+                      product_id:
+                        id,
+                      image_url:
+                        img.image_url,
+                      sort_order:
+                        idx,
                       is_primary:
                         idx === 0 ||
                         img.is_primary,
@@ -928,27 +1235,41 @@ async getProducts(
           }
 
           if (
-            Array.isArray(productData.variants)
+            Array.isArray(
+              productData.variants
+            )
           ) {
             await supabase
-              .from('product_variants')
+              .from(
+                'product_variants'
+              )
               .delete()
-              .eq('product_id', id);
+              .eq(
+                'product_id',
+                id
+              );
 
             if (
-              productData.variants.length > 0
+              productData
+                .variants
+                .length > 0
             ) {
               await supabase
-                .from('product_variants')
+                .from(
+                  'product_variants'
+                )
                 .insert(
                   productData.variants.map(
                     (v: any) => ({
-                      product_id: id,
-                      color: v.color,
+                      product_id:
+                        id,
+                      color:
+                        v.color,
                       color_hex:
                         v.color_hex ||
                         '#333333',
-                      size: v.size,
+                      size:
+                        v.size,
                       stock_quantity:
                         Number(
                           v.stock_quantity
@@ -972,20 +1293,29 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/products/${id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(productData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/products/${id}`,
+        {
+          method:
+            'PUT',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            productData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل تحديث المنتج'
+        err.error ||
+          'فشل تحديث المنتج'
       );
     }
 
@@ -996,16 +1326,25 @@ async getProducts(
   async adminArchiveProduct(
     id: string
   ): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { error } = await supabase
+        const {
+          error,
+        } = await supabase
           .from('products')
           .update({
-            is_active: false,
+            is_active:
+              false,
             updated_at:
               new Date().toISOString(),
           })
-          .eq('id', id);
+          .eq(
+            'id',
+            id
+          );
 
         if (!error) return;
       } catch (err) {
@@ -1019,19 +1358,26 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/products/${id}/archive`,
-      {
-        method: 'POST',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/products/${id}/archive`,
+        {
+          method:
+            'POST',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل أرشفة المنتج'
+        err.error ||
+          'فشل أرشفة المنتج'
       );
     }
   },
@@ -1040,11 +1386,19 @@ async getProducts(
   async adminDeleteProduct(
     id: string
   ): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } = await supabase
         .from('products')
         .delete()
-        .eq('id', id);
+        .eq(
+          'id',
+          id
+        );
 
       if (error) {
         throw new Error(
@@ -1059,19 +1413,26 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/products/${id}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/products/${id}`,
+        {
+          method:
+            'DELETE',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل حذف المنتج'
+        err.error ||
+          'فشل حذف المنتج'
       );
     }
   },
@@ -1080,11 +1441,19 @@ async getProducts(
   async adminUpdateSettings(
     settingsData: Partial<StoreSettings>
   ): Promise<StoreSettings> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('store_settings')
+            .from(
+              'store_settings'
+            )
             .update({
               store_name:
                 settingsData.store_name,
@@ -1112,7 +1481,12 @@ async getProducts(
             .select()
             .single();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminUpdateSettings notice:',
@@ -1124,20 +1498,29 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/settings`,
-      {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(settingsData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/settings`,
+        {
+          method:
+            'PUT',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            settingsData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
-        err.error || 'فشل تحديث الإعدادات'
+        err.error ||
+          'فشل تحديث الإعدادات'
       );
     }
 
@@ -1146,16 +1529,29 @@ async getProducts(
 
   // 14. Store Content CMS
   async getStoreContent(): Promise<StoreContent> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('store_content')
+            .from(
+              'store_content'
+            )
             .select('*')
             .limit(1)
             .maybeSingle();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase getStoreContent notice:',
@@ -1164,9 +1560,10 @@ async getProducts(
       }
     }
 
-    const res = await fetch(
-      `${API_BASE}/content`
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/content`
+      );
 
     if (!res.ok) {
       throw new Error(
@@ -1180,11 +1577,19 @@ async getProducts(
   async adminUpdateStoreContent(
     contentData: Partial<StoreContent>
   ): Promise<StoreContent> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('store_content')
+            .from(
+              'store_content'
+            )
             .update({
               ...contentData,
               updated_at:
@@ -1197,7 +1602,12 @@ async getProducts(
             .select()
             .single();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminUpdateStoreContent notice:',
@@ -1209,17 +1619,25 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/content`,
-      {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(contentData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/content`,
+        {
+          method:
+            'PUT',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            contentData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1232,16 +1650,29 @@ async getProducts(
 
   // 15. Contact & Social Settings
   async getContactSocial(): Promise<ContactSocialSettings> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('contact_social_settings')
+            .from(
+              'contact_social_settings'
+            )
             .select('*')
             .limit(1)
             .maybeSingle();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase getContactSocial notice:',
@@ -1250,9 +1681,10 @@ async getProducts(
       }
     }
 
-    const res = await fetch(
-      `${API_BASE}/contact-social`
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/contact-social`
+      );
 
     if (!res.ok) {
       throw new Error(
@@ -1266,11 +1698,19 @@ async getProducts(
   async adminUpdateContactSocial(
     socialData: Partial<ContactSocialSettings>
   ): Promise<ContactSocialSettings> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('contact_social_settings')
+            .from(
+              'contact_social_settings'
+            )
             .update({
               ...socialData,
               updated_at:
@@ -1283,7 +1723,12 @@ async getProducts(
             .select()
             .single();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminUpdateContactSocial notice:',
@@ -1295,17 +1740,25 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/contact-social`,
-      {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(socialData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/contact-social`,
+        {
+          method:
+            'PUT',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            socialData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1318,17 +1771,34 @@ async getProducts(
 
   // 16. Admin Category Management
   async adminGetCategories(): Promise<Category[]> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('categories')
+            .from(
+              'categories'
+            )
             .select('*')
-            .order('created_at', {
-              ascending: true,
-            });
+            .order(
+              'created_at',
+              {
+                ascending:
+                  true,
+              }
+            );
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminGetCategories notice:',
@@ -1340,12 +1810,14 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/categories`,
-      {
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/categories`,
+        {
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
       throw new Error(
@@ -1356,27 +1828,46 @@ async getProducts(
     return res.json();
   },
 
-  async adminCreateCategory(catData: {
-    name: string;
-    slug: string;
-    image_url?: string;
-  }): Promise<Category> {
-    if (isSupabaseConfigured && supabase) {
+  async adminCreateCategory(
+    catData: {
+      name: string;
+      slug: string;
+      image_url?: string;
+    }
+  ): Promise<Category> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('categories')
+            .from(
+              'categories'
+            )
             .insert({
-              name: catData.name,
-              slug: catData.slug,
+              name:
+                catData.name,
+              slug:
+                catData.slug,
               image_url:
-                catData.image_url || null,
-              is_active: true,
+                catData.image_url ||
+                null,
+              is_active:
+                true,
             })
             .select()
             .single();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminCreateCategory notice:',
@@ -1388,17 +1879,25 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/categories`,
-      {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(catData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/categories`,
+        {
+          method:
+            'POST',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            catData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1413,24 +1912,42 @@ async getProducts(
     id: string,
     catData: Partial<Category>
   ): Promise<Category> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data, error } =
+        const {
+          data,
+          error,
+        } =
           await supabase
-            .from('categories')
+            .from(
+              'categories'
+            )
             .update({
-              name: catData.name,
-              slug: catData.slug,
+              name:
+                catData.name,
+              slug:
+                catData.slug,
               image_url:
                 catData.image_url,
               is_active:
                 catData.is_active,
             })
-            .eq('id', id)
+            .eq(
+              'id',
+              id
+            )
             .select()
             .single();
 
-        if (!error && data) return data;
+        if (
+          !error &&
+          data
+        ) {
+          return data;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminUpdateCategory notice:',
@@ -1442,17 +1959,25 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/categories/${id}`,
-      {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(catData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/categories/${id}`,
+        {
+          method:
+            'PUT',
+          headers:
+            authHeaders,
+          body: JSON.stringify(
+            catData
+          ),
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1466,15 +1991,26 @@ async getProducts(
   async adminArchiveCategory(
     id: string
   ): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { error } =
+        const {
+          error,
+        } =
           await supabase
-            .from('categories')
+            .from(
+              'categories'
+            )
             .update({
-              is_active: false,
+              is_active:
+                false,
             })
-            .eq('id', id);
+            .eq(
+              'id',
+              id
+            );
 
         if (!error) return;
       } catch (err) {
@@ -1488,16 +2024,22 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/categories/${id}/archive`,
-      {
-        method: 'POST',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/categories/${id}/archive`,
+        {
+          method:
+            'POST',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1510,28 +2052,45 @@ async getProducts(
   async adminDeleteCategory(
     id: string
   ): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       const {
-        error: disassociateError,
+        error:
+          disassociateError,
       } = await supabase
         .from('products')
         .update({
-          category_id: null,
+          category_id:
+            null,
         })
-        .eq('category_id', id);
+        .eq(
+          'category_id',
+          id
+        );
 
-      if (disassociateError) {
+      if (
+        disassociateError
+      ) {
         console.warn(
           'Disassociate products notice:',
           disassociateError
         );
       }
 
-      const { error } =
+      const {
+        error,
+      } =
         await supabase
-          .from('categories')
+          .from(
+            'categories'
+          )
           .delete()
-          .eq('id', id);
+          .eq(
+            'id',
+            id
+          );
 
       if (error) {
         throw new Error(
@@ -1546,16 +2105,22 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/categories/${id}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/categories/${id}`,
+        {
+          method:
+            'DELETE',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
@@ -1568,12 +2133,22 @@ async getProducts(
   async adminDeleteVariant(
     variantId: string
   ): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
-      const { error } =
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } =
         await supabase
-          .from('product_variants')
+          .from(
+            'product_variants'
+          )
           .delete()
-          .eq('id', variantId);
+          .eq(
+            'id',
+            variantId
+          );
 
       if (error) {
         throw new Error(
@@ -1588,21 +2163,688 @@ async getProducts(
     const authHeaders =
       await getAuthHeaders();
 
-    const res = await fetch(
-      `${API_BASE}/admin/variants/${variantId}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders,
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/admin/variants/${variantId}`,
+        {
+          method:
+            'DELETE',
+          headers:
+            authHeaders,
+        }
+      );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
 
       throw new Error(
         err.error ||
           'فشل حذف المتغير'
       );
     }
+  },
+
+  // 21. Product Reviews
+  // Public: Get approved reviews for a product
+  async getProductReviews(
+    productId: string
+  ): Promise<ProductReview[]> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .select('*')
+          .eq(
+            'product_id',
+            productId
+          )
+          .eq(
+            'status',
+            'approved'
+          )
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'تعذر جلب تقييمات المنتج'
+        );
+      }
+
+      return data || [];
+    }
+
+    return [];
+  },
+
+  // Public: Submit a customer review
+  // Customer reviews are always pending.
+  async createProductReview(
+    data: {
+      product_id: string;
+      customer_name: string;
+      rating: number;
+      review_text: string;
+    }
+  ): Promise<{
+    success: boolean;
+  }> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .insert({
+            product_id:
+              data.product_id,
+            customer_name:
+              data.customer_name.trim(),
+            rating:
+              Number(
+                data.rating
+              ),
+            review_text:
+              data.review_text.trim(),
+            status:
+              'pending',
+          });
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'تعذر إرسال التقييم'
+        );
+      }
+
+      return {
+        success: true,
+      };
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 21.1 Admin: Get All Product Reviews
+  async adminGetProductReviews(
+    productId?: string
+  ): Promise<ProductReview[]> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      let query =
+        supabase
+          .from(
+            'product_reviews'
+          )
+          .select('*')
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
+
+      if (productId) {
+        query =
+          query.eq(
+            'product_id',
+            productId
+          );
+      }
+
+      const {
+        data,
+        error,
+      } = await query;
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'فشل جلب تقييمات المنتجات'
+        );
+      }
+
+      return data || [];
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 21.2 Admin: Create Product Review
+  async adminCreateProductReview(
+    data: {
+      product_id: string;
+      customer_name: string;
+      rating: number;
+      review_text: string;
+      status?: ProductReview['status'];
+    }
+  ): Promise<ProductReview> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data: review,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .insert({
+            product_id:
+              data.product_id,
+            customer_name:
+              data.customer_name.trim(),
+            rating:
+              Number(
+                data.rating
+              ),
+            review_text:
+              data.review_text.trim(),
+            status:
+              data.status ||
+              'approved',
+          })
+          .select()
+          .single();
+
+      if (
+        error ||
+        !review
+      ) {
+        throw new Error(
+          error?.message ||
+            'فشل إضافة التقييم'
+        );
+      }
+
+      return review;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 21.3 Admin: Update Product Review
+  async adminUpdateProductReview(
+    id: string,
+    updates: Partial<
+      Pick<
+        ProductReview,
+        | 'customer_name'
+        | 'rating'
+        | 'review_text'
+        | 'status'
+      >
+    >
+  ): Promise<ProductReview> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const payload: Record<
+        string,
+        any
+      > = {
+        updated_at:
+          new Date().toISOString(),
+      };
+
+      if (
+        updates.customer_name !==
+        undefined
+      ) {
+        payload.customer_name =
+          updates.customer_name.trim();
+      }
+
+      if (
+        updates.rating !==
+        undefined
+      ) {
+        payload.rating =
+          Number(
+            updates.rating
+          );
+      }
+
+      if (
+        updates.review_text !==
+        undefined
+      ) {
+        payload.review_text =
+          updates.review_text.trim();
+      }
+
+      if (
+        updates.status !==
+        undefined
+      ) {
+        payload.status =
+          updates.status;
+      }
+
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .update(
+            payload
+          )
+          .eq(
+            'id',
+            id
+          )
+          .select()
+          .single();
+
+      if (
+        error ||
+        !data
+      ) {
+        throw new Error(
+          error?.message ||
+            'فشل تحديث التقييم'
+        );
+      }
+
+      return data;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 21.4 Admin: Delete Product Review
+  async adminDeleteProductReview(
+    id: string
+  ): Promise<void> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .delete()
+          .eq(
+            'id',
+            id
+          );
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'فشل حذف التقييم'
+        );
+      }
+
+      return;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 22. Product Comments
+  // Public: Get approved comments for a product
+  async getProductComments(
+    productId: string
+  ): Promise<ProductComment[]> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_comments'
+          )
+          .select('*')
+          .eq(
+            'product_id',
+            productId
+          )
+          .eq(
+            'status',
+            'approved'
+          )
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'تعذر جلب تعليقات المنتج'
+        );
+      }
+
+      return data || [];
+    }
+
+    return [];
+  },
+
+  // Public: Submit a customer comment
+  // Customer comments are always pending.
+  async createProductComment(
+    data: {
+      product_id: string;
+      customer_name: string;
+      comment: string;
+    }
+  ): Promise<{
+    success: boolean;
+  }> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            'product_comments'
+          )
+          .insert({
+            product_id:
+              data.product_id,
+            customer_name:
+              data.customer_name.trim(),
+            comment:
+              data.comment.trim(),
+            status:
+              'pending',
+          });
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'تعذر إرسال التعليق'
+        );
+      }
+
+      return {
+        success: true,
+      };
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 22.1 Admin: Get All Product Comments
+  async adminGetProductComments(
+    productId?: string
+  ): Promise<ProductComment[]> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      let query =
+        supabase
+          .from(
+            'product_comments'
+          )
+          .select('*')
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
+
+      if (productId) {
+        query =
+          query.eq(
+            'product_id',
+            productId
+          );
+      }
+
+      const {
+        data,
+        error,
+      } = await query;
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'فشل جلب تعليقات المنتجات'
+        );
+      }
+
+      return data || [];
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 22.2 Admin: Create Product Comment
+  async adminCreateProductComment(
+    data: {
+      product_id: string;
+      customer_name: string;
+      comment: string;
+      status?: ProductComment['status'];
+    }
+  ): Promise<ProductComment> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data: comment,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_comments'
+          )
+          .insert({
+            product_id:
+              data.product_id,
+            customer_name:
+              data.customer_name.trim(),
+            comment:
+              data.comment.trim(),
+            status:
+              data.status ||
+              'approved',
+          })
+          .select()
+          .single();
+
+      if (
+        error ||
+        !comment
+      ) {
+        throw new Error(
+          error?.message ||
+            'فشل إضافة التعليق'
+        );
+      }
+
+      return comment;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 22.3 Admin: Update Product Comment
+  async adminUpdateProductComment(
+    id: string,
+    updates: Partial<
+      Pick<
+        ProductComment,
+        | 'customer_name'
+        | 'comment'
+        | 'status'
+      >
+    >
+  ): Promise<ProductComment> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const payload: Record<
+        string,
+        any
+      > = {
+        updated_at:
+          new Date().toISOString(),
+      };
+
+      if (
+        updates.customer_name !==
+        undefined
+      ) {
+        payload.customer_name =
+          updates.customer_name.trim();
+      }
+
+      if (
+        updates.comment !==
+        undefined
+      ) {
+        payload.comment =
+          updates.comment.trim();
+      }
+
+      if (
+        updates.status !==
+        undefined
+      ) {
+        payload.status =
+          updates.status;
+      }
+
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_comments'
+          )
+          .update(
+            payload
+          )
+          .eq(
+            'id',
+            id
+          )
+          .select()
+          .single();
+
+      if (
+        error ||
+        !data
+      ) {
+        throw new Error(
+          error?.message ||
+            'فشل تحديث التعليق'
+        );
+      }
+
+      return data;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
+  },
+
+  // 22.4 Admin: Delete Product Comment
+  async adminDeleteProductComment(
+    id: string
+  ): Promise<void> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            'product_comments'
+          )
+          .delete()
+          .eq(
+            'id',
+            id
+          );
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'فشل حذف التعليق'
+        );
+      }
+
+      return;
+    }
+
+    throw new Error(
+      'قاعدة بيانات Supabase غير متصلة.'
+    );
   },
 };

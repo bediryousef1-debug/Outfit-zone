@@ -111,6 +111,32 @@ export interface ShippingRate {
   updated_at?: string;
 }
 
+export type ReviewCommentStatus =
+  | 'pending'
+  | 'approved'
+  | 'hidden';
+
+export interface ProductReview {
+  id: string;
+  product_id: string;
+  customer_name: string;
+  rating: number;
+  review_text: string;
+  status: ReviewCommentStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductComment {
+  id: string;
+  product_id: string;
+  customer_name: string;
+  comment: string;
+  status: ReviewCommentStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StoreSettings {
   id: string;
   store_name: string;
