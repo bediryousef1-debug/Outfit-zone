@@ -2234,11 +2234,52 @@ export const api = {
     return [];
   },
 
+  // Public: Get all approved reviews for the homepage
+  async getPublicReviews(): Promise<ProductReview[]> {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            'product_reviews'
+          )
+          .select('*')
+          .eq(
+            'status',
+            'approved'
+          )
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          )
+          .limit(20);
+
+      if (error) {
+        throw new Error(
+          error.message ||
+            'تعذر جلب آراء العملاء'
+        );
+      }
+
+      return data || [];
+    }
+
+    return [];
+  },
+
   // Public: Submit a customer review
   // Customer reviews are always pending.
   async createProductReview(
     data: {
-      product_id: string;
+      product_id?: string | null;
       customer_name: string;
       rating: number;
       review_text: string;
@@ -2259,7 +2300,7 @@ export const api = {
           )
           .insert({
             product_id:
-              data.product_id,
+              data.product_id ?? null,
             customer_name:
               data.customer_name.trim(),
             rating:
@@ -2342,7 +2383,7 @@ export const api = {
   // 21.2 Admin: Create Product Review
   async adminCreateProductReview(
     data: {
-      product_id: string;
+      product_id?: string | null;
       customer_name: string;
       rating: number;
       review_text: string;
@@ -2363,7 +2404,7 @@ export const api = {
           )
           .insert({
             product_id:
-              data.product_id,
+              data.product_id ?? null,
             customer_name:
               data.customer_name.trim(),
             rating:
