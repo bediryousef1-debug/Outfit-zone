@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Check, Database, Copy, CheckCheck, Settings } from 'lucide-react';
+import {
+  Save,
+  Check,
+  Truck,
+  Settings,
+  ToggleLeft,
+  ToggleRight,
+  Search,
+  RefreshCw,
+} from 'lucide-react';
 import { api } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import { ShippingRate } from '../../types';
+import { EGYPTIAN_GOVERNORATES } from '../../utils/constants';
 
 export const AdminSettingsPage: React.FC = () => {
   const { settings, refreshData } = useStore();
@@ -18,7 +28,14 @@ export const AdminSettingsPage: React.FC = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [copiedSql, setCopiedSql] = useState(false);
+
+  // Shipping Rates per Governorate state
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [ratesLoading, setRatesLoading] = useState(true);
+  const [searchGov, setSearchGov] = useState('');
+  const [updatingRateId, setUpdatingRateId] = useState<string | null>(null);
+  const [bulkPrice, setBulkPrice] = useState('');
+  const [rateFeedback, setRateFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -33,7 +50,23 @@ export const AdminSettingsPage: React.FC = () => {
     }
   }, [settings]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const loadShippingRates = async () => {
+    setRatesLoading(true);
+    try {
+      const data = await api.getShippingRates(true);
+      setShippingRates(data);
+    } catch (err) {
+      console.error('Failed to load shipping rates:', err);
+    } finally {
+      setRatesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadShippingRates();
+  }, []);
+
+  const handleSaveStoreSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setSuccessMsg(null);
@@ -51,7 +84,7 @@ export const AdminSettingsPage: React.FC = () => {
       });
 
       await refreshData();
-      setSuccessMsg('تم حفظ وتحديث إعدادات وسياسات المتجر في Supabase بنجاح.');
+      setSuccessMsg('تم حفظ وتحديث إعدادات وسياسات المتجر العامة بنجاح.');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       alert(err.message || 'فشل تحديث الإعدادات');
@@ -60,25 +93,74 @@ export const AdminSettingsPage: React.FC = () => {
     }
   };
 
-  const copyMigrationSql = () => {
-    const sql = `-- Outfit Zone Supabase SQL Schema
--- See /supabase/schema.sql and /supabase/seed.sql in project root
-SELECT 'Outfit Zone tables and RLS policies created successfully!';`;
-    navigator.clipboard.writeText(sql);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2000);
+  const handleUpdateSingleRate = async (rateId: string, updates: Partial<ShippingRate>) => {
+    setUpdatingRateId(rateId);
+    setRateFeedback(null);
+    try {
+      const updated = await api.adminUpdateShippingRate(rateId, updates);
+      setShippingRates((prev) =>
+        prev.map((r) => (r.id === rateId ? { ...r, ...updated } : r))
+      );
+      setRateFeedback('تم تحديث سعر الشحن للمحافظة بنجاح.');
+      setTimeout(() => setRateFeedback(null), 2500);
+    } catch (err: any) {
+      alert(err.message || 'فشل تحديث سعر المحافظة');
+    } finally {
+      setUpdatingRateId(null);
+    }
   };
 
+  const handleToggleRateActive = async (rate: ShippingRate) => {
+    await handleUpdateSingleRate(rate.id, { is_active: !rate.is_active });
+  };
+
+  const handleBulkApplyPrice = async () => {
+    const numPrice = Number(bulkPrice);
+    if (isNaN(numPrice) || numPrice < 0) {
+      alert('يرجى إدخال سعر صحيح (0 أو أكثر).');
+      return;
+    }
+
+    if (!confirm(`هل أنت متأكد من تعيين سعر ${numPrice} ج.م لجميع المحافظات الـ 27؟`)) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      for (const rate of shippingRates) {
+        await api.adminUpdateShippingRate(rate.id, { shipping_fee: numPrice });
+      }
+      await loadShippingRates();
+      setRateFeedback(`تم تحديث سعر الشحن لجميع المحافظات إلى ${numPrice} ج.م بنجاح.`);
+      setBulkPrice('');
+      setTimeout(() => setRateFeedback(null), 3000);
+    } catch (err: any) {
+      alert(err.message || 'حدث خطأ أثناء التحديث الجماعي');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const filteredRates = shippingRates.filter((r) => {
+    if (!searchGov.trim()) return true;
+    const term = searchGov.trim().toLowerCase();
+    const govObj = EGYPTIAN_GOVERNORATES.find((g) => g.nameAr === r.governorate);
+    return (
+      r.governorate.toLowerCase().includes(term) ||
+      (govObj && govObj.nameEn.toLowerCase().includes(term))
+    );
+  });
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 text-right pb-12">
+    <div className="max-w-5xl mx-auto space-y-8 text-right pb-16">
       {/* Title */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
           <Settings className="w-6 h-6 text-neutral-300" />
-          <span>إعدادات وسياسات المتجر العامة</span>
+          <span>إعدادات وسياسات المتجر ونظام الشحن</span>
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
-          التحكم في مصاريف الشحن، أرقام التواصل، وسياسات المعاينة والاستبدال المخزنة في Supabase.
+          إدارة أسعار الشحن لكل محافظة من الـ 27 محافظة مصرية، وتفعيل أو تعطيل التوصيل، وسياسات المتجر.
         </p>
       </div>
 
@@ -89,8 +171,125 @@ SELECT 'Outfit Zone tables and RLS policies created successfully!';`;
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Basic Brand Settings */}
+      {/* =========================================================================
+          SECTION 1: SHIPPING PER GOVERNORATE (27 EGYPTIAN GOVERNORATES)
+          ========================================================================= */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-800/80 pb-4">
+          <div className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-neutral-300" />
+            <div>
+              <h2 className="text-sm font-bold text-white">
+                أسعار الشحن حسب المحافظة (Shipping per Governorate)
+              </h2>
+              <p className="text-[11px] text-neutral-400">
+                لكل محافظة سعر شحن مستقل وحالة تفعيل/تعطيل، تعتمدها قاعدة البيانات تلقائيًا.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={loadShippingRates}
+            disabled={ratesLoading}
+            className="p-2 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs self-start sm:self-auto cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${ratesLoading ? 'animate-spin' : ''}`} />
+            <span>تحديث الأسعار</span>
+          </button>
+        </div>
+
+        {rateFeedback && (
+          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{rateFeedback}</span>
+          </div>
+        )}
+
+        {/* Search & Bulk Set Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+          <div className="sm:col-span-6 relative">
+            <input
+              type="text"
+              placeholder="ابحث عن محافظة (مثال: الدقهلية / القاهرة / الإسكندرية)..."
+              value={searchGov}
+              onChange={(e) => setSearchGov(e.target.value)}
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl py-2 pr-9 pl-3 text-xs text-white focus:outline-none focus:border-white"
+            />
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+          </div>
+
+          <div className="sm:col-span-6 flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              placeholder="سعر موحد (ج.م)"
+              value={bulkPrice}
+              onChange={(e) => setBulkPrice(e.target.value)}
+              className="w-32 bg-neutral-900 border border-neutral-800 rounded-xl py-2 px-3 text-xs text-white text-center focus:outline-none focus:border-white font-mono"
+            />
+            <button
+              onClick={handleBulkApplyPrice}
+              disabled={!bulkPrice || isSaving}
+              className="py-2 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              تطبيق على الجميع
+            </button>
+          </div>
+        </div>
+
+        {/* Governorates Table */}
+        <div className="border border-neutral-800/80 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full text-right text-xs">
+              <thead className="bg-neutral-900/90 text-neutral-400 font-bold sticky top-0 border-b border-neutral-800 z-10">
+                <tr>
+                  <th className="py-3 px-4">المحافظة</th>
+                  <th className="py-3 px-4">سعر الشحن (جنيه)</th>
+                  <th className="py-3 px-4">الحالة</th>
+                  <th className="py-3 px-4 text-left">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800/60 bg-neutral-950/40">
+                {ratesLoading ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-neutral-400">
+                      جاري تحميل أسعار المحافظات...
+                    </td>
+                  </tr>
+                ) : filteredRates.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-neutral-400">
+                      لا توجد محافظات مطابقة لبحثك.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRates.map((rate) => {
+                    const govObj = EGYPTIAN_GOVERNORATES.find((g) => g.nameAr === rate.governorate);
+                    const isUpdating = updatingRateId === rate.id;
+                    return (
+                      <GovernorateRow
+                        key={rate.id}
+                        rate={rate}
+                        govObj={govObj}
+                        isUpdating={isUpdating}
+                        onSavePrice={(newPrice) =>
+                          handleUpdateSingleRate(rate.id, { shipping_fee: newPrice })
+                        }
+                        onToggleActive={() => handleToggleRateActive(rate)}
+                      />
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          SECTION 2: GENERAL STORE POLICIES & CONTACT
+          ========================================================================= */}
+      <form onSubmit={handleSaveStoreSettings} className="space-y-6">
         <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
           <h2 className="text-sm font-bold text-white border-b border-neutral-800/80 pb-2">
             بيانات المتجر وأرقام التواصل
@@ -142,67 +341,16 @@ SELECT 'Outfit Zone tables and RLS policies created successfully!';`;
           </div>
         </div>
 
-        {/* Shipping & Inspection Settings */}
+        {/* Policies */}
         <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
           <h2 className="text-sm font-bold text-white border-b border-neutral-800/80 pb-2">
-            الشحن وتكلفة التوصيل وسياسة المعاينة والدفع عند الاستلام
+            سياسات الاستبدال والإرجاع والمعاينة
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                مصاريف الشحن لجميع المحافظات (جنيه)
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="1"
-                value={shippingFee}
-                onChange={(e) => setShippingFee(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white font-mono"
-              />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                تُحسب هذه القيمة تلقائيًا على جميع طلبات الدفع عند الاستلام.
-              </p>
-            </div>
-
-            <div className="flex flex-col justify-center">
-              <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-                <input
-                  type="checkbox"
-                  checked={inspectionAvailable}
-                  onChange={(e) => setInspectionAvailable(e.target.checked)}
-                  className="w-4 h-4 rounded bg-neutral-800 border-neutral-700 accent-white cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-bold text-white block">
-                    تفعيل "معاينة مجانية عند الاستلام"
-                  </span>
-                  <span className="text-[11px] text-neutral-400">
-                    إظهار رسالة المعاينة للعميل في المتجر وصفحة إتمام الطلب.
-                  </span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-              رسالة الدفع عند الاستلام (COD Message)
-            </label>
-            <input
-              type="text"
-              value={codMessage}
-              onChange={(e) => setCodMessage(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                نص سياسة استبدال المقاس
+                سياسة الاستبدال
               </label>
               <input
                 type="text"
@@ -214,7 +362,7 @@ SELECT 'Outfit Zone tables and RLS policies created successfully!';`;
 
             <div>
               <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                نص سياسة الإرجاع
+                سياسة الإرجاع
               </label>
               <input
                 type="text"
@@ -223,49 +371,151 @@ SELECT 'Outfit Zone tables and RLS policies created successfully!';`;
                 className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+                رسالة الدفع عند الاستلام
+              </label>
+              <input
+                type="text"
+                value={codMessage}
+                onChange={(e) => setCodMessage(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="inspection"
+                checked={inspectionAvailable}
+                onChange={(e) => setInspectionAvailable(e.target.checked)}
+                className="rounded bg-neutral-900 border-neutral-800 text-white focus:ring-0 w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="inspection" className="text-xs text-neutral-300 cursor-pointer">
+                تفعيل ميزة المعاينة المجانية للطلب قبل الدفع والاستلام
+              </label>
+            </div>
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end pt-2">
+        {/* Submit */}
+        <div className="flex justify-end">
           <button
             type="submit"
             disabled={isSaving}
-            className="py-3 px-8 rounded-xl bg-white hover:bg-neutral-200 text-black font-extrabold text-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="py-3 px-8 bg-white hover:bg-neutral-200 text-black font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
           >
-            <Save className="w-4 h-4" />
-            <span>{isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات في Supabase'}</span>
+            {isSaving ? (
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>حفظ سياسات المتجر</span>
+              </>
+            )}
           </button>
         </div>
       </form>
-
-      {/* Supabase Integration Status */}
-      <div className="p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-white">حالة الاتصال بقاعدة بيانات Supabase</span>
-          </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
-            {isSupabaseConfigured ? 'مفعل ومتصل (Live Supabase)' : 'وضع المحاكاة الآمن (Local Engine)'}
-          </span>
-        </div>
-
-        <p className="text-xs text-neutral-400 leading-relaxed">
-          جميع البيانات (الموديلات، الألوان، المقاسات، المخزون، والطلبات) تُدار ومحمية بسياسات RLS الأمنية لمنع وصول غير المصرح لهم.
-        </p>
-
-        <div className="pt-2 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={copyMigrationSql}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
-          >
-            {copiedSql ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedSql ? 'تم النسخ!' : 'نسخ مرجع كود SQL'}</span>
-          </button>
-        </div>
-      </div>
     </div>
+  );
+};
+
+// Component for Governorate Row with editable input
+const GovernorateRow: React.FC<{
+  rate: ShippingRate;
+  govObj?: { id: string; nameAr: string; nameEn: string };
+  isUpdating: boolean;
+  onSavePrice: (newPrice: number) => void;
+  onToggleActive: () => void;
+}> = ({ rate, govObj, isUpdating, onSavePrice, onToggleActive }) => {
+  const [feeInput, setFeeInput] = useState(String(rate.shipping_fee));
+  const [hasChanged, setHasChanged] = useState(false);
+
+  useEffect(() => {
+    setFeeInput(String(rate.shipping_fee));
+    setHasChanged(false);
+  }, [rate.shipping_fee]);
+
+  const handlePriceChange = (val: string) => {
+    setFeeInput(val);
+    setHasChanged(Number(val) !== Number(rate.shipping_fee));
+  };
+
+  const handleSave = () => {
+    const num = Number(feeInput);
+    if (!isNaN(num) && num >= 0) {
+      onSavePrice(num);
+      setHasChanged(false);
+    }
+  };
+
+  return (
+    <tr className="hover:bg-neutral-900/50 transition-colors">
+      {/* Name */}
+      <td className="py-3 px-4 font-bold text-white">
+        <div className="flex items-center gap-2">
+          <span>{rate.governorate}</span>
+          {govObj && (
+            <span className="text-[10px] text-neutral-500 font-mono">
+              ({govObj.nameEn})
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Shipping Fee Input */}
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={feeInput}
+            onChange={(e) => handlePriceChange(e.target.value)}
+            className="w-24 bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2.5 text-xs text-white text-center focus:outline-none focus:border-white font-mono"
+          />
+          {hasChanged && (
+            <button
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="py-1.5 px-2.5 rounded-lg bg-white text-black font-bold text-[11px] hover:bg-neutral-200 transition-colors shadow cursor-pointer"
+            >
+              {isUpdating ? '...' : 'حفظ'}
+            </button>
+          )}
+        </div>
+      </td>
+
+      {/* Status Badge */}
+      <td className="py-3 px-4">
+        {rate.is_active ? (
+          <span className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>مفعّل</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full text-[10px] font-bold bg-neutral-900 text-neutral-400 border border-neutral-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+            <span>معطّل (غير متاح)</span>
+          </span>
+        )}
+      </td>
+
+      {/* Actions */}
+      <td className="py-3 px-4 text-left">
+        <button
+          onClick={onToggleActive}
+          disabled={isUpdating}
+          className={`py-1.5 px-3 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer border ${
+            rate.is_active
+              ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-red-400 hover:border-red-900'
+              : 'bg-emerald-950/40 border-emerald-900 text-emerald-300 hover:bg-emerald-900/60'
+          }`}
+        >
+          {rate.is_active ? 'تعطيل الشحن' : 'تفعيل الشحن'}
+        </button>
+      </td>
+    </tr>
   );
 };

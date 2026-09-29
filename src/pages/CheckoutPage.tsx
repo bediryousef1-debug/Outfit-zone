@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Truck,
   ArrowRight,
   Lock,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
+import { ShippingRate } from '../types';
 import {
   EGYPTIAN_GOVERNORATES,
   formatPrice,
@@ -26,6 +29,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 }) => {
   const { items, subtotal, clearCart } = useCart();
   const { settings } = useStore();
+  const { isDark } = useTheme();
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -36,11 +40,48 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     notes: '',
   });
 
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [ratesLoading, setRatesLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const shippingFee = settings?.shipping_fee || 65;
+  // Load dynamic shipping rates from Supabase / API
+  useEffect(() => {
+    let isMounted = true;
+    api
+      .getShippingRates(false)
+      .then((rates) => {
+        if (isMounted) {
+          setShippingRates(rates);
+          setRatesLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setRatesLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Compute dynamic shipping fee based on selected Egyptian governorate
+  const selectedGovObj = EGYPTIAN_GOVERNORATES.find(
+    (g) => g.id === formData.governorate
+  );
+  const selectedGovNameAr = selectedGovObj
+    ? selectedGovObj.nameAr
+    : formData.governorate;
+
+  const matchedRate = shippingRates.find(
+    (r) => r.governorate === selectedGovNameAr
+  );
+
+  const isGovAvailable = matchedRate ? matchedRate.is_active : true;
+  const shippingFee = matchedRate
+    ? Number(matchedRate.shipping_fee)
+    : Number(settings?.shipping_fee) || 65;
+
   const grandTotal = subtotal + shippingFee;
 
   const validateForm = (): boolean => {
@@ -62,6 +103,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     if (!formData.governorate) {
       errs.governorate = 'يرجى اختيار المحافظة.';
+    } else if (!isGovAvailable) {
+      errs.governorate =
+        'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.';
     }
 
     if (!formData.city.trim() || formData.city.trim().length < 2) {
@@ -74,7 +118,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
 
     setErrors(errs);
-
     return Object.keys(errs).length === 0;
   };
 
@@ -91,22 +134,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    if (!isGovAvailable) {
+      setSubmitError(
+        'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const selectedGovObj = EGYPTIAN_GOVERNORATES.find(
-        (g) => g.id === formData.governorate
-      );
-
-      const governorateName = selectedGovObj
-        ? selectedGovObj.nameAr
-        : formData.governorate;
-
       const orderPayload = {
         customer: {
           customer_name: formData.customer_name.trim(),
           phone: formData.phone.trim(),
-          governorate: governorateName,
+          governorate: selectedGovNameAr,
           city: formData.city.trim(),
           address: formData.address.trim(),
           notes: formData.notes.trim() || undefined,
@@ -130,10 +172,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       }
     } catch (err: any) {
       console.error('Order submission error:', err);
-
-      setSubmitError(
-        err.message || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.'
-      );
+      const rawMsg = err.message || '';
+      if (
+        rawMsg.includes('OZ_SHIPPING_GOVERNORATE_UNAVAILABLE') ||
+        rawMsg.includes('OZ_SHIPPING_SETTINGS_MISSING')
+      ) {
+        setSubmitError(
+          'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.'
+        );
+      } else if (rawMsg.includes('OZ_INSUFFICIENT_STOCK')) {
+        setSubmitError('عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.');
+      } else {
+        setSubmitError(rawMsg || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -142,17 +193,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center text-right">
-        <h2 className="text-xl font-bold text-white mb-2">
+        <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>
           سلتك فارغة حاليًا
         </h2>
-
         <p className="text-xs text-neutral-400 mb-6">
           أضف بعض قطع الستريت وير إلى سلتك للمتابعة لإتمام الطلب.
         </p>
-
         <button
           onClick={() => onNavigate('/products')}
-          className="py-2.5 px-6 bg-white text-black font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors"
+          className={`py-3 px-6 rounded-full font-bold text-xs transition-all shadow-md cursor-pointer ${
+            isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'
+          }`}
         >
           تصفح الموديلات الآن
         </button>
@@ -161,268 +212,236 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-right">
-      {/* Breadcrumb */}
-      <button
-        onClick={() => onNavigate('/products')}
-        className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white mb-6 transition-colors"
-      >
-        <ArrowRight className="w-4 h-4" />
-        <span>متابعة التسوق</span>
-      </button>
-
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 text-right">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-          إتمام الطلب (الدفع عند الاستلام)
+        <button
+          onClick={() => onNavigate('/cart')}
+          className="text-xs text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1.5 mb-3 transition-colors cursor-pointer"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>الرجوع إلى سلة المشتريات</span>
+        </button>
+        <h1 className={`text-2xl sm:text-3xl font-black ${isDark ? 'text-white' : 'text-black'}`}>
+          إتمام الطلب
         </h1>
-
         <p className="text-xs text-neutral-400 mt-1">
-          لا تحتاج لإنشاء حساب. فقط املأ بيانات التوصيل وسنقوم بتجهيز شحنتك
-          فورًا.
+          الدفع عند الاستلام كاش · معاينة مجانية للطلب قبل الاستلام والدفع
         </p>
       </div>
 
       {submitError && (
-        <div className="mb-6 p-4 rounded-xl bg-red-950/60 border border-red-800 text-red-200 text-xs leading-relaxed">
-          {submitError}
+        <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-800/80 text-red-200 text-xs flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+          <span>{submitError}</span>
         </div>
       )}
 
-      <form
-        noValidate
-        onSubmit={handleSubmitOrder}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-      >
-        {/* Left: Delivery Details Form */}
+      <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left: Customer & Delivery Info */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
-            <h2 className="text-base font-bold text-white border-b border-neutral-800/80 pb-3 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-neutral-300" />
-              <span>بيانات التوصيل والشحن</span>
+          <div
+            className={`p-5 sm:p-6 rounded-2xl border transition-colors ${
+              isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+            }`}
+          >
+            <h2 className={`text-base font-bold pb-3 border-b mb-5 ${
+              isDark ? 'text-white border-neutral-800' : 'text-black border-neutral-100'
+            }`}>
+              بيانات المستلم وعنوان التوصيل
             </h2>
 
-            {/* Customer Name */}
-            <div>
-              <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                الاسم بالكامل <span className="text-red-400">*</span>
-              </label>
-
-              <input
-                type="text"
-                required
-                placeholder="الاسم بالكامل"
-                value={formData.customer_name}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    customer_name: e.target.value,
-                  })
-                }
-                className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                  errors.customer_name
-                    ? 'border-red-500'
-                    : 'border-neutral-800 focus:border-white'
-                }`}
-              />
-
-              {errors.customer_name && (
-                <p className="text-[11px] text-red-400 mt-1">
-                  {errors.customer_name}
-                </p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                رقم الهاتف المحمول (لتأكيد الشحن){' '}
-                <span className="text-red-400">*</span>
-              </label>
-
-              <input
-                type="tel"
-                required
-                placeholder="01012345678"
-                dir="ltr"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    phone: e.target.value,
-                  })
-                }
-                className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 text-right focus:outline-none transition-colors font-mono ${
-                  errors.phone
-                    ? 'border-red-500'
-                    : 'border-neutral-800 focus:border-white'
-                }`}
-              />
-
-              {errors.phone && (
-                <p className="text-[11px] text-red-400 mt-1">
-                  {errors.phone}
-                </p>
-              )}
-
-              <p className="text-[10px] text-neutral-500 mt-1">
-                سيتصل بك مندوب الشحن على هذا الرقم لتنسيق ميعاد التسليم.
-              </p>
-            </div>
-
-            {/* Governorate & City */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* Full Name */}
               <div>
-                <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                  المحافظة <span className="text-red-400">*</span>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                  الاسم بالكامل (ثلاثي) <span className="text-red-400">*</span>
                 </label>
-
-                <select
-                  value={formData.governorate}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      governorate: e.target.value,
-                    })
-                  }
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2.5 px-3 text-xs text-white focus:outline-none focus:border-white"
-                >
-                  {EGYPTIAN_GOVERNORATES.map((gov) => (
-                    <option
-                      key={gov.id}
-                      value={gov.id}
-                      className="bg-neutral-900 text-white"
-                    >
-                      {gov.nameAr}
-                    </option>
-                  ))}
-                </select>
-
-                {errors.governorate && (
-                  <p className="text-[11px] text-red-400 mt-1">
-                    {errors.governorate}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                  المدينة / المركز / الحي{' '}
-                  <span className="text-red-400">*</span>
-                </label>
-
                 <input
                   type="text"
                   required
-                  placeholder="مثال: مدينة نصر / الدقي / سموحة"
-                  value={formData.city}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      city: e.target.value,
-                    })
-                  }
-                  className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                    errors.city
+                  placeholder="مثال: يوسف أحمد البدير"
+                  value={formData.customer_name}
+                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                    errors.customer_name
                       ? 'border-red-500'
-                      : 'border-neutral-800 focus:border-white'
+                      : isDark
+                      ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                      : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                   }`}
                 />
-
-                {errors.city && (
-                  <p className="text-[11px] text-red-400 mt-1">
-                    {errors.city}
-                  </p>
+                {errors.customer_name && (
+                  <p className="text-[11px] text-red-400 mt-1">{errors.customer_name}</p>
                 )}
               </div>
-            </div>
 
-            {/* Detailed Address */}
-            <div>
-              <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                العنوان بالتفصيل <span className="text-red-400">*</span>
-              </label>
-
-              <textarea
-                rows={2}
-                required
-                placeholder="اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة قريبة..."
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    address: e.target.value,
-                  })
-                }
-                className={`w-full bg-neutral-900 border rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition-colors ${
-                  errors.address
-                    ? 'border-red-500'
-                    : 'border-neutral-800 focus:border-white'
-                }`}
-              />
-
-              {errors.address && (
-                <p className="text-[11px] text-red-400 mt-1">
-                  {errors.address}
+              {/* Egyptian Mobile Phone */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                  رقم الهاتف المحمول <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="01012345678"
+                  dir="ltr"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right font-mono focus:outline-none transition-colors border ${
+                    errors.phone
+                      ? 'border-red-500'
+                      : isDark
+                      ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                      : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
+                  }`}
+                />
+                {errors.phone && (
+                  <p className="text-[11px] text-red-400 mt-1">{errors.phone}</p>
+                )}
+                <p className="text-[10px] text-neutral-400 mt-1">
+                  سيتصل بك مندوب الشحن على هذا الرقم لتنسيق ميعاد التسليم.
                 </p>
-              )}
-            </div>
+              </div>
 
-            {/* Order Notes */}
-            <div>
-              <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                ملاحظات خاصة بالشحن (اختياري)
-              </label>
+              {/* Governorate (Dynamic shipping rate) & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                    المحافظة <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={formData.governorate}
+                    onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
+                    className={`w-full rounded-xl py-2.5 px-3 text-xs focus:outline-none border transition-colors ${
+                      errors.governorate
+                        ? 'border-red-500'
+                        : isDark
+                        ? 'bg-neutral-900 border-neutral-800 text-white focus:border-white'
+                        : 'bg-neutral-50 border-neutral-300 text-black focus:border-black'
+                    }`}
+                  >
+                    {EGYPTIAN_GOVERNORATES.map((gov) => {
+                      const rate = shippingRates.find((r) => r.governorate === gov.nameAr);
+                      const feeText = rate ? ` · ${rate.shipping_fee} ج.م` : '';
+                      const inactiveText = rate && !rate.is_active ? ' (غير متاح)' : '';
+                      return (
+                        <option
+                          key={gov.id}
+                          value={gov.id}
+                          disabled={rate && !rate.is_active}
+                          className={isDark ? 'bg-neutral-900 text-white' : 'bg-white text-black'}
+                        >
+                          {gov.nameAr} {feeText} {inactiveText}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.governorate && (
+                    <p className="text-[11px] text-red-400 mt-1">{errors.governorate}</p>
+                  )}
+                  {!isGovAvailable && (
+                    <p className="text-[11px] text-red-400 mt-1">
+                      الشحن لهذه المحافظة غير متاح حاليًا.
+                    </p>
+                  )}
+                </div>
 
-              <input
-                type="text"
-                placeholder="مثال: الاتصال قبل الوصول بنصف ساعة، التوصيل بعد الساعة 3 مساءً..."
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notes: e.target.value,
-                  })
-                }
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2.5 px-3.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
-              />
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                    المدينة / المركز / الحي <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: مدينة نصر / المنصورة / سموحة"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                      errors.city
+                        ? 'border-red-500'
+                        : isDark
+                        ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                        : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
+                    }`}
+                  />
+                  {errors.city && (
+                    <p className="text-[11px] text-red-400 mt-1">{errors.city}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Detailed Street Address */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                  العنوان بالتفصيل <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="اسم الشارع، رقم العمارة، الدور، رقم الشقة، علامة مميزة"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                    errors.address
+                      ? 'border-red-500'
+                      : isDark
+                      ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                      : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
+                  }`}
+                />
+                {errors.address && (
+                  <p className="text-[11px] text-red-400 mt-1">{errors.address}</p>
+                )}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                  ملاحظات إضافية للتوصيل (اختياري)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="أي تعليمات للمندوب مثل مواعيد الاتصال أو علامة مميزة بجوار المنزل"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className={`w-full rounded-xl py-2 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                    isDark
+                      ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                      : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
+                  }`}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Payment Method Notice */}
-          <div className="p-5 rounded-2xl bg-[#121216] border border-neutral-800 space-y-3">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Lock className="w-4 h-4 text-emerald-400" />
-              <span>طريقة الدفع: الدفع عند الاستلام فقط (COD)</span>
-            </h2>
-
-            <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800/80 space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>لا تحتاج لبطاقة بنكية أو دفع إلكتروني مسبق.</span>
+          {/* Payment Method Badge */}
+          <div
+            className={`p-4 rounded-2xl border flex items-center justify-between ${
+              isDark ? 'bg-neutral-900/50 border-neutral-800 text-white' : 'bg-neutral-50 border-neutral-200 text-black'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" />
+              <div>
+                <span className="text-xs font-bold block">الدفع عند الاستلام كاش (COD)</span>
+                <span className="text-[11px] text-neutral-400">تدفع ثمن طلبك للمندوب بعد معاينة الشحنة والتأكد من مطابقتها.</span>
               </div>
-
-              <p className="text-neutral-400 leading-relaxed">
-                ستقوم بسداد قيمة الطلب نقدًا للمندوب عند وصول الشحنة لك.
-              </p>
-
-              {settings?.inspection_available && (
-                <div className="pt-2 border-t border-neutral-900 text-neutral-300 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-
-                  <span>
-                    معاينة مجانية: يحق لك فتح الكيس والتأكد من الخامة والمقاس
-                    قبل دفع أي جنيه.
-                  </span>
-                </div>
-              )}
             </div>
+            <Lock className="w-4 h-4 text-neutral-400" />
           </div>
         </div>
 
-        {/* Right: Order Summary */}
+        {/* Right: Order Summary with Dynamic Shipping */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
-            <h2 className="text-base font-bold text-white border-b border-neutral-800 pb-3">
+          <div
+            className={`p-5 sm:p-6 rounded-2xl border space-y-4 transition-colors ${
+              isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+            }`}
+          >
+            <h2 className={`text-base font-bold pb-3 border-b ${
+              isDark ? 'text-white border-neutral-800' : 'text-black border-neutral-100'
+            }`}>
               ملخص طلبك ({items.length} منتجات)
             </h2>
 
@@ -433,18 +452,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <img
                     src={
                       item.product.images?.[0]?.image_url ||
-                      '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg'
+                      '/images/product_boxfit_tee_black_1790342911897.jpg'
                     }
                     alt={item.product.name}
-                    className="w-12 h-14 object-cover rounded bg-neutral-950 border border-neutral-800 shrink-0"
+                    className="w-12 h-14 object-cover rounded-lg bg-neutral-900 border border-neutral-800 shrink-0"
                   />
-
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-bold text-white line-clamp-1">
+                      <h4 className={`font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-black'}`}>
                         {item.product.name}
                       </h4>
-
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
                         <span>{item.color}</span>
                         <span>·</span>
@@ -453,8 +470,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <span>الكمية: {item.quantity}</span>
                       </div>
                     </div>
-
-                    <div className="font-mono-numbers font-bold text-white">
+                    <div className="font-mono-numbers font-bold">
                       {formatPrice(item.unitPrice * item.quantity)}
                     </div>
                   </div>
@@ -462,28 +478,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               ))}
             </div>
 
-            {/* Cost breakdown */}
-            <div className="pt-3 border-t border-neutral-800/80 space-y-2 text-xs">
-              <div className="flex justify-between text-neutral-400">
+            {/* Dynamic Cost breakdown */}
+            <div className={`pt-3 border-t space-y-2 text-xs ${
+              isDark ? 'border-neutral-800/80 text-neutral-400' : 'border-neutral-100 text-neutral-600'
+            }`}>
+              <div className="flex justify-between">
                 <span>قيمة المشتريات:</span>
-
-                <span className="font-mono-numbers text-white font-medium">
+                <span className={`font-mono-numbers font-medium ${isDark ? 'text-white' : 'text-black'}`}>
                   {formatPrice(subtotal)}
                 </span>
               </div>
 
-              <div className="flex justify-between text-neutral-400">
-                <span>مصاريف الشحن لجميع المحافظات:</span>
-
-                <span className="font-mono-numbers text-white font-medium">
-                  {formatPrice(shippingFee)}
+              <div className="flex justify-between">
+                <span>مصاريف الشحن ({selectedGovNameAr}):</span>
+                <span className={`font-mono-numbers font-medium ${isDark ? 'text-white' : 'text-black'}`}>
+                  {ratesLoading ? 'جاري الحساب...' : formatPrice(shippingFee)}
                 </span>
               </div>
 
-              <div className="pt-2 border-t border-neutral-800 flex justify-between text-base font-extrabold text-white">
+              <div className={`pt-2 border-t flex justify-between text-base font-extrabold ${
+                isDark ? 'border-neutral-800 text-white' : 'border-neutral-100 text-black'
+              }`}>
                 <span>الإجمالي عند الاستلام:</span>
-
-                <span className="font-mono-numbers text-lg text-white">
+                <span className="font-mono-numbers text-lg">
                   {formatPrice(grandTotal)}
                 </span>
               </div>
@@ -492,11 +509,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             {/* Submit button */}
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-4 px-6 bg-white hover:bg-neutral-200 text-black font-extrabold text-sm sm:text-base rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              disabled={isSubmitting || !isGovAvailable}
+              className={`w-full py-4 px-6 font-extrabold text-sm sm:text-base rounded-full transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50 ${
+                isDark
+                  ? 'bg-white text-black hover:bg-neutral-200'
+                  : 'bg-black text-white hover:bg-neutral-800'
+              }`}
             >
               {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   <span>تأكيد الطلب الآن (دفع عند الاستلام)</span>
@@ -505,9 +526,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               )}
             </button>
 
-            <p className="text-[11px] text-center text-neutral-500">
-              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع
-              الخاصة بـ Outfit Zone.
+            <p className="text-[10px] text-center text-neutral-400">
+              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع الخاصة بـ Outfit Zone.
             </p>
           </div>
         </div>

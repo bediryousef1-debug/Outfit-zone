@@ -6,10 +6,12 @@ import {
   OrderCreateResponse,
   OrderReceipt,
   Product,
+  ShippingRate,
   StoreContent,
   StoreSettings,
 } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { EGYPTIAN_GOVERNORATES } from '../utils/constants';
 
 const API_BASE = '/api';
 
@@ -72,6 +74,85 @@ export const api = {
       cod_message: 'الدفع عند الاستلام فقط لجميع المحافظات داخل مصر.',
       updated_at: new Date().toISOString(),
     };
+  },
+
+  // 1b. Fetch Shipping Rates per Governorate
+  async getShippingRates(includeInactive = false): Promise<ShippingRate[]> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let query = supabase
+          .from('shipping_rates')
+          .select('*')
+          .order('governorate', { ascending: true });
+
+        if (!includeInactive) {
+          query = query.eq('is_active', true);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data && data.length > 0) {
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase getShippingRates notice:', err);
+      }
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json) && json.length > 0) return json;
+      }
+    } catch {}
+
+    // Fallback to standard 27 governorates
+    return EGYPTIAN_GOVERNORATES.map((gov) => ({
+      id: `sr_${gov.id}`,
+      governorate: gov.nameAr,
+      shipping_fee: 65,
+      is_active: true,
+    }));
+  },
+
+  // 1c. Admin: Update Shipping Rate
+  async adminUpdateShippingRate(
+    id: string,
+    updates: Partial<ShippingRate>
+  ): Promise<ShippingRate> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('shipping_rates')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (!error && data) return data;
+        if (error) throw new Error(error.message);
+      } catch (err: any) {
+        console.warn('Supabase adminUpdateShippingRate notice:', err);
+        if (err?.message) throw err;
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/shipping-rates/${id}`, {
+      method: 'PUT',
+      headers: authHeaders,
+      body: JSON.stringify(updates),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل تحديث سعر الشحن');
+    }
+    return await res.json();
   },
 
   // 2. Fetch Categories

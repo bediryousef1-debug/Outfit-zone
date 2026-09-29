@@ -2,7 +2,7 @@ import React from 'react';
 
 interface OutfitZoneLogoProps {
   className?: string;
-  variant?: 'stacked' | 'horizontal' | 'mark';
+  variant?: 'stacked' | 'horizontal' | 'mark' | 'center-editorial';
   iconSize?: number;
   textColor?: string;
 }
@@ -53,6 +53,22 @@ export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
         <path d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z" fill="#0c0c0e" />
         <rect x="20" y="93" width="160" height="10" rx="5" />
       </svg>
+    );
+  }
+
+  if (variant === 'center-editorial') {
+    return (
+      <div className={`flex flex-col items-center justify-center text-center select-none ${className}`}>
+        <div className="font-syne font-black tracking-[0.2em] text-lg sm:text-2xl leading-none uppercase">
+          OUTFIT
+        </div>
+        <div className="font-syne font-black tracking-[0.25em] text-lg sm:text-2xl leading-none uppercase mt-0.5">
+          ZONE
+        </div>
+        <div className="text-[7px] sm:text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-semibold mt-1">
+          WEAR IN THE ZONE
+        </div>
+      </div>
     );
   }
 

@@ -1,0 +1,166 @@
+[
+  {
+    "id": "sr_cairo",
+    "governorate": "القاهرة",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_giza",
+    "governorate": "الجيزة",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_alexandria",
+    "governorate": "الإسكندرية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_qalyubia",
+    "governorate": "القليوبية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_sharqia",
+    "governorate": "الشرقية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_dakahlia",
+    "governorate": "الدقهلية",
+    "shipping_fee": 80,
+    "is_active": true,
+    "updated_at": "2026-09-29T10:22:06.644Z"
+  },
+  {
+    "id": "sr_gharbia",
+    "governorate": "الغربية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_monufia",
+    "governorate": "المنوفية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_beheira",
+    "governorate": "البحيرة",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_kafr_el_sheikh",
+    "governorate": "كفر الشيخ",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_damietta",
+    "governorate": "دمياط",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_port_said",
+    "governorate": "بورسعيد",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_ismailia",
+    "governorate": "الإسماعيلية",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_suez",
+    "governorate": "السويس",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_fayoum",
+    "governorate": "الفيوم",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_beni_suef",
+    "governorate": "بني سويف",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_minya",
+    "governorate": "المنيا",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_asyut",
+    "governorate": "أسيوط",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_sohag",
+    "governorate": "سوهاج",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_qena",
+    "governorate": "قنا",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_luxor",
+    "governorate": "الأقصر",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_aswan",
+    "governorate": "أسوان",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_red_sea",
+    "governorate": "البحر الأحمر",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_new_valley",
+    "governorate": "الوادي الجديد",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_matrouh",
+    "governorate": "مطروح",
+    "shipping_fee": 65,
+    "is_active": true,
+    "updated_at": "2026-09-29T10:23:10.639Z"
+  },
+  {
+    "id": "sr_north_sinai",
+    "governorate": "شمال سيناء",
+    "shipping_fee": 65,
+    "is_active": true
+  },
+  {
+    "id": "sr_south_sinai",
+    "governorate": "جنوب سيناء",
+    "shipping_fee": 65,
+    "is_active": true
+  }
+]

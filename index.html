@@ -13,8 +13,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('oz_theme');
+          var isDark = false;
+          if (saved === 'dark' || saved === 'light') {
+            isDark = (saved === 'dark');
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            isDark = true;
+          }
+          var root = document.documentElement;
+          if (isDark) {
+            root.classList.add('dark');
+            root.classList.remove('light');
+          } else {
+            root.classList.add('light');
+            root.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#0c0c0e] text-[#ededed] antialiased selection:bg-neutral-800 selection:text-white min-h-screen">
+  <body class="antialiased min-h-screen transition-colors duration-200 bg-[#f9f9fb] text-[#09090b] dark:bg-[#0c0c0e] dark:text-[#ededed] selection:bg-neutral-200 selection:text-black dark:selection:bg-neutral-800 dark:selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

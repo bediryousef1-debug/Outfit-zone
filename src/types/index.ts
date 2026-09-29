@@ -102,6 +102,15 @@ export type OrderReceipt = Partial<Order> & {
   has_full_access: boolean;
 };
 
+export interface ShippingRate {
+  id: string;
+  governorate: string;
+  shipping_fee: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface StoreSettings {
   id: string;
   store_name: string;

@@ -1,7 +1,9 @@
 import React from 'react';
+import { Heart } from 'lucide-react';
 import { Product } from '../../types';
 import { formatPrice } from '../../utils/constants';
 import { resolveImageUrl } from '../../utils/imageHelper';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +11,8 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
+  const { isDark } = useTheme();
+
   const rawImage =
     product.images?.find((img) => img.is_primary)?.image_url ||
     product.images?.[0]?.image_url;
@@ -30,7 +34,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   return (
     <div
       onClick={() => onSelect(product.slug)}
-      className="group cursor-pointer flex flex-col bg-[#121215] border border-neutral-800/80 rounded-xl overflow-hidden hover:border-neutral-700 transition-all duration-200"
+      className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden border transition-all duration-300 ${
+        isDark
+          ? 'bg-[#121216] border-neutral-800/80 hover:border-neutral-600 shadow-md'
+          : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+      }`}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -40,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       }}
     >
       {/* Product Image Slot */}
-      <div className="relative aspect-[3/4] w-full bg-[#18181c] overflow-hidden">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-900/10">
         <img
           src={primaryImage}
           alt={product.name}
@@ -49,56 +57,79 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
-        {/* Status flags: Clean, subtle text label */}
+        {/* Status flags */}
         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 items-end">
           {isOutOfStock ? (
-            <span className="text-[11px] font-semibold bg-neutral-900/90 text-neutral-400 px-2 py-0.5 rounded backdrop-blur-sm">
+            <span className="text-[10px] font-bold bg-neutral-900/90 text-neutral-300 px-2 py-0.5 rounded-full backdrop-blur-sm">
               نفد من المخزون
             </span>
           ) : product.is_new ? (
-            <span className="text-[11px] font-semibold bg-white text-black px-2 py-0.5 rounded shadow-sm">
-              وصل حديثًا
+            <span className="text-[10px] font-bold bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider">
+              NEW
             </span>
           ) : null}
 
           {hasDiscount && !isOutOfStock && (
-            <span className="text-[11px] font-semibold bg-red-950/80 text-red-200 border border-red-800/50 px-1.5 py-0.5 rounded font-mono-numbers">
+            <span className="text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded-full font-mono-numbers shadow-sm">
               -{discountPercent}%
             </span>
           )}
         </div>
+
+        {/* Favorite Heart Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          className={`absolute top-2.5 left-2.5 p-1.5 rounded-full backdrop-blur-md transition-all ${
+            isDark
+              ? 'bg-black/40 text-neutral-300 hover:text-red-400 hover:bg-black/70'
+              : 'bg-white/70 text-neutral-600 hover:text-red-500 hover:bg-white'
+          }`}
+          aria-label="إضافة للمفضلة"
+        >
+          <Heart className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Card Info */}
       <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-2 text-right">
         <div>
-          {/* Category / Style (Unboxed metadata with typographic separator) */}
-          <div className="text-[11px] text-neutral-500 mb-1 flex items-center gap-1.5">
+          {/* Category / Style */}
+          <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-1 flex items-center gap-1.5 font-medium">
             <span>{product.category?.name || 'ستريت وير'}</span>
             <span aria-hidden="true">·</span>
             <span>قطن مصري</span>
           </div>
 
-          <h3 className="text-sm sm:text-base font-semibold text-neutral-100 group-hover:text-white transition-colors line-clamp-1">
+          <h3
+            className={`text-sm sm:text-base font-bold transition-colors line-clamp-1 ${
+              isDark ? 'text-white group-hover:text-neutral-200' : 'text-neutral-900 group-hover:text-black'
+            }`}
+          >
             {product.name}
           </h3>
         </div>
 
         {/* Pricing & Stock status */}
-        <div className="pt-1 border-t border-neutral-800/60 flex items-baseline justify-between">
+        <div className={`pt-2 border-t flex items-baseline justify-between ${
+          isDark ? 'border-neutral-800/80' : 'border-neutral-100'
+        }`}>
           <div className="flex items-baseline gap-2">
-            <span className="text-sm sm:text-base font-bold text-white font-mono-numbers">
+            <span className={`text-sm sm:text-base font-extrabold font-mono-numbers ${
+              isDark ? 'text-white' : 'text-black'
+            }`}>
               {formatPrice(product.price)}
             </span>
             {hasDiscount && (
-              <span className="text-xs text-neutral-500 line-through font-mono-numbers">
+              <span className="text-xs text-neutral-400 line-through font-mono-numbers">
                 {formatPrice(product.compare_at_price!)}
               </span>
             )}
           </div>
 
-          <span className="text-[11px] text-neutral-400 font-medium">
-            عرض المقاسات ←
+          <span className="text-[10px] text-neutral-400 font-medium">
+            {isOutOfStock ? 'غير متوفر' : 'متوفر بالمقاسات'}
           </span>
         </div>
       </div>

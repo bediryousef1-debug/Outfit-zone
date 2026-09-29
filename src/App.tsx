@@ -2,8 +2,11 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { SocialBar } from './components/layout/SocialBar';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { CartDrawer } from './components/cart/CartDrawer';
 import { HomePage } from './pages/HomePage';
@@ -44,6 +47,7 @@ function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const { content } = useStore();
   const { itemCount, isCartOpen, setIsCartOpen } = useCart();
+  const { isDark } = useTheme();
 
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
@@ -240,7 +244,13 @@ function AppContent() {
   // CUSTOMER STOREFRONT ROUTES
   // ==============================================================================
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-white flex flex-col font-sans selection:bg-neutral-800 selection:text-white">
+    <div
+      className={`min-h-screen flex flex-col font-sans transition-colors ${
+        isDark
+          ? 'bg-[#09090b] text-[#f4f4f5] selection:bg-neutral-800 selection:text-white'
+          : 'bg-[#f9f9fb] text-[#09090b] selection:bg-neutral-200 selection:text-black'
+      }`}
+    >
       {/* Customer Header */}
       <Header
         itemCount={itemCount}
@@ -251,7 +261,7 @@ function AppContent() {
       />
 
       {/* Main Storefront Views */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-24 md:pb-16">
         {/* / (Home) */}
         {currentPath === '/' && (
           <HomePage
@@ -325,8 +335,10 @@ function AppContent() {
       {/* Customer Footer */}
       <Footer onNavigate={(path) => navigate(path)} />
 
-      {/* Floating Elements (WhatsApp & Cart Drawer) */}
+      {/* Floating Elements (WhatsApp, Social Bar & Cart Drawer) */}
       <WhatsAppFloatingButton />
+      <SocialBar variant="floating-mobile" />
+      <MobileBottomNav currentPath={currentPath} onNavigate={(path) => navigate(path)} />
       <CartDrawer onNavigate={(path) => navigate(path)} />
     </div>
   );
@@ -334,13 +346,15 @@ function AppContent() {
 
 export function App() {
   return (
-    <StoreProvider>
-      <CartProvider>
-        <AdminAuthProvider>
-          <AppContent />
-        </AdminAuthProvider>
-      </CartProvider>
-    </StoreProvider>
+    <ThemeProvider>
+      <StoreProvider>
+        <CartProvider>
+          <AdminAuthProvider>
+            <AppContent />
+          </AdminAuthProvider>
+        </CartProvider>
+      </StoreProvider>
+    </ThemeProvider>
   );
 }
 

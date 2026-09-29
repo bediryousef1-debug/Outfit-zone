@@ -3,11 +3,36 @@
 @layer base {
   :root {
     font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --bg-main: #f9f9fb;
+    --text-main: #09090b;
+    --bottom-nav-height: 0px;
+    --social-bar-height: 0px;
+    --social-bar-bottom: 24px;
+    --whatsapp-btn-bottom: calc(var(--social-bar-bottom) + var(--social-bar-height, 0px) + 12px);
+  }
+
+  @media (max-width: 767px) {
+    :root {
+      --bottom-nav-height: calc(56px + max(env(safe-area-inset-bottom, 0px), 8px));
+      --social-bar-bottom: calc(var(--bottom-nav-height) + 10px);
+      --whatsapp-btn-bottom: calc(var(--social-bar-bottom) + var(--social-bar-height, 0px) + 12px);
+    }
+  }
+
+  html.light {
+    --bg-main: #f9f9fb;
+    --text-main: #09090b;
+  }
+
+  html.dark {
+    --bg-main: #09090b;
+    --text-main: #f4f4f5;
   }
 
   body {
-    background-color: #0c0c0e;
-    color: #ededed;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Custom scrollbar */
@@ -16,14 +41,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #141417;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a2a30;
+    background: rgba(120, 120, 120, 0.3);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3c3c45;
+    background: rgba(120, 120, 120, 0.5);
   }
 }
 

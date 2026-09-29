@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { useTheme } from '../../context/ThemeContext';
 import { OutfitZoneLogo } from '../common/OutfitZoneLogo';
 
 interface FooterProps {
@@ -9,11 +10,18 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const { settings, content, socialLinks, contactSocial } = useStore();
+  const { isDark } = useTheme();
 
   const showTrust = content ? content.show_trust : true;
 
   return (
-    <footer className="bg-[#08080a] border-t border-neutral-900 text-neutral-400 mt-20">
+    <footer
+      className={`border-t mt-16 transition-colors ${
+        isDark
+          ? 'bg-black border-neutral-900 text-neutral-400'
+          : 'bg-neutral-100 border-neutral-200 text-neutral-600'
+      }`}
+    >
       {/* Trust Elements Section */}
       {showTrust && (
         <div className="border-b border-neutral-900 py-10 px-4 sm:px-6">

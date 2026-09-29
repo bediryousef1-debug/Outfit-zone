@@ -123,6 +123,19 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 9b. shipping_rates (Dynamic shipping rates per Egyptian governorate)
+CREATE TABLE IF NOT EXISTS public.shipping_rates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  governorate TEXT NOT NULL UNIQUE,
+  shipping_fee NUMERIC(10, 2) NOT NULL CHECK (shipping_fee >= 0),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_governorate ON public.shipping_rates(governorate);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_is_active ON public.shipping_rates(is_active);
+
 -- 10. store_content (Centralized CMS for storefront texts & sections)
 CREATE TABLE IF NOT EXISTS public.store_content (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -202,6 +215,7 @@ DECLARE
   v_order_id UUID;
   v_order_number TEXT;
   v_public_token TEXT;
+  v_receipt_token TEXT;
   v_subtotal NUMERIC(10, 2) := 0;
   v_shipping_fee NUMERIC(10, 2);
   v_total NUMERIC(10, 2) := 0;
@@ -224,10 +238,20 @@ BEGIN
     RAISE EXCEPTION 'Cart cannot be empty.';
   END IF;
 
-  -- 2. Fetch authoritative shipping fee from store_settings (no hardcoded fallback)
-  SELECT shipping_fee INTO v_shipping_fee FROM public.store_settings LIMIT 1;
+  -- 2. Fetch authoritative shipping fee from shipping_rates for governorate
+  SELECT sr.shipping_fee INTO v_shipping_fee
+  FROM public.shipping_rates sr
+  WHERE sr.governorate = trim(p_governorate) AND sr.is_active = TRUE
+  LIMIT 1;
+
   IF v_shipping_fee IS NULL THEN
-    RAISE EXCEPTION 'OZ_SHIPPING_SETTINGS_MISSING: Store shipping settings not configured in database.';
+    IF EXISTS (SELECT 1 FROM public.shipping_rates sr WHERE sr.governorate = trim(p_governorate)) THEN
+      RAISE EXCEPTION 'OZ_SHIPPING_GOVERNORATE_UNAVAILABLE';
+    ELSIF NOT EXISTS (SELECT 1 FROM public.shipping_rates LIMIT 1) THEN
+      RAISE EXCEPTION 'OZ_SHIPPING_SETTINGS_MISSING';
+    ELSE
+      RAISE EXCEPTION 'OZ_SHIPPING_GOVERNORATE_UNAVAILABLE';
+    END IF;
   END IF;
 
   -- 3. Pre-validate stock and recalculate subtotal using authoritative database values
@@ -277,6 +301,7 @@ BEGIN
   v_total := v_subtotal + v_shipping_fee;
   v_order_number := generate_order_number();
   v_public_token := encode(gen_random_bytes(24), 'hex');
+  v_receipt_token := encode(gen_random_bytes(24), 'hex');
 
   -- 4. Insert into orders table with public_token and receipt_token
   INSERT INTO public.orders (
@@ -296,13 +321,13 @@ BEGIN
   ) VALUES (
     v_order_number,
     v_public_token,
-    v_public_token,
+    v_receipt_token,
     trim(p_customer_name),
     trim(p_phone),
-    p_governorate,
+    trim(p_governorate),
     trim(p_city),
     trim(p_address),
-    p_notes,
+    NULLIF(trim(COALESCE(p_notes, '')), ''),
     v_subtotal,
     v_shipping_fee,
     v_total,
@@ -378,7 +403,7 @@ BEGIN
     'order_id', v_order_id,
     'order_number', v_order_number,
     'public_token', v_public_token,
-    'receipt_token', v_public_token,
+    'receipt_token', v_receipt_token,
     'subtotal', v_subtotal,
     'shipping_fee', v_shipping_fee,
     'total', v_total
@@ -713,6 +738,18 @@ CREATE POLICY "Public can read store settings" ON public.store_settings
 
 CREATE POLICY "Admins can update store settings" ON public.store_settings
   FOR UPDATE TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- 9b. shipping_rates policies:
+ALTER TABLE public.shipping_rates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view active shipping rates" ON public.shipping_rates
+  FOR SELECT TO public
+  USING (is_active = true);
+
+CREATE POLICY "Admins have full access to shipping rates" ON public.shipping_rates
+  FOR ALL TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 

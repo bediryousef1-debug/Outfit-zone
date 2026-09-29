@@ -147,6 +147,15 @@ interface OrderStatusHistoryRecord {
   changed_by: string;
 }
 
+interface ShippingRateRecord {
+  id: string;
+  governorate: string;
+  shipping_fee: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface StoreSettingsRecord {
   id: string;
   store_name: string;
@@ -331,6 +340,7 @@ const db = {
   orders: [] as OrderRecord[],
   order_items: [] as OrderItemRecord[],
   order_status_history: [] as OrderStatusHistoryRecord[],
+  shipping_rates: [] as ShippingRateRecord[],
 };
 
 // ==============================================================================
@@ -452,6 +462,41 @@ function initializeCatalog() {
 
   if (persistedSocial) {
     db.contact_social = persistedSocial;
+  }
+
+  const defaultShippingRates: ShippingRateRecord[] = [
+    { id: 'sr_cairo', governorate: 'القاهرة', shipping_fee: 65, is_active: true },
+    { id: 'sr_giza', governorate: 'الجيزة', shipping_fee: 65, is_active: true },
+    { id: 'sr_alexandria', governorate: 'الإسكندرية', shipping_fee: 65, is_active: true },
+    { id: 'sr_qalyubia', governorate: 'القليوبية', shipping_fee: 65, is_active: true },
+    { id: 'sr_sharqia', governorate: 'الشرقية', shipping_fee: 65, is_active: true },
+    { id: 'sr_dakahlia', governorate: 'الدقهلية', shipping_fee: 65, is_active: true },
+    { id: 'sr_gharbia', governorate: 'الغربية', shipping_fee: 65, is_active: true },
+    { id: 'sr_monufia', governorate: 'المنوفية', shipping_fee: 65, is_active: true },
+    { id: 'sr_beheira', governorate: 'البحيرة', shipping_fee: 65, is_active: true },
+    { id: 'sr_kafr_el_sheikh', governorate: 'كفر الشيخ', shipping_fee: 65, is_active: true },
+    { id: 'sr_damietta', governorate: 'دمياط', shipping_fee: 65, is_active: true },
+    { id: 'sr_port_said', governorate: 'بورسعيد', shipping_fee: 65, is_active: true },
+    { id: 'sr_ismailia', governorate: 'الإسماعيلية', shipping_fee: 65, is_active: true },
+    { id: 'sr_suez', governorate: 'السويس', shipping_fee: 65, is_active: true },
+    { id: 'sr_fayoum', governorate: 'الفيوم', shipping_fee: 65, is_active: true },
+    { id: 'sr_beni_suef', governorate: 'بني سويف', shipping_fee: 65, is_active: true },
+    { id: 'sr_minya', governorate: 'المنيا', shipping_fee: 65, is_active: true },
+    { id: 'sr_asyut', governorate: 'أسيوط', shipping_fee: 65, is_active: true },
+    { id: 'sr_sohag', governorate: 'سوهاج', shipping_fee: 65, is_active: true },
+    { id: 'sr_qena', governorate: 'قنا', shipping_fee: 65, is_active: true },
+    { id: 'sr_luxor', governorate: 'الأقصر', shipping_fee: 65, is_active: true },
+    { id: 'sr_aswan', governorate: 'أسوان', shipping_fee: 65, is_active: true },
+    { id: 'sr_red_sea', governorate: 'البحر الأحمر', shipping_fee: 65, is_active: true },
+    { id: 'sr_new_valley', governorate: 'الوادي الجديد', shipping_fee: 65, is_active: true },
+    { id: 'sr_matrouh', governorate: 'مطروح', shipping_fee: 65, is_active: true },
+    { id: 'sr_north_sinai', governorate: 'شمال سيناء', shipping_fee: 65, is_active: true },
+    { id: 'sr_south_sinai', governorate: 'جنوب سيناء', shipping_fee: 65, is_active: true }
+  ];
+  db.shipping_rates = loadFromFile<ShippingRateRecord[]>('shipping_rates.json', defaultShippingRates);
+  if (!db.shipping_rates || db.shipping_rates.length === 0) {
+    db.shipping_rates = defaultShippingRates;
+    saveToFile('shipping_rates.json', defaultShippingRates);
   }
 
   if (persistedProducts.length > 0) {
@@ -843,6 +888,97 @@ app.get(
     }
 
     res.json(db.store_settings);
+  }
+);
+
+// 1b. Shipping Rates per Governorate
+
+app.get(
+  '/api/shipping-rates',
+  async (req: Request, res: Response) => {
+    const includeInactive = req.query.all === 'true';
+
+    if (supabaseClient) {
+      try {
+        let query = supabaseClient
+          .from('shipping_rates')
+          .select('*')
+          .order('governorate', { ascending: true });
+
+        if (!includeInactive) {
+          query = query.eq('is_active', true);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data && data.length > 0) {
+          return res.json(data);
+        }
+      } catch (err) {
+        console.warn('Supabase shipping_rates query notice:', err);
+      }
+    }
+
+    const rates = includeInactive
+      ? db.shipping_rates
+      : db.shipping_rates.filter((r) => r.is_active);
+
+    res.json(rates);
+  }
+);
+
+app.put(
+  '/api/admin/shipping-rates/:id',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { shipping_fee, is_active } = req.body;
+
+    if (supabaseClient) {
+      try {
+        const updates: any = {
+          updated_at: new Date().toISOString(),
+        };
+        if (shipping_fee !== undefined) {
+          updates.shipping_fee = Number(shipping_fee);
+        }
+        if (is_active !== undefined) {
+          updates.is_active = Boolean(is_active);
+        }
+
+        const { data, error } = await supabaseClient
+          .from('shipping_rates')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          const idx = db.shipping_rates.findIndex((r) => r.id === id);
+          if (idx > -1) db.shipping_rates[idx] = data;
+          saveToFile('shipping_rates.json', db.shipping_rates);
+          return res.json(data);
+        }
+      } catch (err) {
+        console.warn('Supabase update shipping_rates notice:', err);
+      }
+    }
+
+    const rate = db.shipping_rates.find((r) => r.id === id);
+    if (!rate) {
+      return res.status(404).json({ error: 'سعر الشحن غير موجود' });
+    }
+
+    if (shipping_fee !== undefined) {
+      rate.shipping_fee = Number(shipping_fee);
+    }
+    if (is_active !== undefined) {
+      rate.is_active = Boolean(is_active);
+    }
+    rate.updated_at = new Date().toISOString();
+
+    saveToFile('shipping_rates.json', db.shipping_rates);
+    res.json(rate);
   }
 );
 
@@ -1901,6 +2037,24 @@ app.post(
 
           return res.json(data);
         }
+
+        if (error) {
+          const errMsg = error.message || '';
+          if (
+            errMsg.includes('OZ_SHIPPING_GOVERNORATE_UNAVAILABLE') ||
+            errMsg.includes('OZ_SHIPPING_SETTINGS_MISSING')
+          ) {
+            return res.status(400).json({
+              error:
+                'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+            });
+          }
+          if (errMsg.includes('OZ_INSUFFICIENT_STOCK')) {
+            return res.status(400).json({
+              error: 'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
+            });
+          }
+        }
       } catch (rpcErr) {
         console.warn(
           'Supabase RPC execution warning, continuing with server order engine:',
@@ -1915,9 +2069,21 @@ app.post(
 
     let subtotal = 0;
 
-    const shippingFee =
-      db.store_settings.shipping_fee ||
-      65;
+    const cleanGov = (customer.governorate || '').trim();
+    const rateRecord = (db.shipping_rates || []).find(
+      (r) => r.governorate === cleanGov
+    );
+
+    if (rateRecord && !rateRecord.is_active) {
+      return res.status(400).json({
+        error:
+          'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+      });
+    }
+
+    const shippingFee = rateRecord
+      ? Number(rateRecord.shipping_fee)
+      : Number(db.store_settings.shipping_fee) || 65;
 
     const validatedItems: {
       variant: ProductVariantRecord;
