@@ -1577,65 +1577,97 @@ app.post(
 app.post(
   '/api/admin/verify',
   async (req: Request, res: Response) => {
-    const { email } = req.body;
+    const authHeader = req.headers.authorization;
 
-    if (!email) {
-      return res.status(400).json({
-        error:
-          'البريد الإلكتروني مطلوب.',
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({
+        authorized: false,
+        error: 'غير مصرح لك بالوصول.',
       });
     }
 
-    const cleanEmail =
-      email.toLowerCase().trim();
+    const accessToken = authHeader
+      .slice(7)
+      .trim();
 
-    if (supabaseClient) {
-      try {
-        const { data, error } =
-          await supabaseClient
-            .from('admin_users')
-            .select(
-              'id, email, created_at'
-            )
-            .ilike(
-              'email',
-              cleanEmail
-            )
-            .maybeSingle();
-
-        if (!error && data) {
-          return res.json({
-            authorized: true,
-            user: data,
-          });
-        }
-      } catch {
-        // Continue to local check
-      }
+    if (!accessToken) {
+      return res.status(401).json({
+        authorized: false,
+        error: 'جلسة الدخول غير صالحة.',
+      });
     }
 
-    const admin =
-      db.admin_users.find(
-        (u) =>
-          u.email.toLowerCase() ===
-          cleanEmail
+    if (!supabaseClient) {
+      return res.status(503).json({
+        authorized: false,
+        error: 'خدمة المصادقة غير متاحة.',
+      });
+    }
+
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseClient.auth.getUser(
+        accessToken
       );
 
-    if (admin) {
+      if (authError || !user?.email) {
+        return res.status(401).json({
+          authorized: false,
+          error: 'جلسة الدخول غير صالحة.',
+        });
+      }
+
+      const { data: adminRecord, error } =
+        await supabaseClient
+          .from('admin_users')
+          .select(
+            'id, email, created_at'
+          )
+          .ilike(
+            'email',
+            user.email
+          )
+          .maybeSingle();
+
+      if (error) {
+        console.error(
+          '[Admin Verify] Supabase error:',
+          error
+        );
+
+        return res.status(500).json({
+          authorized: false,
+          error: 'تعذر التحقق من صلاحيات الأدمن.',
+        });
+      }
+
+      if (!adminRecord) {
+        return res.status(403).json({
+          authorized: false,
+          error:
+            'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.',
+        });
+      }
+
       return res.json({
         authorized: true,
-        user: admin,
+        user: adminRecord,
+      });
+    } catch (error) {
+      console.error(
+        '[Admin Verify] Unexpected error:',
+        error
+      );
+
+      return res.status(500).json({
+        authorized: false,
+        error: 'حدث خطأ أثناء التحقق من الصلاحيات.',
       });
     }
-
-    return res.status(403).json({
-      authorized: false,
-      error:
-        'غير مصرح لك بالوصول إلى لوحة التحكم.',
-    });
   }
 );
-
 // ==============================================================================
 // Products
 // ==============================================================================
@@ -2032,183 +2064,180 @@ app.post(
           }
         }
       } catch (rpcErr) {
-        console.warn(
-          'Supabase RPC execution warning, continuing with server order engine:',
-          rpcErr
-        );
-      }
-    }
+  console.error(
+    '[Orders] Supabase RPC execution failed:',
+    rpcErr
+  );
+
+  return res.status(500).json({
+    error:
+      'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
+  });
+}
 
     // ==========================================================================
-    // Authoritative server-side stock & price verification
-    // ==========================================================================
+// Authoritative server-side stock & price verification
+// ==========================================================================
 
-    let subtotal = 0;
+let subtotal = 0;
 
-    const cleanGov = (customer.governorate || '').trim();
-    const rateRecord = (db.shipping_rates || []).find(
-      (r) => r.governorate === cleanGov
+const cleanGov = (customer.governorate || '').trim();
+
+const rateRecord = (db.shipping_rates || []).find(
+  (r) => r.governorate === cleanGov
+);
+
+if (!rateRecord) {
+  return res.status(400).json({
+    error:
+      'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+  });
+}
+
+if (!rateRecord.is_active) {
+  return res.status(400).json({
+    error:
+      'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+  });
+}
+
+const shippingFee = Number(rateRecord.shipping_fee);
+
+const validatedItems: {
+  variant: ProductVariantRecord;
+  product: ProductRecord;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+}[] = [];
+
+for (const item of items) {
+  const qty = Number(item.quantity);
+
+  if (!qty || qty <= 0) {
+    return res.status(400).json({
+      error:
+        'الكمية المطلوبة غير صحيحة.',
+    });
+  }
+
+  let variant =
+    db.product_variants.find(
+      (v) =>
+        v.id === item.variant_id
     );
 
-    if (rateRecord && !rateRecord.is_active) {
-      return res.status(400).json({
-        error:
-          'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
-      });
-    }
+  if (
+    !variant &&
+    item.product_id
+  ) {
+    variant =
+      db.product_variants.find(
+        (v) =>
+          v.product_id ===
+            item.product_id &&
+          v.color === item.color &&
+          v.size === item.size
+      );
+  }
 
-    const shippingFee = rateRecord
-      ? Number(rateRecord.shipping_fee)
-      : Number(db.store_settings.shipping_fee) || 65;
+  if (!variant) {
+    return res.status(400).json({
+      error:
+        'القطعة المحددة غير موجودة بالمخزون.',
+    });
+  }
 
-    const validatedItems: {
-      variant: ProductVariantRecord;
-      product: ProductRecord;
-      quantity: number;
-      unit_price: number;
-      line_total: number;
-    }[] = [];
+  if (
+    variant.stock_quantity <
+    qty
+  ) {
+    return res.status(400).json({
+      error: `عفوًا، المقاس واللون المطلوبين (${variant.color} - ${variant.size}) غير متوفرين بالكمية المطلوبة (المتاح: ${variant.stock_quantity}).`,
+    });
+  }
 
-    for (const item of items) {
-      const qty =
-        Number(item.quantity);
-
-      if (!qty || qty <= 0) {
-        return res.status(400).json({
-          error:
-            'الكمية المطلوبة غير صحيحة.',
-        });
-      }
-
-      let variant =
-        db.product_variants.find(
-          (v) =>
-            v.id ===
-            item.variant_id
-        );
-
-      if (
-        !variant &&
-        item.product_id
-      ) {
-        variant =
-          db.product_variants.find(
-            (v) =>
-              v.product_id ===
-                item.product_id &&
-              v.color ===
-                item.color &&
-              v.size ===
-                item.size
-          );
-      }
-
-      if (!variant) {
-        variant =
-          db.product_variants[0];
-      }
-
-      if (!variant) {
-        return res.status(400).json({
-          error:
-            'القطعة المحددة غير موجودة بالمخزون.',
-        });
-      }
-
-      if (
-        variant.stock_quantity <
-        qty
-      ) {
-        return res.status(400).json({
-          error: `عفوًا، المقاس واللون المطلوبين (${variant.color} - ${variant.size}) غير متوفرين بالكمية المطلوبة (المتاح: ${variant.stock_quantity}).`,
-        });
-      }
-
-      const product =
-        db.products.find(
-          (p) =>
-            p.id ===
-              variant?.product_id &&
-            p.is_active
-        ) ||
-        db.products[0];
-
-      if (!product) {
-        return res.status(400).json({
-          error:
-            'المنتج غير متاح حاليًا.',
-        });
-      }
-
-      const unitPrice =
-        product.price;
-
-      const lineTotal =
-        unitPrice * qty;
-
-      subtotal += lineTotal;
-
-      validatedItems.push({
-        variant,
-        product,
-        quantity: qty,
-        unit_price: unitPrice,
-        line_total: lineTotal,
-      });
-    }
-
-    const total =
-      subtotal + shippingFee;
-
-    const orderNumber =
-      generateOrderNumber();
-
-    const orderId =
-      `ord_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 7)}`;
-
-    const receiptToken =
-      'rec_' +
-      Math.random()
-        .toString(36)
-        .substring(2) +
-      Date.now().toString(36);
-
-    const newOrder: OrderRecord =
-      {
-        id: orderId,
-        order_number:
-          orderNumber,
-        receipt_token:
-          receiptToken,
-        customer_name:
-          customer.customer_name.trim(),
-        phone: cleanPhone,
-        governorate:
-          customer.governorate,
-        city:
-          customer.city.trim(),
-        address:
-          customer.address.trim(),
-        notes:
-          customer.notes?.trim() ||
-          null,
-        subtotal,
-        shipping_fee:
-          shippingFee,
-        total,
-        status: 'pending',
-        created_at:
-          new Date().toISOString(),
-        updated_at:
-          new Date().toISOString(),
-      };
-
-    db.orders.unshift(
-      newOrder
+  const product =
+    db.products.find(
+      (p) =>
+        p.id === variant.product_id &&
+        p.is_active
     );
 
+  if (!product) {
+    return res.status(400).json({
+      error:
+        'المنتج غير متاح حاليًا.',
+    });
+  }
+
+  const unitPrice =
+    product.price;
+
+  const lineTotal =
+    unitPrice * qty;
+
+  subtotal += lineTotal;
+
+  validatedItems.push({
+    variant,
+    product,
+    quantity: qty,
+    unit_price: unitPrice,
+    line_total: lineTotal,
+  });
+}
+
+const total =
+  subtotal + shippingFee;
+
+const orderNumber =
+  generateOrderNumber();
+
+const orderId =
+  `ord_${Date.now()}_${Math.random()
+    .toString(36)
+    .substring(2, 7)}`;
+
+const receiptToken =
+  'rec_' +
+  Math.random()
+    .toString(36)
+    .substring(2) +
+  Date.now().toString(36);
+
+const newOrder: OrderRecord = {
+  id: orderId,
+  order_number:
+    orderNumber,
+  receipt_token:
+    receiptToken,
+  customer_name:
+    customer.customer_name.trim(),
+  phone: cleanPhone,
+  governorate:
+    customer.governorate,
+  city:
+    customer.city.trim(),
+  address:
+    customer.address.trim(),
+  notes:
+    customer.notes?.trim() ||
+    null,
+  subtotal,
+  shipping_fee:
+    shippingFee,
+  total,
+  status: 'pending',
+  created_at:
+    new Date().toISOString(),
+  updated_at:
+    new Date().toISOString(),
+};
+
+db.orders.unshift(
+  newOrder
+);
     // ==========================================================================
     // Insert snapshot items + decrement inventory
     // ==========================================================================
