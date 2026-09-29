@@ -834,31 +834,7 @@ async function requireAdmin(
     }
   }
 
-  const cleanToken = token.trim().toLowerCase();
-
-  const matchedAdmin = db.admin_users.find((u) => {
-    const email = u.email.toLowerCase();
-
-    return (
-      cleanToken === email ||
-      cleanToken === `admin_token_${email}` ||
-      cleanToken.includes(email)
-    );
-  });
-
-  if (matchedAdmin) {
-    (req as any).adminUser = matchedAdmin;
-    return next();
-  }
-
-  if (
-    cleanToken.includes('admin') ||
-    cleanToken.includes('bedir')
-  ) {
-    (req as any).adminUser = db.admin_users[0];
-    return next();
-  }
-
+  
   return res.status(403).json({
     error:
       'غير مصرح لك بالوصول إلى لوحة التحكم.',
