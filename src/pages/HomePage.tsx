@@ -570,10 +570,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                   })}
                 </div>
 
-                {/* Direction is controlled directly by LanguageContext.
-                    No local dir override and no rtl/ltr Tailwind variants. */}
+                {/* Previous / Next controls.
+                    The icon direction changes with the language,
+                    while the button positions are reversed as a pair. */}
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div
+                  className={`flex shrink-0 items-center gap-2 ${
+                    isRtl ? 'flex-row' : 'flex-row-reverse'
+                  }`}
+                >
                   {/* Previous slide */}
                   <button
                     onClick={prevSlide}
