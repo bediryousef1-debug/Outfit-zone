@@ -8,14 +8,24 @@
     --bottom-nav-height: 0px;
     --social-bar-height: 0px;
     --social-bar-bottom: 24px;
-    --whatsapp-btn-bottom: calc(var(--social-bar-bottom) + var(--social-bar-height, 0px) + 12px);
+    --whatsapp-btn-bottom: calc(
+      var(--social-bar-bottom) +
+      var(--social-bar-height, 0px) +
+      12px
+    );
   }
 
   @media (max-width: 767px) {
     :root {
-      --bottom-nav-height: calc(56px + max(env(safe-area-inset-bottom, 0px), 8px));
+      --bottom-nav-height: calc(
+        56px + max(env(safe-area-inset-bottom, 0px), 8px)
+      );
       --social-bar-bottom: calc(var(--bottom-nav-height) + 10px);
-      --whatsapp-btn-bottom: calc(var(--social-bar-bottom) + var(--social-bar-height, 0px) + 12px);
+      --whatsapp-btn-bottom: calc(
+        var(--social-bar-bottom) +
+        var(--social-bar-height, 0px) +
+        12px
+      );
     }
   }
 
@@ -32,7 +42,9 @@
   body {
     background-color: var(--bg-main);
     color: var(--text-main);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
 
   /* Custom scrollbar */
@@ -40,13 +52,16 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--bg-main);
   }
+
   ::-webkit-scrollbar-thumb {
     background: rgba(120, 120, 120, 0.3);
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(120, 120, 120, 0.5);
   }
