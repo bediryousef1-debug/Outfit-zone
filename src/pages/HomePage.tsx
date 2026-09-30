@@ -321,7 +321,6 @@ const HomePage = () => {
                 ))}
               </div>
 
-              {/* Slider Previous / Next */}
               <div className="flex shrink-0 items-center gap-2">
                 {/* Previous */}
                 <button
@@ -338,7 +337,11 @@ const HomePage = () => {
                       : 'border-black/20 bg-white/70 text-black hover:bg-black hover:text-white'
                   }`}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  {isRtl ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  )}
                 </button>
 
                 {/* Next */}
@@ -356,7 +359,11 @@ const HomePage = () => {
                       : 'border-black/20 bg-white/70 text-black hover:bg-black hover:text-white'
                   }`}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  {isRtl ? (
+                    <ChevronLeft className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
