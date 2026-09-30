@@ -32,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+
   const { isDark, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -50,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const normalized = headerSearchQuery.trim();
 
     if (!normalized) return;
@@ -65,21 +67,26 @@ export const Header: React.FC<HeaderProps> = ({
     setHeaderSearchQuery('');
     setIsSearchOpen(false);
     setMobileMenuOpen(false);
+
     onNavigate(`/products?search=${encodeURIComponent(normalized)}`);
   };
 
   return (
     <>
-      {/* Top Banner Notice with Left/Right Chevrons matching Reference Images */}
+      {/* Announcement Bar */}
       <div className="bg-black text-white text-[10px] sm:text-xs py-2 px-3 text-center font-medium border-b border-neutral-800 select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-2 min-w-0">
           <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-          <span className="truncate tracking-tight">{announcementText}</span>
+
+          <span className="truncate tracking-tight min-w-0">
+            {announcementText}
+          </span>
+
           <ChevronLeft className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
         </div>
       </div>
 
-      {/* Main Brand Header */}
+      {/* Main Header */}
       <header
         className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${
           isDark
@@ -87,15 +94,13 @@ export const Header: React.FC<HeaderProps> = ({
             : 'bg-white/95 border-neutral-200 text-black shadow-xs'
         }`}
       >
-        <div
-          dir="ltr"
-          className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between"
-        >
-          {/* Left: Navigation Menu & Search */}
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 h-18 min-w-0 flex items-center justify-between">
+          {/* LEFT GROUP */}
+          <div className="flex items-center gap-0.5 sm:gap-4 shrink-0">
+            {/* Menu */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              className={`p-1.5 sm:p-2 rounded-lg transition-colors cursor-pointer ${
                 isDark
                   ? 'hover:bg-neutral-900 text-white'
                   : 'hover:bg-neutral-100 text-black'
@@ -103,25 +108,26 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="القائمة الرئيسية"
             >
               {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
               )}
             </button>
 
+            {/* Search */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              className={`p-1.5 sm:p-2 rounded-lg transition-colors cursor-pointer ${
                 isDark
                   ? 'hover:bg-neutral-900 text-white'
                   : 'hover:bg-neutral-100 text-black'
               }`}
               aria-label="البحث عن منتج"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-5 h-5 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Desktop Navigation Links */}
+            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
               {navLinks.map((link) => {
                 const isActive = currentPath === link.path;
@@ -155,26 +161,26 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
           </div>
 
-          {/* Center: OUTFIT ZONE Brand Lockup */}
-          <div className="flex items-center justify-center">
+          {/* CENTER LOGO */}
+          <div className="flex items-center justify-center min-w-0 flex-1 px-1 sm:px-4">
             <button
               onClick={() => handleNav('/')}
-              className="text-center focus:outline-none cursor-pointer group py-1"
+              className="text-center focus:outline-none cursor-pointer group py-1 min-w-0"
               aria-label="Outfit Zone Home"
             >
               <OutfitZoneLogo
                 variant="center-editorial"
-                className={isDark ? 'text-white' : 'text-black'}
+                className={`${isDark ? 'text-white' : 'text-black'} max-w-full`}
               />
             </button>
           </div>
 
-          {/* Right: Theme Toggle & Shopping Cart Bag */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Language Toggle */}
+          {/* RIGHT GROUP */}
+          <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
+            {/* Language */}
             <button
               onClick={toggleLanguage}
-              className={`px-2.5 py-1 text-xs font-mono font-bold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 motion-reduce:transition-none ${
+              className={`h-8 min-w-8 px-1.5 sm:px-2.5 sm:h-auto sm:py-1 rounded-full border transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 motion-reduce:transition-none ${
                 isDark
                   ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
                   : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
@@ -186,14 +192,17 @@ export const Header: React.FC<HeaderProps> = ({
               }
               aria-label="تبديل اللغة"
             >
-              <Globe className="w-3.5 h-3.5" />
-              <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+
+              <span className="hidden xs:inline text-[10px] sm:text-xs">
+                {language === 'ar' ? 'EN' : 'عربي'}
+              </span>
             </button>
 
-            {/* Theme Toggle */}
+            {/* Theme */}
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-full border transition-all cursor-pointer ${
+              className={`w-8 h-8 sm:w-auto sm:h-auto sm:p-2 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
                 isDark
                   ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
                   : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
@@ -212,20 +221,20 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Cart Bag with badge count */}
+            {/* Cart */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className={`relative p-2 rounded-lg transition-colors cursor-pointer ${
+              className={`relative w-8 h-8 sm:w-auto sm:h-auto sm:p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
                 isDark
                   ? 'hover:bg-neutral-900 text-white'
                   : 'hover:bg-neutral-100 text-black'
               }`}
               aria-label={`عربة التسوق (${itemCount} منتجات)`}
             >
-              <ShoppingBag className="w-6 h-6 stroke-[1.8]" />
+              <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.8]" />
 
               <span
-                className={`absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center border font-mono ${
+                className={`absolute top-0.5 right-0.5 sm:top-1 sm:right-1 min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] px-0.5 sm:px-1 rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center border font-mono ${
                   isDark
                     ? 'bg-white text-black border-black'
                     : 'bg-black text-white border-white'
@@ -237,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Collapsible Search Bar */}
+        {/* Search Bar */}
         {isSearchOpen && (
           <div
             className={`border-t px-4 py-3 transition-colors ${
@@ -268,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div
             className={`lg:hidden border-t px-5 py-6 space-y-4 animate-in fade-in duration-200 ${
@@ -293,6 +302,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   <span>{link.label}</span>
+
                   <ChevronLeft className="w-4 h-4 text-neutral-400" />
                 </button>
               ))}
@@ -312,6 +322,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
+
                 <span>
                   {language === 'ar' ? 'English (EN)' : 'العربية (AR)'}
                 </span>
