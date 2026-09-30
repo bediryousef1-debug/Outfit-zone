@@ -8,33 +8,60 @@ interface OutfitZoneLogoProps {
 }
 
 export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
-  className = 'h-10 text-white',
+  className = 'h-10',
   variant = 'horizontal',
   textColor = 'currentColor',
 }) => {
+  /*
+   * Outfit Zone logo
+   *
+   * Important:
+   * - The component inherits its color from the parent by default.
+   * - This allows Header / Light Mode / Dark Mode to control the logo color.
+   * - No hardcoded text-white on the root component.
+   */
+
   if (variant === 'stacked') {
     return (
-      <div className={`flex flex-col items-center justify-center text-center select-none ${className}`}>
+      <div
+        className={`flex flex-col items-center justify-center text-center select-none min-w-0 ${className}`}
+      >
         {/* Coat Hanger Mark */}
         <svg
           viewBox="0 0 200 120"
-          className="w-24 h-14"
+          className="w-24 h-14 shrink-0"
           fill={textColor}
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
         >
           {/* Top Hook */}
           <path d="M100 18 C100 12 105 6 112 6 C119 6 125 12 125 19 C125 25 120 30 115 34 C109 37 104 42 103 48 L97 48 C98 39 104 33 111 29 C115 26 119 22 119 19 C119 15 116 12 112 12 C108 12 106 15 106 18 Z" />
+
           {/* Triangular Hanger Body */}
-          <path d="M100 48 L175 80 C180 82 183 87 181 92 C179 97 174 100 169 100 L31 100 C26 100 21 97 19 92 C17 87 20 82 25 80 Z" fillRule="evenodd" />
-          <path d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z" fill="#0c0c0e" />
+          <path
+            d="M100 48 L175 80 C180 82 183 87 181 92 C179 97 174 100 169 100 L31 100 C26 100 21 97 19 92 C17 87 20 82 25 80 Z"
+            fillRule="evenodd"
+          />
+
+          {/* Inner Hanger */}
+          <path
+            d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z"
+            fill="#0c0c0e"
+          />
+
           {/* Bottom Bar */}
           <rect x="20" y="93" width="160" height="10" rx="5" />
         </svg>
 
         {/* Brand Typography */}
         <div className="mt-1 font-syne font-black tracking-wider leading-none">
-          <div className="text-xl sm:text-2xl tracking-[0.2em]">OUTFIT</div>
-          <div className="text-xl sm:text-2xl tracking-[0.25em] mt-0.5">ZONE</div>
+          <div className="text-xl sm:text-2xl tracking-[0.2em]">
+            OUTFIT
+          </div>
+
+          <div className="text-xl sm:text-2xl tracking-[0.25em] mt-0.5">
+            ZONE
+          </div>
         </div>
       </div>
     );
@@ -47,10 +74,20 @@ export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
         className={className}
         fill={textColor}
         xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
       >
         <path d="M100 18 C100 12 105 6 112 6 C119 6 125 12 125 19 C125 25 120 30 115 34 C109 37 104 42 103 48 L97 48 C98 39 104 33 111 29 C115 26 119 22 119 19 C119 15 116 12 112 12 C108 12 106 15 106 18 Z" />
-        <path d="M100 48 L175 80 C180 82 183 87 181 92 C179 97 174 100 169 100 L31 100 C26 100 21 97 19 92 C17 87 20 82 25 80 Z" fillRule="evenodd" />
-        <path d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z" fill="#0c0c0e" />
+
+        <path
+          d="M100 48 L175 80 C180 82 183 87 181 92 C179 97 174 100 169 100 L31 100 C26 100 21 97 19 92 C17 87 20 82 25 80 Z"
+          fillRule="evenodd"
+        />
+
+        <path
+          d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z"
+          fill="#0c0c0e"
+        />
+
         <rect x="20" y="93" width="160" height="10" rx="5" />
       </svg>
     );
@@ -58,42 +95,65 @@ export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
 
   if (variant === 'center-editorial') {
     return (
-      <div className={`flex flex-col items-center justify-center text-center select-none ${className}`}>
-        <div className="font-syne font-black tracking-[0.2em] text-lg sm:text-2xl leading-none uppercase">
+      <div
+        className={`flex flex-col items-center justify-center text-center select-none min-w-0 ${className}`}
+      >
+        <div className="font-syne font-black tracking-[0.2em] text-lg sm:text-2xl leading-none uppercase whitespace-nowrap">
           OUTFIT
         </div>
-        <div className="font-syne font-black tracking-[0.25em] text-lg sm:text-2xl leading-none uppercase mt-0.5">
+
+        <div className="font-syne font-black tracking-[0.25em] text-lg sm:text-2xl leading-none uppercase mt-0.5 whitespace-nowrap">
           ZONE
         </div>
-        <div className="text-[7px] sm:text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-semibold mt-1">
+
+        <div className="text-[7px] sm:text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-semibold mt-1 whitespace-nowrap">
           WEAR IN THE ZONE
         </div>
       </div>
     );
   }
 
-  // Horizontal variant (Ideal for Top Bars & Headers)
+  /*
+   * Horizontal variant
+   * Used mainly in Header / Top Bars.
+   *
+   * Important:
+   * - No text-white here.
+   * - Color comes from the parent.
+   * - min-w-0 allows the whole logo to participate correctly
+   *   inside constrained flex layouts.
+   */
   return (
-    <div className={`flex items-center gap-2.5 sm:gap-3 select-none ${className}`}>
+    <div
+      className={`flex items-center gap-2.5 sm:gap-3 select-none min-w-0 max-w-full ${className}`}
+    >
       {/* Coat Hanger Mark */}
       <svg
         viewBox="0 0 200 120"
-        className="h-8 w-11 shrink-0"
+        className="h-8 w-11 sm:h-8 sm:w-11 shrink-0"
         fill={textColor}
         xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
       >
         <path d="M100 18 C100 12 105 6 112 6 C119 6 125 12 125 19 C125 25 120 30 115 34 C109 37 104 42 103 48 L97 48 C98 39 104 33 111 29 C115 26 119 22 119 19 C119 15 116 12 112 12 C108 12 106 15 106 18 Z" />
+
         <path d="M100 48 L175 80 C180 82 183 87 181 92 C179 97 174 100 169 100 L31 100 C26 100 21 97 19 92 C17 87 20 82 25 80 Z" />
-        <path d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 164 86 162 85 Z" fill="#0c0c0e" />
+
+        <path
+          d="M100 58 L38 85 C36 86 35 88 35 90 C36 92 38 93 40 93 L160 93 C162 93 164 92 165 90 C165 88 162 86 162 85 Z"
+          fill="#0c0c0e"
+        />
+
         <rect x="20" y="93" width="160" height="10" rx="5" />
       </svg>
 
       {/* Brand Text */}
-      <div className="flex flex-col text-right justify-center">
-        <span className="font-syne text-lg sm:text-xl font-black tracking-wider uppercase leading-none">
+      <div className="flex flex-col text-right justify-center min-w-0 overflow-hidden">
+        <span className="font-syne text-lg sm:text-xl font-black tracking-wider uppercase leading-none whitespace-nowrap">
           OUTFIT ZONE
         </span>
-        <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-neutral-400 font-medium mt-0.5">
+
+        <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-neutral-400 font-medium mt-0.5 whitespace-nowrap">
           WEAR IN THE ZONE
         </span>
       </div>
