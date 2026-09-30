@@ -3,6 +3,7 @@ import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -347,13 +348,15 @@ function AppContent() {
 export function App() {
   return (
     <ThemeProvider>
-      <StoreProvider>
-        <CartProvider>
-          <AdminAuthProvider>
-            <AppContent />
-          </AdminAuthProvider>
-        </CartProvider>
-      </StoreProvider>
+      <LanguageProvider>
+        <StoreProvider>
+          <CartProvider>
+            <AdminAuthProvider>
+              <AppContent />
+            </AdminAuthProvider>
+          </CartProvider>
+        </StoreProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

@@ -77,21 +77,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        const data = await api.adminGetOrders();
-        setOrders(data);
-      } catch (err) {
-        console.error('Failed to load admin orders:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrders();
-  }, []);
-
   const loadReviews = async () => {
     try {
       setReviewsLoading(true);
@@ -106,7 +91,38 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   };
 
   useEffect(() => {
-    loadReviews();
+    let isMounted = true;
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      setReviewsLoading(true);
+      try {
+        const [ordersData, reviewsData] = await Promise.all([
+          api.adminGetOrders().catch((err) => {
+            console.error('Failed to load admin orders:', err);
+            return [];
+          }),
+          api.adminGetProductReviews().catch((err) => {
+            console.error('Failed to load admin reviews:', err);
+            return [];
+          }),
+        ]);
+
+        if (isMounted) {
+          setOrders(ordersData);
+          setReviews(reviewsData);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setReviewsLoading(false);
+        }
+      }
+    };
+
+    loadDashboardData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Filter orders by date range

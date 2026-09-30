@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Menu, X, Search, Sun, Moon, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ShoppingBag, Menu, X, Search, Sun, Moon, ChevronRight, ChevronLeft, Globe } from 'lucide-react';
 import { OutfitZoneLogo } from '../common/OutfitZoneLogo';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface HeaderProps {
   currentPath: string;
@@ -22,12 +23,13 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const { isDark, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t, isRtl } = useLanguage();
 
   const navLinks = [
-    { label: 'الرئيسية', path: '/' },
-    { label: 'الموديلات', path: '/products' },
-    { label: 'قصة البراند', path: '/about' },
-    { label: 'تواصل معنا', path: '/contact' },
+    { label: t('nav.home', 'الرئيسية'), path: '/' },
+    { label: t('nav.products', 'الموديلات'), path: '/products' },
+    { label: t('nav.about', 'قصة البراند'), path: '/about' },
+    { label: t('nav.contact', 'تواصل معنا'), path: '/contact' },
   ];
 
   const handleNav = (path: string) => {
@@ -146,6 +148,21 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right: Theme Toggle & Shopping Cart Bag */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Language Toggle (AR / EN) */}
+            <button
+              onClick={toggleLanguage}
+              className={`px-2.5 py-1 text-xs font-mono font-bold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 motion-reduce:transition-none ${
+                isDark
+                  ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
+                  : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
+              }`}
+              title={language === 'ar' ? 'Switch to English' : 'التحويل إلى العربية'}
+              aria-label="تبديل اللغة"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+            </button>
+
             {/* Theme Toggle (Light / Dark) */}
             <button
               onClick={toggleTheme}
@@ -236,7 +253,22 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-between text-xs text-neutral-400">
-              <span>المظهر:</span>
+              <span>{language === 'ar' ? 'اللغة / Language:' : 'Language:'}</span>
+              <button
+                onClick={toggleLanguage}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold cursor-pointer ${
+                  isDark
+                    ? 'bg-neutral-900 border-neutral-800 text-white'
+                    : 'bg-neutral-100 border-neutral-300 text-black'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>{language === 'ar' ? 'English (EN)' : 'العربية (AR)'}</span>
+              </button>
+            </div>
+
+            <div className="pt-3 flex items-center justify-between text-xs text-neutral-400">
+              <span>{language === 'ar' ? 'المظهر:' : 'Theme:'}</span>
               <button
                 onClick={toggleTheme}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold cursor-pointer ${

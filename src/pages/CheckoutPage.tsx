@@ -170,6 +170,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           variant_id: i.variantId,
           product_id: i.productId,
           quantity: i.quantity,
+          product_name: i.product?.name,
+          category_name: i.product?.category?.name,
+          color: i.color,
+          size: i.size,
+          unit_price: i.unitPrice,
+          line_total: i.unitPrice * i.quantity,
         })),
       };
 

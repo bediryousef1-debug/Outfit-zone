@@ -24,6 +24,7 @@ interface AdminProductEditPageProps {
 interface VariantGroup {
   color: string;
   color_hex: string;
+  image_url?: string;
   sizes: Record<string, number>;
 }
 
@@ -102,8 +103,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
         }
 
         if (isEditing && productId) {
-          const prods = await api.getProducts({ admin: true });
-          const found = prods.find((p) => p.id === productId);
+          const found = await api.getProductById(productId);
 
           if (found) {
             setName(found.name);
@@ -139,6 +139,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                 string,
                 {
                   color_hex: string;
+                  image_url?: string;
                   sizes: Record<string, number>;
                 }
               > = {};
@@ -151,8 +152,11 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                 if (!grouped[v.color]) {
                   grouped[v.color] = {
                     color_hex: v.color_hex || DEFAULT_COLOR_HEX,
+                    image_url: v.image_url || '',
                     sizes: {},
                   };
+                } else if (!grouped[v.color].image_url && v.image_url) {
+                  grouped[v.color].image_url = v.image_url;
                 }
 
                 grouped[v.color].sizes[v.size] = v.stock_quantity;
@@ -172,6 +176,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                 Object.entries(grouped).map(([color, data]) => ({
                   color,
                   color_hex: data.color_hex || DEFAULT_COLOR_HEX,
+                  image_url: data.image_url || '',
                   sizes: data.sizes,
                 }))
               );
@@ -305,6 +310,23 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     );
   };
 
+  // Update color-specific image
+  const updateColorImage = (
+    color: string,
+    imageUrl: string
+  ) => {
+    setVariantGroups((prev) =>
+      prev.map((group) =>
+        group.color === color
+          ? {
+              ...group,
+              image_url: imageUrl,
+            }
+          : group
+      )
+    );
+  };
+
   const addColorGroup = () => {
     if (!newColorInput.trim()) return;
 
@@ -330,6 +352,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
       {
         color: col,
         color_hex: DEFAULT_COLOR_HEX,
+        image_url: images[0]?.image_url || '',
         sizes: defaultSizes,
       },
     ]);
@@ -569,6 +592,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
       const flattenedVariants: {
         color: string;
         color_hex: string;
+        image_url?: string;
         size: string;
         stock_quantity: number;
       }[] = [];
@@ -581,6 +605,9 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
               color_hex:
                 group.color_hex ||
                 DEFAULT_COLOR_HEX,
+              image_url:
+                group.image_url ||
+                undefined,
               size,
               stock_quantity:
                 Number(quantity) || 0,
@@ -1173,6 +1200,63 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                </div>
+
+                {/* Color-specific Image Selector */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-xl bg-neutral-900/90 border border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-14 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-950 shrink-0 flex items-center justify-center">
+                      {group.image_url ? (
+                        <img
+                          src={group.image_url}
+                          alt={group.color}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[10px] text-neutral-500 text-center px-1">
+                          بدون صورة
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        صورة اللون: {group.color}
+                      </span>
+                      <span className="text-[11px] text-neutral-400">
+                        تظهر للعميل فور اختياره هذا اللون في صفحة المنتج
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select
+                      value={group.image_url || ''}
+                      onChange={(e) =>
+                        updateColorImage(group.color, e.target.value)
+                      }
+                      className="bg-neutral-950 border border-neutral-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-white w-full sm:w-auto"
+                    >
+                      <option value="">اختر من صور الموديل...</option>
+                      {images.map((img, idx) => (
+                        <option
+                          key={img.image_url || idx}
+                          value={img.image_url}
+                        >
+                          صورة {idx + 1} {img.is_primary ? '(الرئيسية)' : ''}
+                        </option>
+                      ))}
+                    </select>
+
+                    {group.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => updateColorImage(group.color, '')}
+                        className="px-2.5 py-1.5 text-xs text-neutral-400 hover:text-red-400 border border-neutral-800 rounded-lg hover:bg-neutral-800 transition-colors shrink-0"
+                      >
+                        إزالة
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Stock per Size */}

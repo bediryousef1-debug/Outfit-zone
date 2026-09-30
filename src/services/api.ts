@@ -17,6 +17,35 @@ import { EGYPTIAN_GOVERNORATES } from '../utils/constants';
 
 const API_BASE = '/api';
 
+// In-memory cache to prevent repeated fetches during navigation and re-renders
+const memoryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+function getCached<T>(key: string): T | null {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > entry.ttl) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCached<T>(key: string, data: T, ttlMs = 60_000): void {
+  memoryCache.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
+}
+
+export function invalidateApiCache(prefix?: string): void {
+  if (!prefix) {
+    memoryCache.clear();
+    return;
+  }
+  for (const k of memoryCache.keys()) {
+    if (k.startsWith(prefix)) {
+      memoryCache.delete(k);
+    }
+  }
+}
+
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -43,6 +72,10 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export const api = {
   // 1. Fetch Store Settings
   async getStoreSettings(): Promise<StoreSettings> {
+    const cached = getCached<StoreSettings>('settings');
+    if (cached) return cached;
+
+    let result: StoreSettings | null = null;
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -51,19 +84,20 @@ export const api = {
           .limit(1)
           .maybeSingle();
 
-        if (!error && data) return data;
+        if (!error && data) result = data;
       } catch (err) {
         console.warn('Supabase getStoreSettings notice:', err);
       }
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/settings`);
+    if (!result) {
+      try {
+        const res = await fetch(`${API_BASE}/settings`);
+        if (res.ok) result = await res.json();
+      } catch {}
+    }
 
-      if (res.ok) return await res.json();
-    } catch {}
-
-    return {
+    const finalSettings = result || {
       id: 'settings_default',
       store_name: 'Outfit Zone',
       shipping_fee: 65,
@@ -76,10 +110,18 @@ export const api = {
       cod_message: 'الدفع عند الاستلام فقط لجميع المحافظات داخل مصر.',
       updated_at: new Date().toISOString(),
     };
+
+    setCached('settings', finalSettings, 120_000);
+    return finalSettings;
   },
 
   // 1b. Fetch Shipping Rates per Governorate
   async getShippingRates(includeInactive = false): Promise<ShippingRate[]> {
+    const cacheKey = `shipping_rates_${includeInactive}`;
+    const cached = getCached<ShippingRate[]>(cacheKey);
+    if (cached) return cached;
+
+    let result: ShippingRate[] | null = null;
     if (isSupabaseConfigured && supabase) {
       try {
         let query = supabase
@@ -94,34 +136,37 @@ export const api = {
         const { data, error } = await query;
 
         if (!error && data && data.length > 0) {
-          return data;
+          result = data;
         }
       } catch (err) {
         console.warn('Supabase getShippingRates notice:', err);
       }
     }
 
-    try {
-      const res = await fetch(
-        `${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`
-      );
+    if (!result) {
+      try {
+        const res = await fetch(
+          `${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`
+        );
 
-      if (res.ok) {
-        const json = await res.json();
-
-        if (Array.isArray(json) && json.length > 0) {
-          return json;
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json) && json.length > 0) {
+            result = json;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
-    // Fallback to standard 27 governorates
-    return EGYPTIAN_GOVERNORATES.map((gov) => ({
+    const finalRates = result || EGYPTIAN_GOVERNORATES.map((gov) => ({
       id: `sr_${gov.id}`,
       governorate: gov.nameAr,
       shipping_fee: 65,
       is_active: true,
     }));
+
+    setCached(cacheKey, finalRates, 120_000);
+    return finalRates;
   },
 
   // 1c. Admin: Update Shipping Rate
@@ -180,6 +225,9 @@ export const api = {
 
   // 2. Fetch Categories
   async getCategories(): Promise<Category[]> {
+    const cached = getCached<Category[]>('categories');
+    if (cached) return cached;
+
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('categories')
@@ -196,13 +244,19 @@ export const api = {
         );
       }
 
-      return data || [];
+      const resData = data || [];
+      setCached('categories', resData, 120_000);
+      return resData;
     }
 
     try {
       const res = await fetch(`${API_BASE}/categories`);
 
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const json = await res.json();
+        setCached('categories', json, 120_000);
+        return json;
+      }
     } catch {}
 
     return [];
@@ -212,6 +266,10 @@ export const api = {
   async getProducts(
     options?: { admin?: boolean }
   ): Promise<Product[]> {
+    const cacheKey = options?.admin ? 'products_admin' : 'products_public';
+    const cached = getCached<Product[]>(cacheKey);
+    if (cached) return cached;
+
     if (isSupabaseConfigured && supabase) {
       let prodQuery = supabase
         .from('products')
@@ -267,7 +325,7 @@ export const api = {
       const allCategories =
         catRes.data || [];
 
-      return (
+      const result = (
         pRes.data || []
       ).map((p: any) => {
         const category =
@@ -307,6 +365,9 @@ export const api = {
           variants,
         };
       });
+
+      setCached(cacheKey, result, 60_000);
+      return result;
     }
 
     try {
@@ -348,7 +409,9 @@ export const api = {
       );
 
       if (res.ok) {
-        return await res.json();
+        const json = await res.json();
+        setCached(cacheKey, json, 60_000);
+        return json;
       }
 
       if (
@@ -374,6 +437,10 @@ export const api = {
 
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
+    const cacheKey = `product_slug_${slug}`;
+    const cached = getCached<Product>(cacheKey);
+    if (cached) return cached;
+
     if (isSupabaseConfigured && supabase) {
       const { data: pData, error: pErr } =
         await supabase
@@ -422,7 +489,7 @@ export const api = {
             }),
       ]);
 
-      return {
+      const result = {
         ...pData,
         category:
           catRes.data ||
@@ -440,6 +507,9 @@ export const api = {
         variants:
           varRes.data || [],
       };
+
+      setCached(cacheKey, result, 60_000);
+      return result;
     }
 
     const res = await fetch(
@@ -458,7 +528,51 @@ export const api = {
       );
     }
 
-    return res.json();
+    const json = await res.json();
+    setCached(cacheKey, json, 60_000);
+    return json;
+  },
+
+  // 4b. Fetch Single Product By ID
+  async getProductById(id: string): Promise<Product> {
+    const cacheKey = `product_id_${id}`;
+    const cached = getCached<Product>(cacheKey);
+    if (cached) return cached;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: pData, error: pErr } = await supabase
+          .from('products')
+          .select(
+            '*, category:categories(*), images:product_images(*), variants:product_variants(*)'
+          )
+          .eq('id', id)
+          .maybeSingle();
+
+        if (!pErr && pData) {
+          const result = {
+            ...pData,
+            images: (pData.images || []).sort(
+              (a: any, b: any) =>
+                (a.sort_order ?? 0) - (b.sort_order ?? 0)
+            ),
+          };
+          setCached(cacheKey, result, 60_000);
+          return result;
+        }
+      } catch (err) {
+        console.warn('Supabase getProductById notice:', err);
+      }
+    }
+
+    const res = await fetch(`${API_BASE}/products/id/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'المنتج غير متوفر');
+    }
+    const json = await res.json();
+    setCached(cacheKey, json, 60_000);
+    return json;
   },
 
   // 5. Submit Guest COD Order

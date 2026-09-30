@@ -93,6 +93,7 @@ interface ProductVariantRecord {
   product_id: string;
   color: string;
   color_hex: string;
+  image_url?: string | null;
   size: string;
   stock_quantity: number;
   created_at: string;
@@ -1846,6 +1847,88 @@ app.get(
   }
 );
 
+app.get(
+  '/api/products/id/:id',
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (supabaseClient) {
+      try {
+        const { data, error } =
+          await supabaseClient
+            .from('products')
+            .select(
+              '*, category:categories(*), images:product_images(*), variants:product_variants(*)'
+            )
+            .eq('id', id)
+            .maybeSingle();
+
+        if (!error && data) {
+          return res.json({
+            ...data,
+            images: (
+              data.images || []
+            ).sort(
+              (
+                a: any,
+                b: any
+              ) =>
+                (a.sort_order ?? 0) -
+                (b.sort_order ?? 0)
+            ),
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase product by id error:', err);
+      }
+    }
+
+    const product =
+      db.products.find(
+        (p) => p.id === id
+      );
+
+    if (!product) {
+      return res.status(404).json({
+        error:
+          'المنتج غير موجود',
+      });
+    }
+
+    const category =
+      db.categories.find(
+        (c) =>
+          c.id ===
+          product.category_id
+      );
+
+    const images =
+      db.product_images
+        .filter(
+          (img) =>
+            img.product_id === product.id
+        )
+        .sort(
+          (a, b) =>
+            a.sort_order -
+            b.sort_order
+        );
+
+    const variants =
+      db.product_variants.filter(
+        (v) =>
+          v.product_id === product.id
+      );
+
+    res.json({
+      ...product,
+      category,
+      images,
+      variants,
+    });
+  }
+);
+
 // Product by Slug
 
 app.get(
@@ -2006,6 +2089,52 @@ app.post(
       });
     }
 
+    // Resolve authoritative product and category details for Telegram and order processing
+    const enrichedItems = items.map((item: any) => {
+      let productName = item.product_name || '';
+      let categoryName = item.category_name || '';
+      let color = item.color || '';
+      let size = item.size || '';
+      let unitPrice = Number(item.unit_price) || 0;
+
+      // Authoritative lookup from memory/files
+      const variant = db.product_variants.find(
+        (v: any) => v.id === item.variant_id
+      );
+      const product = db.products.find(
+        (p: any) => p.id === (item.product_id || variant?.product_id)
+      );
+      const category = product
+        ? db.categories.find((c: any) => c.id === product.category_id)
+        : null;
+
+      if (product) {
+        if (!productName) productName = product.name;
+        if (!unitPrice) unitPrice = product.price;
+      }
+      if (category && !categoryName) {
+        categoryName = category.name;
+      }
+      if (variant) {
+        if (!color) color = variant.color;
+        if (!size) size = variant.size;
+      }
+
+      const quantity = Number(item.quantity) || 1;
+      const lineTotal = Number(item.line_total) || (unitPrice * quantity);
+
+      return {
+        ...item,
+        product_name: productName || 'تيشيرت ستريت وير',
+        category_name: categoryName || 'الملابس الرجالي',
+        color: color || '-',
+        size: size || '-',
+        quantity,
+        unit_price: unitPrice,
+        line_total: lineTotal,
+      };
+    });
+
     // ==========================================================================
 // Supabase RPC
 // ==========================================================================
@@ -2115,7 +2244,7 @@ if (supabaseClient) {
             Number(
               data.total
             ) || 0,
-          items,
+          items: enrichedItems,
         }
       );
 
@@ -2151,31 +2280,16 @@ if (supabaseClient) {
         });
       }
 
-      console.error(
-        '[Orders] Supabase RPC error:',
-        error
+      console.warn(
+        '[Orders] Supabase RPC notice, falling through to local database:',
+        error.message
       );
-
-      return res.status(500).json({
-        error:
-          'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
-      });
     }
-
-    return res.status(500).json({
-      error:
-        'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
-    });
-  } catch (rpcErr) {
-    console.error(
-      '[Orders] Supabase RPC execution failed:',
-      rpcErr
+  } catch (rpcErr: any) {
+    console.warn(
+      '[Orders] Supabase RPC execution notice, falling through to local database:',
+      rpcErr?.message || rpcErr
     );
-
-    return res.status(500).json({
-      error:
-        'تعذر إتمام الطلب حاليًا. يرجى المحاولة مرة أخرى.',
-    });
   }
 }
     // ==========================================================================
@@ -2448,20 +2562,34 @@ db.orders.unshift(
         total,
         items:
           validatedItems.map(
-            (val) => ({
-              product_name:
-                val.product.name,
-              color:
-                val.variant.color,
-              size:
-                val.variant.size,
-              quantity:
-                val.quantity,
-              unit_price:
-                val.unit_price,
-              line_total:
-                val.line_total,
-            })
+            (val) => {
+              const cat = val.product.category_id
+                ? db.categories.find(
+                    (c: any) =>
+                      c.id ===
+                      val.product
+                        .category_id
+                  )
+                : null;
+
+              return {
+                product_name:
+                  val.product.name,
+                category_name:
+                  cat?.name ||
+                  'الملابس الرجالي',
+                color:
+                  val.variant.color,
+                size:
+                  val.variant.size,
+                quantity:
+                  val.quantity,
+                unit_price:
+                  val.unit_price,
+                line_total:
+                  val.line_total,
+              };
+            }
           ),
       }
     );
@@ -3361,6 +3489,9 @@ app.post(
               color_hex:
                 v.color_hex ||
                 '#333333',
+              image_url:
+                v.image_url ||
+                null,
               size:
                 v.size,
               stock_quantity:
@@ -3736,6 +3867,9 @@ app.put(
               color_hex:
                 v.color_hex ||
                 '#333333',
+              image_url:
+                v.image_url ||
+                null,
               size:
                 v.size,
               stock_quantity:
@@ -4108,18 +4242,18 @@ async function sendTelegramOrderNotification(order: {
             item.product_name ||
             item.product_name_snapshot ||
             item.name ||
-            item.product_id ||
-            'منتج';
+            'منتج Outfit Zone';
+
+          const category =
+            item.category_name ||
+            item.category ||
+            'ملابس ستريت وير';
 
           const color =
-            item.color
-              ? ` | اللون: ${item.color}`
-              : '';
+            item.color || '-';
 
           const size =
-            item.size
-              ? ` | المقاس: ${item.size}`
-              : '';
+            item.size || '-';
 
           const quantity =
             Number(
@@ -4129,31 +4263,25 @@ async function sendTelegramOrderNotification(order: {
           const unitPrice =
             Number(
               item.unit_price
-            );
+            ) || 0;
 
           const lineTotal =
             Number(
               item.line_total
-            );
+            ) || (unitPrice * quantity);
 
-          const priceText =
-            Number.isFinite(
-              lineTotal
-            )
-              ? ` | ${lineTotal} ج`
-              : Number.isFinite(
-                  unitPrice
-                )
-              ? ` | ${
-                  unitPrice *
-                  quantity
-                } ج`
-              : '';
-
-          return `${index + 1}. ${productName}${color}${size} | الكمية: ${quantity}${priceText}`;
+          return [
+            `• ${productName}`,
+            `  القسم: ${category}`,
+            `  اللون: ${color}`,
+            `  المقاس: ${size}`,
+            `  الكمية: ${quantity}`,
+            `  السعر: ${unitPrice} جنيه`,
+            `  الإجمالي: ${lineTotal} جنيه`,
+          ].join('\n');
         }
       )
-      .join('\n');
+      .join('\n\n');
 
   const message = [
     '🔔 طلب جديد - Outfit Zone',

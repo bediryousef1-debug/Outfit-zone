@@ -17,11 +17,17 @@
       (function() {
         try {
           var saved = localStorage.getItem('oz_theme');
-          var isDark = false;
+          var isDark = true; // default dark fallback
           if (saved === 'dark' || saved === 'light') {
             isDark = (saved === 'dark');
-          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            isDark = true;
+          } else if (window.matchMedia) {
+            if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+              isDark = false;
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              isDark = true;
+            } else {
+              isDark = true;
+            }
           }
           var root = document.documentElement;
           if (isDark) {
@@ -30,6 +36,15 @@
           } else {
             root.classList.add('light');
             root.classList.remove('dark');
+          }
+
+          var savedLang = localStorage.getItem('oz_lang');
+          if (savedLang === 'en') {
+            root.dir = 'ltr';
+            root.lang = 'en';
+          } else {
+            root.dir = 'rtl';
+            root.lang = 'ar';
           }
         } catch (e) {}
       })();

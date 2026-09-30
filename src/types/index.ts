@@ -31,6 +31,7 @@ export interface ProductVariant {
   color_hex: string;
   size: 'M' | 'L' | 'XL' | '2XL' | string;
   stock_quantity: number;
+  image_url?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -230,6 +231,12 @@ export interface OrderCreateRequest {
     variant_id: string;
     product_id: string;
     quantity: number;
+    product_name?: string;
+    category_name?: string;
+    color?: string;
+    size?: string;
+    unit_price?: number;
+    line_total?: number;
   }[];
 }
 

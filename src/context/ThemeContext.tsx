@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const getInitialThemeState = (): { theme: Theme; isManual: boolean } => {
   if (typeof window === 'undefined') {
-    return { theme: 'light', isManual: false };
+    return { theme: 'dark', isManual: false };
   }
 
   try {
@@ -23,13 +23,18 @@ const getInitialThemeState = (): { theme: Theme; isManual: boolean } => {
     }
 
     // Follow device/system preferences on first visit
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return { theme: 'dark', isManual: false };
+    if (window.matchMedia) {
+      if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+        return { theme: 'light', isManual: false };
+      }
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return { theme: 'dark', isManual: false };
+      }
     }
   } catch {}
 
-  // If system prefers light or not supported, default to light
-  return { theme: 'light', isManual: false };
+  // Fallback if unable to detect system preference: Dark
+  return { theme: 'dark', isManual: false };
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
