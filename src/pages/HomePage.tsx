@@ -518,9 +518,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     {currentSlide.ctaText}
                   </span>
 
-                  {/* LTR = normal arrow.
-                      RTL = mirrored arrow.
-                      The button itself never changes direction. */}
                   <ArrowRight className="hidden h-4 w-4 shrink-0 ltr:block" />
                   <ArrowLeft className="hidden h-4 w-4 shrink-0 rtl:block" />
                 </button>
@@ -569,14 +566,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 {/* IMPORTANT:
-                    Keep the control group LTR so physical button order is
-                    stable. The individual icons are controlled by rtl/ltr
-                    variants below. */}
+                    No local dir override here.
+                    The icons follow the actual page direction. */}
 
-                <div
-                  className="flex shrink-0 items-center gap-2"
-                  dir="ltr"
-                >
+                <div className="flex shrink-0 items-center gap-2">
                   {/* Previous slide */}
                   <button
                     onClick={prevSlide}
@@ -587,8 +580,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    {/* Arabic: previous points right
-                        English: previous points left */}
                     <ChevronRight className="hidden h-4 w-4 rtl:block" />
                     <ChevronLeft className="hidden h-4 w-4 ltr:block" />
                   </button>
@@ -603,8 +594,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    {/* Arabic: next points left
-                        English: next points right */}
                     <ChevronLeft className="hidden h-4 w-4 rtl:block" />
                     <ChevronRight className="hidden h-4 w-4 ltr:block" />
                   </button>
