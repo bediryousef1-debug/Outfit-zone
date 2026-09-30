@@ -1,4 +1,3 @@
-```tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -68,9 +67,6 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * HERO SLIDES
    * ==========================================================================
-   *
-   * Kept as a memoized value so the autoplay effect does not depend on a
-   * newly-created array on every render.
    */
 
   const heroSlides = useMemo(
@@ -138,7 +134,11 @@ export const HomePage: React.FC<HomePageProps> = ({
         alt: 'Streetwear Polo Charcoal',
       },
     ],
-    [content?.hero_subtitle, content?.hero_button_text, content?.hero_image_url]
+    [
+      content?.hero_subtitle,
+      content?.hero_button_text,
+      content?.hero_image_url,
+    ]
   );
 
   const currentSlide = heroSlides[activeSlide] || heroSlides[0];
@@ -168,10 +168,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     return () => window.clearInterval(interval);
   }, [isPaused, heroSlides.length]);
-
-  /*
-   * Keep active slide valid if the number of slides ever changes.
-   */
 
   useEffect(() => {
     if (activeSlide >= heroSlides.length) {
@@ -414,7 +410,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           ===================================================================== */}
 
       <section
-        className={`relative w-full min-w-0 max-w-full overflow-hidden transition-colors ${
+        className={`relative w-full min-w-0 max-w-full overflow-x-clip transition-colors ${
           isDark
             ? 'bg-gradient-to-b from-[#111115] via-[#09090b] to-[#000000]'
             : 'bg-gradient-to-b from-[#f3f4f6] via-[#f9fafb] to-[#ffffff]'
@@ -426,7 +422,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         aria-roledescription="carousel"
         aria-label="عروض وتشكيلات Outfit Zone"
       >
-        <div className="w-full max-w-7xl min-w-0 mx-auto px-4 pt-5 pb-8 sm:px-6 sm:py-12 lg:py-16">
+        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 pt-5 pb-8 sm:px-6 sm:py-12 lg:py-16">
           <div className="grid w-full min-w-0 grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
             {/* =================================================================
                 HERO CONTENT
@@ -435,8 +431,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="order-1 min-w-0 max-w-full space-y-5 text-right lg:col-span-6 lg:order-1 lg:space-y-6">
               {/* Top metadata */}
 
-              <div className="flex min-w-0 max-w-full items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-widest">
-                <div className="flex min-w-0 max-w-[75%] items-center gap-2">
+              <div className="flex min-w-0 max-w-full items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 sm:text-xs sm:tracking-widest">
+                <div className="flex min-w-0 max-w-[72%] items-center gap-2">
                   <span className="h-px w-6 shrink-0 bg-neutral-500 sm:w-8" />
 
                   <span className="min-w-0 wrap-anywhere font-mono tracking-wider">
@@ -451,23 +447,23 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               {/* Main heading */}
 
-              <div className="min-w-0 max-w-full space-y-2">
+              <div className="w-full min-w-0 max-w-full space-y-2">
                 <h1
-                  className={`min-w-0 max-w-full wrap-anywhere font-syne text-[clamp(2.15rem,10vw,4.5rem)] font-black uppercase leading-[0.92] tracking-[-0.035em] sm:text-6xl lg:text-7xl ${
+                  className={`block w-full min-w-0 max-w-full wrap-anywhere font-syne text-[clamp(2rem,9vw,3rem)] font-black uppercase leading-[0.9] tracking-[-0.03em] sm:text-6xl lg:text-[clamp(3.5rem,5vw,4.5rem)] ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
-                  <span className="block min-w-0 max-w-full wrap-anywhere">
+                  <span className="block w-full min-w-0 max-w-full wrap-anywhere">
                     {currentSlide.titleLine1}
                   </span>
 
-                  <span className="block min-w-0 max-w-full wrap-anywhere">
+                  <span className="block w-full min-w-0 max-w-full wrap-anywhere">
                     {currentSlide.titleLine2}
                   </span>
                 </h1>
 
                 <h2
-                  className={`min-w-0 max-w-full wrap-anywhere pt-2 text-xl font-extrabold leading-tight sm:text-3xl lg:text-4xl ${
+                  className={`block w-full min-w-0 max-w-full wrap-anywhere pt-2 text-xl font-extrabold leading-tight sm:text-3xl lg:text-4xl ${
                     isDark ? 'text-neutral-100' : 'text-neutral-900'
                   }`}
                 >
@@ -513,8 +509,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     : 'border-neutral-200/70'
                 }`}
               >
-                {/* Indicators */}
-
                 <div
                   className="flex min-w-0 shrink items-center gap-1.5"
                   role="tablist"
@@ -548,8 +542,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                   })}
                 </div>
 
-                {/* Previous / Next */}
-
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={prevSlide}
@@ -582,7 +574,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 HERO IMAGE
                 ================================================================= */}
 
-            <div className="order-2 min-w-0 w-full max-w-full lg:col-span-6 lg:order-2">
+            <div className="order-2 w-full min-w-0 max-w-full lg:col-span-6 lg:order-2">
               <div
                 onClick={() => onNavigate(currentSlide.ctaLink)}
                 className={`group relative mx-auto w-full max-w-[620px] overflow-hidden rounded-2xl border shadow-2xl transition-all duration-500 sm:rounded-3xl ${
@@ -609,8 +601,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     fetchPriority="high"
                   />
 
-                  {/* Image overlay */}
-
                   <div
                     className={`pointer-events-none absolute inset-0 ${
                       isDark
@@ -619,15 +609,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     }`}
                   />
 
-                  {/* Top badge */}
-
                   <div className="pointer-events-none absolute left-4 top-4 max-w-[70%] select-none opacity-90 transition-all duration-500 sm:left-6 sm:top-6">
                     <span className="wrap-anywhere font-serif text-base italic text-white/95 drop-shadow-md sm:text-2xl">
                       {currentSlide.badgeTop}
                     </span>
                   </div>
-
-                  {/* Bottom badge */}
 
                   <div className="pointer-events-none absolute bottom-4 right-4 max-w-[75%] select-none text-right sm:bottom-6 sm:right-6">
                     <span className="block wrap-anywhere text-[9px] font-mono uppercase tracking-[0.14em] text-white/95 drop-shadow-sm sm:text-xs sm:tracking-widest">
@@ -636,8 +622,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                     <div className="mr-auto mt-1 h-0.5 w-8 bg-white/80" />
                   </div>
-
-                  {/* Desktop hover label */}
 
                   <div className="pointer-events-none absolute bottom-4 left-4 hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:block">
                     <span className="rounded-full border border-white/20 bg-black/75 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-md">
@@ -655,7 +639,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           2. TRUST FEATURES
           ===================================================================== */}
 
-      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
         <div
           className={`grid grid-cols-2 gap-6 rounded-2xl border p-6 text-center transition-colors sm:gap-4 sm:p-8 md:grid-cols-4 md:divide-x md:divide-x-reverse md:divide-y-0 ${
             isDark
@@ -698,7 +682,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           3. REAL CATEGORIES
           ===================================================================== */}
 
-      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
         <div className="my-6 text-center">
           <div className="inline-flex max-w-full items-center gap-3 text-lg font-black tracking-tight sm:text-2xl">
             <span className="h-[2px] w-8 shrink-0 bg-neutral-400 sm:w-12" />
@@ -815,7 +799,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           4. EDITORIAL PROMO BANNER
           ===================================================================== */}
 
-      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
         <div
           className={`relative overflow-hidden rounded-3xl border p-6 transition-colors sm:p-10 lg:p-12 ${
             isDark
@@ -881,7 +865,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           5. FEATURED PRODUCTS
           ===================================================================== */}
 
-      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
         <div className="mb-8 flex min-w-0 items-end justify-between gap-4">
           <div className="min-w-0 text-right">
             <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-400">
@@ -959,7 +943,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           6. CUSTOMER REVIEWS
           ===================================================================== */}
 
-      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
         <div className="mb-8 flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 text-right">
             <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-400">
@@ -1041,7 +1025,11 @@ export const HomePage: React.FC<HomePageProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitReview} className="space-y-5" dir="rtl">
+            <form
+              onSubmit={handleSubmitReview}
+              className="space-y-5"
+              dir="rtl"
+            >
               <div>
                 <label
                   className={`mb-2 block text-sm font-bold ${
@@ -1313,6 +1301,3 @@ export const HomePage: React.FC<HomePageProps> = ({
     </div>
   );
 };
-```
-
-[/END]
