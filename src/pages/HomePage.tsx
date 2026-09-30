@@ -1,4 +1,3 @@
-```tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -68,7 +67,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     [content?.hero_image_url]
   );
 
-  const activeSlide = heroSlides[currentSlide] || heroSlides[0];
+  const activeSlide =
+    heroSlides[currentSlide] || heroSlides[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -84,7 +84,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           setProducts(data || []);
         }
       } catch (err) {
-        console.error('Failed to load homepage products:', err);
+        console.error(
+          'Failed to load homepage products:',
+          err
+        );
 
         if (!cancelled) {
           setError(
@@ -175,7 +178,8 @@ export const HomePage: React.FC<HomePageProps> = ({
       return;
     }
 
-    window.location.href = '/products/' + product.slug;
+    window.location.href =
+      '/products/' + product.slug;
   };
 
   const socialLinks = [
@@ -188,9 +192,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     {
       key: 'whatsapp',
       href: contactSocial?.whatsapp_number
-        ? `https://wa.me/${String(
-            contactSocial.whatsapp_number
-          ).replace(/\D/g, '')}`
+        ? `https://wa.me/${String(contactSocial.whatsapp_number).replace(/\D/g, '')}`
         : '',
       icon: MessageCircle,
       label: 'WhatsApp',
@@ -203,7 +205,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     },
   ].filter((social) => Boolean(social.href));
 
-  const isLongHeroTitle = activeSlide.title.length > 18;
+  const isLongHeroTitle =
+    activeSlide.title.length > 18;
 
   const mainClass = isDark
     ? 'min-h-screen overflow-x-hidden bg-black text-white'
@@ -379,8 +382,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button
                     key={slide.id}
                     type="button"
-                    aria-label={'Go to slide ' + (index + 1)}
-                    onClick={() => setCurrentSlide(index)}
+                    aria-label={
+                      'Go to slide ' + (index + 1)
+                    }
+                    onClick={() =>
+                      setCurrentSlide(index)
+                    }
                     className={
                       index === currentSlide
                         ? 'h-1.5 w-8 rounded-full bg-white transition-all duration-300'
@@ -462,7 +469,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         {activeCategories.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {activeCategories.map((category) => {
-              const categoryImage = category.image_url;
+              const categoryImage =
+                category.image_url;
 
               return (
                 <button
@@ -533,7 +541,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <button
               type="button"
-              onClick={() => handleNavigate('/products')}
+              onClick={() =>
+                handleNavigate('/products')
+              }
               className="mt-6 inline-flex w-fit flex-row-reverse items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform hover:-translate-y-0.5"
             >
               تسوق المجموعة
@@ -562,7 +572,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           <button
             type="button"
-            onClick={() => handleNavigate('/products')}
+            onClick={() =>
+              handleNavigate('/products')
+            }
             className="hidden items-center gap-2 text-sm font-bold sm:flex"
           >
             عرض جميع المنتجات
@@ -580,7 +592,9 @@ export const HomePage: React.FC<HomePageProps> = ({
             ))}
           </div>
         ) : error ? (
-          <div className={messageClass}>{error}</div>
+          <div className={messageClass}>
+            {error}
+          </div>
         ) : displayedProducts.length === 0 ? (
           <div className={messageClass}>
             لا توجد منتجات متاحة حاليًا.
@@ -588,21 +602,23 @@ export const HomePage: React.FC<HomePageProps> = ({
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {displayedProducts.map((product) => {
-              const compareAtPrice = (
-                product as Product & {
-                  compareAtPrice?:
-                    | number
-                    | string
-                    | null;
-                }
-              ).compareAtPrice;
+              const compareAtPrice =
+                (
+                  product as Product & {
+                    compareAtPrice?:
+                      | number
+                      | string
+                      | null;
+                  }
+                ).compareAtPrice;
 
               const numericCompare =
                 compareAtPrice == null
                   ? null
                   : Number(compareAtPrice);
 
-              const numericPrice = Number(product.price);
+              const numericPrice =
+                Number(product.price);
 
               const hasCompare =
                 numericCompare !== null &&
@@ -661,15 +677,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => {
-                        const variant = product.variants?.[0];
-
-                        if (!variant) {
-                          return;
-                        }
-
-                        addItem(product, variant);
-                      }}
+                      onClick={() =>
+                        (() => {
+                          const variant = product.variants?.[0];
+                          if (!variant) return;
+                          addItem(product, variant);
+                        })()
+                      }
                       className={productButtonClass}
                     >
                       <ShoppingBag className="h-4 w-4" />
@@ -684,7 +698,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         <button
           type="button"
-          onClick={() => handleNavigate('/products')}
+          onClick={() =>
+            handleNavigate('/products')
+          }
           className="mt-6 flex w-full items-center justify-center gap-2 text-sm font-bold sm:hidden"
         >
           عرض جميع المنتجات
@@ -751,4 +767,3 @@ export const HomePage: React.FC<HomePageProps> = ({
 };
 
 export default HomePage;
-```

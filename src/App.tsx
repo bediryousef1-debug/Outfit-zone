@@ -1,4 +1,3 @@
-```tsx
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 
 import { CartProvider, useCart } from './context/CartContext';
@@ -750,4 +749,3 @@ export function App() {
 }
 
 export default App;
-```
