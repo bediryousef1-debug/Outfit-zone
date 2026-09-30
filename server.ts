@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -4151,24 +4150,14 @@ app.get(
 // ==============================================================================
 
 async function startServer() {
-  // One parent HTTP server shared by Express and Vite (HMR WebSocket).
-  const httpServer =
-    http.createServer(app);
-
   if (!isProduction) {
-    const { createServer: createViteServer } =
+    const { createServer } =
       await import('vite');
 
     const vite =
-      await createViteServer({
+      await createServer({
         server: {
           middlewareMode: true,
-          // Attach Vite's HMR WebSocket to the same HTTP server as Express.
-          // Keeps the existing vite.config.ts behavior when DISABLE_HMR=true.
-          hmr:
-            process.env.DISABLE_HMR === 'true'
-              ? false
-              : { server: httpServer },
         },
         appType: 'spa',
       });
@@ -4200,7 +4189,7 @@ async function startServer() {
     );
   }
 
-  httpServer.listen(
+  app.listen(
     PORT,
     () => {
       console.log(

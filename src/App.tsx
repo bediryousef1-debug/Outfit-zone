@@ -1,19 +1,16 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
-
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { LanguageProvider } from './context/LanguageContext';
-
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { SocialBar } from './components/layout/SocialBar';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { CartDrawer } from './components/cart/CartDrawer';
-
-import HomePage from './pages/HomePage';
+import { HomePage } from './pages/HomePage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
@@ -21,106 +18,20 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
-
 import type { AdminTab } from './pages/admin/AdminLayout';
 
-
-// ============================================================================
-// ADMIN LAZY IMPORTS
-// ============================================================================
-
-const AdminLoginPage = lazy(function loadAdminLoginPage() {
-  return import('./pages/admin/AdminLoginPage').then(function (module) {
-    return {
-      default: module.AdminLoginPage,
-    };
-  });
-});
-
-const AdminLayout = lazy(function loadAdminLayout() {
-  return import('./pages/admin/AdminLayout').then(function (module) {
-    return {
-      default: module.AdminLayout,
-    };
-  });
-});
-
-const AdminDashboardPage = lazy(function loadAdminDashboardPage() {
-  return import('./pages/admin/AdminDashboardPage').then(function (module) {
-    return {
-      default: module.AdminDashboardPage,
-    };
-  });
-});
-
-const AdminProductsPage = lazy(function loadAdminProductsPage() {
-  return import('./pages/admin/AdminProductsPage').then(function (module) {
-    return {
-      default: module.AdminProductsPage,
-    };
-  });
-});
-
-const AdminProductEditPage = lazy(function loadAdminProductEditPage() {
-  return import('./pages/admin/AdminProductEditPage').then(function (module) {
-    return {
-      default: module.AdminProductEditPage,
-    };
-  });
-});
-
-const AdminCategoriesPage = lazy(function loadAdminCategoriesPage() {
-  return import('./pages/admin/AdminCategoriesPage').then(function (module) {
-    return {
-      default: module.AdminCategoriesPage,
-    };
-  });
-});
-
-const AdminOrdersPage = lazy(function loadAdminOrdersPage() {
-  return import('./pages/admin/AdminOrdersPage').then(function (module) {
-    return {
-      default: module.AdminOrdersPage,
-    };
-  });
-});
-
-const AdminOrderDetailPage = lazy(function loadAdminOrderDetailPage() {
-  return import('./pages/admin/AdminOrderDetailPage').then(function (module) {
-    return {
-      default: module.AdminOrderDetailPage,
-    };
-  });
-});
-
-const AdminContentPage = lazy(function loadAdminContentPage() {
-  return import('./pages/admin/AdminContentPage').then(function (module) {
-    return {
-      default: module.AdminContentPage,
-    };
-  });
-});
-
-const AdminContactPage = lazy(function loadAdminContactPage() {
-  return import('./pages/admin/AdminContactPage').then(function (module) {
-    return {
-      default: module.AdminContactPage,
-    };
-  });
-});
-
-const AdminSettingsPage = lazy(function loadAdminSettingsPage() {
-  return import('./pages/admin/AdminSettingsPage').then(function (module) {
-    return {
-      default: module.AdminSettingsPage,
-    };
-  });
-});
-
-
-// ============================================================================
-// ADMIN LOADING
-// ============================================================================
+// Performance optimization: Lazy-load admin bundle so customer storefront remains ultra-fast
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
+const AdminProductEditPage = lazy(() => import('./pages/admin/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
+const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })));
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
+const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage').then(m => ({ default: m.AdminContentPage })));
+const AdminContactPage = lazy(() => import('./pages/admin/AdminContactPage').then(m => ({ default: m.AdminContactPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 function AdminLoadingSpinner() {
   return (
@@ -133,604 +44,306 @@ function AdminLoadingSpinner() {
   );
 }
 
-
-// ============================================================================
-// APP CONTENT
-// ============================================================================
-
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const { content } = useStore();
   const { itemCount, isCartOpen, setIsCartOpen } = useCart();
   const { isDark } = useTheme();
 
-  const [currentPath, setCurrentPath] = useState(function () {
+  const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
   });
 
-
-  // ==========================================================================
-  // BROWSER HISTORY
-  // ==========================================================================
-
-  useEffect(function () {
-    function handlePopState() {
+  // Sync browser history
+  useEffect(() => {
+    const handlePopState = () => {
       setCurrentPath(window.location.pathname || '/');
-    }
-
-    window.addEventListener('popstate', handlePopState);
-
-    return function () {
-      window.removeEventListener('popstate', handlePopState);
     };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-
-  // ==========================================================================
-  // NAVIGATION
-  // ==========================================================================
-
-  function navigate(path: string) {
+  const navigate = (path: string) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  }
+  // SEO document title sync per page
+  useEffect(() => {
+    if (currentPath === '/') {
+      document.title = 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري';
+    } else if (currentPath.startsWith('/products/')) {
+      document.title = 'تفاصيل الموديل | Outfit Zone';
+    } else if (currentPath.startsWith('/products')) {
+      document.title = 'تشكيلة الستريت وير | Outfit Zone';
+    } else if (currentPath === '/cart') {
+      document.title = 'سلة المشتريات | Outfit Zone';
+    } else if (currentPath === '/checkout') {
+      document.title = 'إتمام الطلب (الدفع عند الاستلام) | Outfit Zone';
+    } else if (currentPath.startsWith('/order-success/')) {
+      document.title = 'تم استلام طلبك بنجاح | Outfit Zone';
+    } else if (currentPath === '/about') {
+      document.title = 'قصتنا وعن البراند | Outfit Zone';
+    } else if (currentPath === '/contact') {
+      document.title = 'تواصل معنا | Outfit Zone';
+    } else if (currentPath.startsWith('/admin')) {
+      document.title = 'لوحة التحكم | Outfit Zone Admin';
+    }
+  }, [currentPath]);
 
+  // Route Parsers
+  const isProductDetail = currentPath.startsWith('/products/') && currentPath !== '/products';
+  const productSlug = isProductDetail ? currentPath.replace('/products/', '').split('?')[0] : '';
 
-  // ==========================================================================
-  // PAGE TITLE
-  // ==========================================================================
+  const isOrderSuccess = currentPath.startsWith('/order-success/');
+  const orderNumber = isOrderSuccess ? currentPath.replace('/order-success/', '').split('?')[0] : '';
 
-  useEffect(
-    function () {
-      if (currentPath === '/') {
-        document.title =
-          'Outfit Zone | Wear In The Zone - براند ستريت وير مصري';
-        return;
-      }
+  const isAdminRoute = currentPath.startsWith('/admin');
 
-      if (currentPath.indexOf('/products/') === 0) {
-        document.title = 'تفاصيل الموديل | Outfit Zone';
-        return;
-      }
-
-      if (currentPath.indexOf('/products') === 0) {
-        document.title = 'تشكيلة الستريت وير | Outfit Zone';
-        return;
-      }
-
-      if (currentPath === '/cart') {
-        document.title = 'سلة المشتريات | Outfit Zone';
-        return;
-      }
-
-      if (currentPath === '/checkout') {
-        document.title = 'إتمام الطلب (الدفع عند الاستلام) | Outfit Zone';
-        return;
-      }
-
-      if (currentPath.indexOf('/order-success/') === 0) {
-        document.title = 'تم استلام طلبك بنجاح | Outfit Zone';
-        return;
-      }
-
-      if (currentPath === '/about') {
-        document.title = 'قصتنا وعن البراند | Outfit Zone';
-        return;
-      }
-
-      if (currentPath === '/contact') {
-        document.title = 'تواصل معنا | Outfit Zone';
-        return;
-      }
-
-      if (currentPath.indexOf('/admin') === 0) {
-        document.title = 'لوحة التحكم | Outfit Zone Admin';
-      }
-    },
-    [currentPath]
-  );
-
-
-  // ==========================================================================
-  // ROUTE PARSING
-  // ==========================================================================
-
-  const isProductDetail =
-    currentPath.indexOf('/products/') === 0 &&
-    currentPath !== '/products';
-
-  let productSlug = '';
-
-  if (isProductDetail) {
-    productSlug = currentPath
-      .replace('/products/', '')
-      .split('?')[0];
-  }
-
-  const isOrderSuccess =
-    currentPath.indexOf('/order-success/') === 0;
-
-  let orderNumber = '';
-
-  if (isOrderSuccess) {
-    orderNumber = currentPath
-      .replace('/order-success/', '')
-      .split('?')[0];
-  }
-
-  const isAdminRoute =
-    currentPath.indexOf('/admin') === 0;
-
-
-  // ==========================================================================
-  // ADMIN ROUTES
-  // ==========================================================================
-
+  // ==============================================================================
+  // ADMIN ROUTES (Lazy-loaded and strictly isolated from customer interface)
+  // ==============================================================================
   if (isAdminRoute) {
     if (authLoading) {
       return <AdminLoadingSpinner />;
     }
 
+    // Unauthenticated admin route handling: redirect to /admin/login
     if (!isAuthenticated) {
       return (
         <Suspense fallback={<AdminLoadingSpinner />}>
           <AdminLoginPage
-            onBackToStore={function () {
-              navigate('/');
-            }}
-            onLoginSuccess={function () {
-              navigate('/admin');
-            }}
+            onBackToStore={() => navigate('/')}
+            onLoginSuccess={() => navigate('/admin')}
           />
         </Suspense>
       );
     }
 
+    // If authenticated user visits /admin/login, direct them to /admin dashboard directly
     if (currentPath === '/admin/login') {
       window.history.replaceState({}, '', '/admin');
     }
 
-
-    // ------------------------------------------------------------------------
-    // ADMIN ACTIVE TAB
-    // ------------------------------------------------------------------------
-
+    // Authenticated admin routing:
     let activeTab: AdminTab = 'dashboard';
-
-    if (currentPath.indexOf('/admin/products') === 0) {
+    if (currentPath.startsWith('/admin/products')) {
       activeTab = 'products';
-    } else if (currentPath.indexOf('/admin/categories') === 0) {
+    } else if (currentPath.startsWith('/admin/categories')) {
       activeTab = 'categories';
-    } else if (currentPath.indexOf('/admin/orders') === 0) {
+    } else if (currentPath.startsWith('/admin/orders')) {
       activeTab = 'orders';
-    } else if (currentPath.indexOf('/admin/content') === 0) {
+    } else if (currentPath.startsWith('/admin/content')) {
       activeTab = 'content';
-    } else if (currentPath.indexOf('/admin/contact') === 0) {
+    } else if (currentPath.startsWith('/admin/contact')) {
       activeTab = 'contact';
-    } else if (currentPath.indexOf('/admin/settings') === 0) {
+    } else if (currentPath.startsWith('/admin/settings')) {
       activeTab = 'settings';
     }
 
-
-    // ------------------------------------------------------------------------
-    // PRODUCT ADMIN ROUTES
-    // ------------------------------------------------------------------------
-
-    const isNewProduct =
-      currentPath === '/admin/products/new';
-
-    const isEditProduct =
-      currentPath.indexOf('/admin/products/') === 0 &&
-      currentPath.endsWith('/edit');
-
-    let editProductId: string | null = null;
-
-    if (isEditProduct) {
-      editProductId = currentPath
-        .replace('/admin/products/', '')
-        .replace('/edit', '');
-    }
-
-
-    // ------------------------------------------------------------------------
-    // ORDER ADMIN ROUTES
-    // ------------------------------------------------------------------------
+    // Parse edit product / view order IDs
+    const isNewProduct = currentPath === '/admin/products/new';
+    const isEditProduct = currentPath.startsWith('/admin/products/') && currentPath.endsWith('/edit');
+    const editProductId = isEditProduct
+      ? currentPath.replace('/admin/products/', '').replace('/edit', '')
+      : null;
 
     const isOrderDetail =
-      currentPath.indexOf('/admin/orders/') === 0 &&
-      currentPath !== '/admin/orders';
-
-    let orderDetailId: string | null = null;
-
-    if (isOrderDetail) {
-      orderDetailId = currentPath.replace(
-        '/admin/orders/',
-        ''
-      );
-    }
-
-
-    // ------------------------------------------------------------------------
-    // ADMIN UI
-    // ------------------------------------------------------------------------
+      currentPath.startsWith('/admin/orders/') && currentPath !== '/admin/orders';
+    const orderDetailId = isOrderDetail ? currentPath.replace('/admin/orders/', '') : null;
 
     return (
       <Suspense fallback={<AdminLoadingSpinner />}>
         <AdminLayout
           currentTab={activeTab}
-          onSelectTab={function (tab) {
-            if (tab === 'dashboard') {
-              navigate('/admin');
-            }
-
-            if (tab === 'products') {
-              navigate('/admin/products');
-            }
-
-            if (tab === 'categories') {
-              navigate('/admin/categories');
-            }
-
-            if (tab === 'orders') {
-              navigate('/admin/orders');
-            }
-
-            if (tab === 'content') {
-              navigate('/admin/content');
-            }
-
-            if (tab === 'contact') {
-              navigate('/admin/contact');
-            }
-
-            if (tab === 'settings') {
-              navigate('/admin/settings');
-            }
+          onSelectTab={(tab) => {
+            if (tab === 'dashboard') navigate('/admin');
+            if (tab === 'products') navigate('/admin/products');
+            if (tab === 'categories') navigate('/admin/categories');
+            if (tab === 'orders') navigate('/admin/orders');
+            if (tab === 'content') navigate('/admin/content');
+            if (tab === 'contact') navigate('/admin/contact');
+            if (tab === 'settings') navigate('/admin/settings');
           }}
-          onExitAdmin={function () {
-            navigate('/');
-          }}
+          onExitAdmin={() => navigate('/')}
         >
-
-          {/* ADMIN DASHBOARD */}
-
+          {/* /admin Dashboard */}
           {activeTab === 'dashboard' && (
             <AdminDashboardPage
-              onNavigateTab={function (tab) {
-                if (tab === 'dashboard') {
-                  navigate('/admin');
-                }
-
-                if (tab === 'products') {
-                  navigate('/admin/products');
-                }
-
-                if (tab === 'categories') {
-                  navigate('/admin/categories');
-                }
-
-                if (tab === 'orders') {
-                  navigate('/admin/orders');
-                }
-
-                if (tab === 'content') {
-                  navigate('/admin/content');
-                }
-
-                if (tab === 'contact') {
-                  navigate('/admin/contact');
-                }
-
-                if (tab === 'settings') {
-                  navigate('/admin/settings');
-                }
+              onNavigateTab={(tab) => {
+                if (tab === 'dashboard') navigate('/admin');
+                if (tab === 'products') navigate('/admin/products');
+                if (tab === 'categories') navigate('/admin/categories');
+                if (tab === 'orders') navigate('/admin/orders');
+                if (tab === 'content') navigate('/admin/content');
+                if (tab === 'contact') navigate('/admin/contact');
+                if (tab === 'settings') navigate('/admin/settings');
               }}
-              onSelectOrder={function (id) {
-                navigate('/admin/orders/' + id);
-              }}
-              onNewProduct={function () {
-                navigate('/admin/products/new');
-              }}
+              onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
+              onNewProduct={() => navigate('/admin/products/new')}
             />
           )}
 
-
-          {/* ADMIN PRODUCTS */}
-
+          {/* /admin/products */}
           {activeTab === 'products' && (
             <>
               {isNewProduct ? (
                 <AdminProductEditPage
                   productId={null}
-                  onBack={function () {
-                    navigate('/admin/products');
-                  }}
-                  onSaved={function () {
-                    navigate('/admin/products');
-                  }}
+                  onBack={() => navigate('/admin/products')}
+                  onSaved={() => navigate('/admin/products')}
                 />
               ) : isEditProduct && editProductId ? (
                 <AdminProductEditPage
                   productId={editProductId}
-                  onBack={function () {
-                    navigate('/admin/products');
-                  }}
-                  onSaved={function () {
-                    navigate('/admin/products');
-                  }}
+                  onBack={() => navigate('/admin/products')}
+                  onSaved={() => navigate('/admin/products')}
                 />
               ) : (
                 <AdminProductsPage
-                  onNewProduct={function () {
-                    navigate('/admin/products/new');
-                  }}
-                  onEditProduct={function (id) {
-                    navigate('/admin/products/' + id + '/edit');
-                  }}
+                  onNewProduct={() => navigate('/admin/products/new')}
+                  onEditProduct={(id) => navigate(`/admin/products/${id}/edit`)}
                 />
               )}
             </>
           )}
 
+          {/* /admin/categories */}
+          {activeTab === 'categories' && <AdminCategoriesPage />}
 
-          {/* ADMIN CATEGORIES */}
-
-          {activeTab === 'categories' && (
-            <AdminCategoriesPage />
-          )}
-
-
-          {/* ADMIN ORDERS */}
-
+          {/* /admin/orders */}
           {activeTab === 'orders' && (
             <>
               {isOrderDetail && orderDetailId ? (
                 <AdminOrderDetailPage
                   orderId={orderDetailId}
-                  onBack={function () {
-                    navigate('/admin/orders');
-                  }}
+                  onBack={() => navigate('/admin/orders')}
                 />
               ) : (
                 <AdminOrdersPage
-                  onSelectOrder={function (id) {
-                    navigate('/admin/orders/' + id);
-                  }}
+                  onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
                 />
               )}
             </>
           )}
 
+          {/* /admin/content */}
+          {activeTab === 'content' && <AdminContentPage />}
 
-          {/* ADMIN CONTENT */}
+          {/* /admin/contact */}
+          {activeTab === 'contact' && <AdminContactPage />}
 
-          {activeTab === 'content' && (
-            <AdminContentPage />
-          )}
-
-
-          {/* ADMIN CONTACT */}
-
-          {activeTab === 'contact' && (
-            <AdminContactPage />
-          )}
-
-
-          {/* ADMIN SETTINGS */}
-
-          {activeTab === 'settings' && (
-            <AdminSettingsPage />
-          )}
-
+          {/* /admin/settings */}
+          {activeTab === 'settings' && <AdminSettingsPage />}
         </AdminLayout>
       </Suspense>
     );
   }
 
-
-  // ==========================================================================
-  // CUSTOMER STOREFRONT
-  // ==========================================================================
-
-  let storefrontClassName =
-    'min-h-screen flex flex-col font-sans transition-colors ';
-
-  if (isDark) {
-    storefrontClassName +=
-      'bg-[#09090b] text-[#f4f4f5] selection:bg-neutral-800 selection:text-white';
-  } else {
-    storefrontClassName +=
-      'bg-[#f9f9fb] text-[#09090b] selection:bg-neutral-200 selection:text-black';
-  }
-
-
+  // ==============================================================================
+  // CUSTOMER STOREFRONT ROUTES
+  // ==============================================================================
   return (
-    <div className={storefrontClassName}>
-
-      {/* HEADER */}
-
+    <div
+      className={`min-h-screen flex flex-col font-sans transition-colors ${
+        isDark
+          ? 'bg-[#09090b] text-[#f4f4f5] selection:bg-neutral-800 selection:text-white'
+          : 'bg-[#f9f9fb] text-[#09090b] selection:bg-neutral-200 selection:text-black'
+      }`}
+    >
+      {/* Customer Header */}
       <Header
         itemCount={itemCount}
         setIsCartOpen={setIsCartOpen}
-        onNavigate={function (path) {
-          navigate(path);
-        }}
+        onNavigate={(path) => navigate(path)}
         currentPath={currentPath}
         announcementText={content?.announcement_text}
       />
 
-
-      {/* MAIN */}
-
+      {/* Main Storefront Views */}
       <main className="flex-1 pb-24 md:pb-16">
-
-        {/* HOME */}
-
+        {/* / (Home) */}
         {currentPath === '/' && (
           <HomePage
-            onNavigate={function (path) {
-              navigate(path);
-            }}
-            onSelectProduct={function (slug) {
-              navigate('/products/' + slug);
-            }}
+            onNavigate={(path) => navigate(path)}
+            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
           />
         )}
 
-
-        {/* PRODUCTS */}
-
+        {/* /products */}
         {currentPath === '/products' && (
           <ProductsPage
-            onSelectProduct={function (slug) {
-              navigate('/products/' + slug);
-            }}
+            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
           />
         )}
 
+        {/* /products?category=... */}
+        {currentPath.startsWith('/products?') && !isProductDetail && (
+          <ProductsPage
+            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
+            initialCategory={new URLSearchParams(currentPath.split('?')[1]).get('category') || ''}
+            initialFilter={new URLSearchParams(currentPath.split('?')[1]).get('filter') || ''}
+          />
+        )}
 
-        {/* PRODUCTS WITH QUERY */}
-
-        {currentPath.indexOf('/products?') === 0 &&
-          !isProductDetail && (
-            <ProductsPage
-              onSelectProduct={function (slug) {
-                navigate('/products/' + slug);
-              }}
-              initialCategory={
-                new URLSearchParams(
-                  currentPath.split('?')[1]
-                ).get('category') || ''
-              }
-              initialFilter={
-                new URLSearchParams(
-                  currentPath.split('?')[1]
-                ).get('filter') || ''
-              }
-            />
-          )}
-
-
-        {/* PRODUCT DETAIL */}
-
+        {/* /products/:slug */}
         {isProductDetail && productSlug && (
           <ProductDetailPage
             slug={productSlug}
-            onBack={function () {
-              navigate('/products');
-            }}
-            onNavigate={function (path) {
-              navigate(path);
-            }}
+            onBack={() => navigate('/products')}
+            onNavigate={(path) => navigate(path)}
           />
         )}
 
-
-        {/* CART */}
-
+        {/* /cart */}
         {currentPath === '/cart' && (
           <CartPage
-            onNavigate={function (path) {
-              navigate(path);
-            }}
+            onNavigate={(path) => navigate(path)}
           />
         )}
 
-
-        {/* CHECKOUT */}
-
+        {/* /checkout */}
         {currentPath === '/checkout' && (
           <CheckoutPage
-            onNavigate={function (path) {
-              navigate(path);
-            }}
-            onOrderSuccess={function (orderNum, token) {
-              let url =
-                '/order-success/' + orderNum;
-
-              if (token) {
-                url += '?t=' + token;
-              }
-
+            onNavigate={(path) => navigate(path)}
+            onOrderSuccess={(orderNum, token) => {
+              const url = token ? `/order-success/${orderNum}?t=${token}` : `/order-success/${orderNum}`;
               navigate(url);
             }}
           />
         )}
 
-
-        {/* ORDER SUCCESS */}
-
+        {/* /order-success/:orderNumber */}
         {isOrderSuccess && orderNumber && (
           <OrderSuccessPage
             orderNumber={orderNumber}
-            onNavigate={function (path) {
-              navigate(path);
-            }}
+            onNavigate={(path) => navigate(path)}
           />
         )}
 
-
-        {/* ABOUT */}
-
+        {/* /about */}
         {currentPath === '/about' && (
-          <AboutPage
-            onNavigate={function (path) {
-              navigate(path);
-            }}
-          />
+          <AboutPage onNavigate={(path) => navigate(path)} />
         )}
 
-
-        {/* CONTACT */}
-
+        {/* /contact */}
         {currentPath === '/contact' && (
           <ContactPage />
         )}
-
       </main>
 
+      {/* Customer Footer */}
+      <Footer onNavigate={(path) => navigate(path)} />
 
-      {/* FOOTER */}
-
-      <Footer
-        onNavigate={function (path) {
-          navigate(path);
-        }}
-      />
-
-
-      {/* FLOATING ELEMENTS */}
-
+      {/* Floating Elements (WhatsApp, Social Bar & Cart Drawer) */}
       <WhatsAppFloatingButton />
-
       <SocialBar variant="floating-mobile" />
-
-      <MobileBottomNav
-        currentPath={currentPath}
-        onNavigate={function (path) {
-          navigate(path);
-        }}
-      />
-
-      <CartDrawer
-        onNavigate={function (path) {
-          navigate(path);
-        }}
-      />
-
+      <MobileBottomNav currentPath={currentPath} onNavigate={(path) => navigate(path)} />
+      <CartDrawer onNavigate={(path) => navigate(path)} />
     </div>
   );
 }
-
-
-// ============================================================================
-// ROOT APP
-// ============================================================================
 
 export function App() {
   return (

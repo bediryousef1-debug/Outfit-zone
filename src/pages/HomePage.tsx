@@ -1,769 +1,1264 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Instagram,
-  MessageCircle,
-  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  Percent,
+  Headphones,
+  RotateCcw,
+  AlertCircle,
+  Star,
+  Send,
+  X,
 } from 'lucide-react';
-
-import type { Product } from '../types';
+import { Product, ProductReview } from '../types';
 import { api } from '../services/api';
+import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
-import { useCart } from '../context/CartContext';
+import { resolveImageUrl } from '../utils/imageHelper';
 
 interface HomePageProps {
-  onNavigate?: (path: string) => void;
-  onSelectProduct?: (slug: string) => void;
+  onNavigate: (path: string) => void;
+  onSelectProduct: (slug: string) => void;
+}
+
+interface HomepageReview extends ProductReview {
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
   onSelectProduct,
 }) => {
-  const { categories, content, contactSocial } = useStore();
+  const { categories, content } = useStore();
   const { isDark } = useTheme();
-  const { addItem } = useCart();
-
-  const isRtl = true;
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [reviews, setReviews] = useState<HomepageReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const heroSlides = useMemo(
-    () => [
-      {
-        id: 'hero-1',
-        eyebrow: 'OUTFIT ZONE',
-        title: 'WEAR IN THE ZONE',
-        arabicTitle: 'البسها صح',
-        description:
-          'قطع ستريت وير مختارة بعناية عشان تكمل اللوك بتاعك من غير تفكير كتير.',
-        cta: 'تسوق الآن',
-        image:
-          content?.hero_image_url ||
-          '/images/hero_streetwear_editorial_1790342899745.jpg',
-        path: '/products',
-      },
-      {
-        id: 'hero-2',
-        eyebrow: 'NEW DROP',
-        title: 'YOUR STYLE. YOUR ZONE.',
-        arabicTitle: 'ستايلك له مكان',
-        description:
-          'اكتشف أحدث القطع والقصات اللي تخلي اختيارك للّوك أسهل.',
-        cta: 'اكتشف الجديد',
-        image:
-          content?.hero_image_url ||
-          '/images/hero_streetwear_editorial_1790342899745.jpg',
-        path: '/products',
-      },
-    ],
-    [content?.hero_image_url]
-  );
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
 
-  const activeSlide =
-    heroSlides[currentSlide] || heroSlides[0];
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  /*
+   * ==========================================================================
+   * HERO SLIDES
+   * ==========================================================================
+   */
 
-    const loadProducts = async () => {
-      setIsLoading(true);
-      setError(null);
+  const heroSlides = [
+    {
+      id: 'slide-main',
+      tag: 'NEW COLLECTION 2026',
+      titleLine1: 'WEAR IN',
+      titleLine2: 'THE ZONE',
+      subtitleAr: content?.hero_subtitle || 'ستايلك له حضور',
+      description:
+        'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
+      ctaText: content?.hero_button_text || 'تسوق الآن',
+      ctaLink: '/products',
+      imageUrl:
+        content?.hero_image_url ||
+        '/images/hero_streetwear_editorial_1790342899745.jpg',
+      badgeTop: 'Style Your Zone',
+      badgeBottom: 'STYLE BUILDS CONFIDENCE',
+      alt: 'Outfit Zone Editorial Campaign',
+    },
+    {
+      id: 'slide-boxfit',
+      tag: 'BOX FIT ESSENTIALS',
+      titleLine1: 'HEAVYWEIGHT',
+      titleLine2: 'COTTON 240+',
+      subtitleAr: 'تيشيرتات Box Fit الفاخرة',
+      description:
+        'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
+      ctaText: 'اكتشف التيشيرتات',
+      ctaLink: '/products?search=تيشيرت',
+      imageUrl: '/images/product_boxfit_tee_black_1790342911897.jpg',
+      badgeTop: 'Heavyweight Fit',
+      badgeBottom: '100% EGYPTIAN COTTON',
+      alt: 'Box Fit T-Shirt Black',
+    },
+    {
+      id: 'slide-oversized',
+      tag: 'OVERSIZED STREETWEAR',
+      titleLine1: 'EFFORTLESS',
+      titleLine2: 'OVERSIZED',
+      subtitleAr: 'تشكيلة الأوفرسايز الواسعة',
+      description:
+        'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
+      ctaText: 'تسوق الأوفرسايز',
+      ctaLink: '/products?search=اوفرسايز',
+      imageUrl: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
+      badgeTop: 'Streetwear Drop',
+      badgeBottom: 'WEAR IN THE ZONE',
+      alt: 'Oversized Tee Offwhite',
+    },
+    {
+      id: 'slide-polos',
+      tag: 'URBAN INTERLOCK',
+      titleLine1: 'MODERN',
+      titleLine2: 'POLOS & SHIRTS',
+      subtitleAr: 'بولو وقمصان إنترلوك أنيقة',
+      description:
+        'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
+      ctaText: 'عرض التشكيلة',
+      ctaLink: '/products?category=streetwear-polos',
+      imageUrl: '/images/product_interlock_polo_charcoal_1790342934447.jpg',
+      badgeTop: 'Urban Interlock',
+      badgeBottom: 'CASH ON DELIVERY',
+      alt: 'Streetwear Polo Charcoal',
+    },
+  ];
 
-      try {
-        const data = await api.getProducts();
-
-        if (!cancelled) {
-          setProducts(data || []);
-        }
-      } catch (err) {
-        console.error(
-          'Failed to load homepage products:',
-          err
-        );
-
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'تعذر تحميل المنتجات حاليًا'
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadProducts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (heroSlides.length <= 1) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setCurrentSlide((previous) => {
-        if (previous >= heroSlides.length - 1) {
-          return 0;
-        }
-
-        return previous + 1;
-      });
-    }, 6000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [heroSlides.length]);
+  const currentSlide = heroSlides[activeSlide] || heroSlides[0];
 
   const nextSlide = () => {
-    setCurrentSlide((previous) => {
-      if (previous >= heroSlides.length - 1) {
-        return 0;
-      }
-
-      return previous + 1;
-    });
+    setActiveSlide((prev) => (prev + 1) % heroSlides.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((previous) => {
-      if (previous <= 0) {
-        return heroSlides.length - 1;
-      }
-
-      return previous - 1;
-    });
+    setActiveSlide(
+      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
+    );
   };
+
+  /*
+   * ==========================================================================
+   * HERO AUTOPLAY
+   * ==========================================================================
+   */
+
+  useEffect(() => {
+    if (isPaused) return;
+
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isPaused, heroSlides.length]);
+
+  /*
+   * ==========================================================================
+   * LOAD PRODUCTS
+   * ==========================================================================
+   */
+
+  const loadProducts = async () => {
+    setIsLoading(true);
+    setReviewsLoading(true);
+    setError(null);
+
+    try {
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (err: any) {
+      console.error('Error fetching homepage products:', err);
+      setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+      setProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /*
+   * ==========================================================================
+   * LOAD PUBLIC HOMEPAGE REVIEWS
+   * ==========================================================================
+   *
+   * Reviews are loaded once through getPublicReviews().
+   * General reviews have product_id = null.
+   * Product-specific reviews are matched locally against the already-loaded
+   * products instead of making one request per product.
+   */
+
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+
+    try {
+      const publicReviews = await api.getPublicReviews();
+
+      const productMap = new Map(
+        products.map((product) => [
+          product.id,
+          {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+          },
+        ])
+      );
+
+      const homepageReviews: HomepageReview[] = publicReviews
+        .map((review) => ({
+          ...review,
+          product: review.product_id
+            ? productMap.get(review.product_id)
+            : undefined,
+        }))
+        .slice(0, 6);
+
+      setReviews(homepageReviews);
+    } catch (err) {
+      console.error('Error fetching homepage reviews:', err);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      loadReviews();
+    }
+  }, [isLoading, products]);
+
+  const featuredProducts = products.some((p) => p.is_featured)
+    ? products.filter((p) => p.is_featured).slice(0, 8)
+    : products.slice(0, 8);
+
+  /*
+   * ==========================================================================
+   * REAL CATEGORIES
+   * ==========================================================================
+   */
 
   const activeCategories = (categories || []).filter(
     (category) => category.is_active !== false
   );
 
-  const featuredProducts = products
-    .filter((product) => product.is_featured)
-    .slice(0, 8);
+  /*
+   * ==========================================================================
+   * TRUST FEATURES
+   * ==========================================================================
+   */
 
-  const displayedProducts =
-    featuredProducts.length > 0
-      ? featuredProducts
-      : products.slice(0, 8);
+  const trustFeatures = [
+    {
+      id: 'cod',
+      title: 'دفع عند الاستلام',
+      subtitle: 'كاش',
+      icon: ShieldCheck,
+    },
+    {
+      id: 'shipping',
+      title: 'شحن سريع',
+      subtitle: 'لجميع المحافظات',
+      icon: Truck,
+    },
+    {
+      id: 'discounts',
+      title: 'خصومات حصرية',
+      subtitle: 'ولمدة محدودة',
+      icon: Percent,
+    },
+    {
+      id: 'support',
+      title: 'دعم العملاء',
+      subtitle: 'علي مدار الساعة',
+      icon: Headphones,
+    },
+  ];
 
-  const handleNavigate = (path: string) => {
-    if (onNavigate) {
-      onNavigate(path);
+  /*
+   * ==========================================================================
+   * CATEGORY NAVIGATION
+   * ==========================================================================
+   */
+
+  const handleCategoryNavigate = (slug: string) => {
+    onNavigate(`/products?category=${encodeURIComponent(slug)}`);
+  };
+
+  /*
+   * ==========================================================================
+   * REVIEW NAVIGATION
+   * ==========================================================================
+   */
+
+  const handleReviewProduct = (slug?: string) => {
+    if (!slug) return;
+
+    onSelectProduct(slug);
+  };
+
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
+
+  const openReviewForm = () => {
+    setReviewMessage(null);
+    setReviewError(null);
+    setShowReviewForm(true);
+  };
+
+  const closeReviewForm = () => {
+    if (reviewSubmitting) return;
+
+    setShowReviewForm(false);
+    setReviewError(null);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setReviewMessage(null);
+    setReviewError(null);
+
+    const cleanName = reviewName.trim();
+    const cleanText = reviewText.trim();
+
+    if (!cleanName) {
+      setReviewError('من فضلك اكتب اسمك.');
       return;
     }
 
-    window.location.href = path;
-  };
-
-  const handleProductSelect = (product: Product) => {
-    if (onSelectProduct) {
-      onSelectProduct(product.slug);
+    if (cleanName.length < 2) {
+      setReviewError('الاسم يجب أن يكون حرفين على الأقل.');
       return;
     }
 
-    window.location.href =
-      '/products/' + product.slug;
+    if (!cleanText) {
+      setReviewError('من فضلك اكتب رأيك.');
+      return;
+    }
+
+    if (cleanText.length < 5) {
+      setReviewError('اكتب رأيك في 5 أحرف على الأقل.');
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewError('اختار تقييم من نجمة إلى 5 نجوم.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+
+    try {
+      const result = await api.createProductReview({
+        product_id: null,
+        customer_name: cleanName,
+        rating: reviewRating,
+        review_text: cleanText,
+      });
+
+      if (!result.success) {
+        throw new Error('تعذر إرسال رأيك حاليًا.');
+      }
+
+      setReviewName('');
+      setReviewRating(5);
+      setReviewText('');
+      setShowReviewForm(false);
+
+      setReviewMessage(
+        'شكرًا لرأيك ❤️ سيتم مراجعته واعتماده قبل ظهوره على الموقع.'
+      );
+    } catch (err: any) {
+      console.error('Error submitting homepage review:', err);
+
+      setReviewError(
+        err.message || 'تعذر إرسال رأيك حاليًا. حاول مرة أخرى.'
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
-
-  const socialLinks = [
-    {
-      key: 'instagram',
-      href: contactSocial?.instagram_url || '',
-      icon: Instagram,
-      label: 'Instagram',
-    },
-    {
-      key: 'whatsapp',
-      href: contactSocial?.whatsapp_number
-        ? `https://wa.me/${String(contactSocial.whatsapp_number).replace(/\D/g, '')}`
-        : '',
-      icon: MessageCircle,
-      label: 'WhatsApp',
-    },
-    {
-      key: 'tiktok',
-      href: contactSocial?.tiktok_url || '',
-      icon: null,
-      label: 'TikTok',
-    },
-  ].filter((social) => Boolean(social.href));
-
-  const isLongHeroTitle =
-    activeSlide.title.length > 18;
-
-  const mainClass = isDark
-    ? 'min-h-screen overflow-x-hidden bg-black text-white'
-    : 'min-h-screen overflow-x-hidden bg-white text-black';
-
-  const heroWrapperClass = isDark
-    ? 'mx-auto grid min-h-[680px] w-full max-w-[1600px] grid-cols-1 bg-black lg:grid-cols-2'
-    : 'mx-auto grid min-h-[680px] w-full max-w-[1600px] grid-cols-1 bg-white lg:grid-cols-2';
-
-  const heroTextClass = isRtl
-    ? 'relative z-10 flex min-w-0 flex-col justify-center px-5 py-14 sm:px-8 lg:order-2 lg:px-12 lg:text-right xl:px-16'
-    : 'relative z-10 flex min-w-0 flex-col justify-center px-5 py-14 sm:px-8 lg:order-1 lg:px-12 lg:text-left xl:px-16';
-
-  const heroContentClass = isLongHeroTitle
-    ? 'w-full min-w-0 max-w-full space-y-2 lg:max-w-[510px]'
-    : 'w-full min-w-0 max-w-full space-y-2 lg:max-w-[570px]';
-
-  const eyebrowClass = isDark
-    ? 'font-mono text-xs font-bold tracking-[0.2em] text-white/60'
-    : 'font-mono text-xs font-bold tracking-[0.2em] text-black/50';
-
-  const titleSizeClass = isLongHeroTitle
-    ? 'text-[clamp(1.9rem,8.5vw,3rem)] sm:text-[clamp(2.7rem,6vw,3.7rem)] lg:text-[clamp(2.5rem,3.45vw,3.75rem)]'
-    : 'text-[clamp(2.15rem,9vw,3rem)] sm:text-6xl lg:text-[clamp(3.4rem,4.7vw,4.5rem)]';
-
-  const titleClass = isDark
-    ? 'w-full min-w-0 max-w-full font-syne font-black uppercase leading-[0.88] tracking-[-0.045em] text-white'
-    : 'w-full min-w-0 max-w-full font-syne font-black uppercase leading-[0.88] tracking-[-0.045em] text-black';
-
-  const arabicTitleClass = isDark
-    ? 'pt-2 text-xl font-bold text-white/90 sm:text-2xl'
-    : 'pt-2 text-xl font-bold text-black/80 sm:text-2xl';
-
-  const descriptionClass = isDark
-    ? 'max-w-xl text-sm leading-7 text-white/60 sm:text-base'
-    : 'max-w-xl text-sm leading-7 text-black/60 sm:text-base';
-
-  const heroButtonClass = isDark
-    ? 'inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform duration-200 hover:-translate-y-0.5'
-    : 'inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-bold text-white transition-transform duration-200 hover:-translate-y-0.5';
-
-  const heroImageSideClass = isRtl
-    ? 'relative min-h-[420px] overflow-hidden lg:order-1 lg:min-h-full'
-    : 'relative min-h-[420px] overflow-hidden lg:order-2 lg:min-h-full';
-
-  const heroGradientDirection = isRtl
-    ? 'bg-gradient-to-l'
-    : 'bg-gradient-to-r';
-
-  const heroGradientTheme = isDark
-    ? 'from-black/70 via-black/20 to-transparent'
-    : 'from-white/70 via-white/10 to-transparent';
-
-  const heroControlClass = isDark
-    ? 'flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/40 text-white transition-colors hover:bg-white hover:text-black'
-    : 'flex h-10 w-10 items-center justify-center rounded-full border border-black/20 bg-white/70 text-black transition-colors hover:bg-black hover:text-white';
-
-  const trustSectionClass = isDark
-    ? 'border-y border-white/10 bg-neutral-950'
-    : 'border-y border-black/10 bg-neutral-50';
-
-  const trustItemClass = isDark
-    ? 'border-b border-white/10 px-4 py-6 text-center md:border-b-0 md:border-r'
-    : 'border-b border-black/10 px-4 py-6 text-center md:border-b-0 md:border-r';
-
-  const mutedTextClass = isDark
-    ? 'text-white/45'
-    : 'text-black/45';
-
-  const editorialWrapperClass = isDark
-    ? 'relative min-h-[360px] overflow-hidden rounded-3xl bg-neutral-900'
-    : 'relative min-h-[360px] overflow-hidden rounded-3xl bg-neutral-100';
-
-  const productCardClass = isDark
-    ? 'group overflow-hidden rounded-2xl bg-neutral-900'
-    : 'group overflow-hidden rounded-2xl bg-neutral-100';
-
-  const productCompareClass = isDark
-    ? 'text-xs line-through text-white/35'
-    : 'text-xs line-through text-black/35';
-
-  const productButtonClass = isDark
-    ? 'mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-xs font-bold text-black transition-colors hover:bg-white/90'
-    : 'mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-black py-2.5 text-xs font-bold text-white transition-colors hover:bg-black/90';
-
-  const loadingCardClass = isDark
-    ? 'aspect-[0.8] animate-pulse rounded-2xl bg-neutral-900'
-    : 'aspect-[0.8] animate-pulse rounded-2xl bg-neutral-100';
-
-  const messageClass = isDark
-    ? 'rounded-2xl border border-white/10 p-8 text-center text-sm text-white/60'
-    : 'rounded-2xl border border-black/10 p-8 text-center text-sm text-black/60';
-
-  const socialSectionClass = isDark
-    ? 'border-t border-white/10 bg-black'
-    : 'border-t border-black/10 bg-white';
-
-  const socialButtonClass = isDark
-    ? 'flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900'
-    : 'flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-neutral-50';
 
   return (
-    <main className={mainClass}>
-      <section className="relative overflow-hidden">
-        <div className={heroWrapperClass}>
-          <div className={heroTextClass}>
-            <div className={heroContentClass}>
-              <p className={eyebrowClass}>
-                {activeSlide.eyebrow}
-              </p>
+    <div className="space-y-12 sm:space-y-16">
+      {/* =====================================================================
+          1. HERO SECTION & SLIDER
+          ===================================================================== */}
 
-              <h1
-                className={
-                  titleSizeClass + ' ' + titleClass
-                }
-              >
-                {activeSlide.title}
-              </h1>
+      <section
+        className={`relative overflow-hidden transition-colors ${
+          isDark
+            ? 'bg-gradient-to-b from-[#111115] via-[#09090b] to-[#000000]'
+            : 'bg-gradient-to-b from-[#f3f4f6] via-[#f9fafb] to-[#ffffff]'
+        }`}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
+        aria-roledescription="carousel"
+        aria-label="عروض وتشكيلات Outfit Zone"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Column */}
+            <div className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-[1px] bg-neutral-500" />
 
-              <h2 className={arabicTitleClass}>
-                {activeSlide.arabicTitle}
-              </h2>
+                  <span className="font-mono tracking-wider">
+                    {currentSlide.tag}
+                  </span>
+                </div>
 
-              <p className={descriptionClass}>
-                {activeSlide.description}
-              </p>
+                <div className="font-mono text-xs opacity-75">
+                  0{activeSlide + 1} / 0{heroSlides.length}
+                </div>
+              </div>
 
-              <div
-                className={
-                  isRtl
-                    ? 'flex flex-wrap items-center justify-end gap-3 pt-5'
-                    : 'flex flex-wrap items-center justify-start gap-3 pt-5'
-                }
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleNavigate(activeSlide.path)
-                  }
-                  className={heroButtonClass}
+              <div className="space-y-1 min-h-[140px] sm:min-h-[180px] flex flex-col justify-center">
+                <h1 className="font-syne text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95]">
+                  <span
+                    className={`block transition-colors duration-300 ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {currentSlide.titleLine1}
+                  </span>
+
+                  <span
+                    className={`block transition-colors duration-300 ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {currentSlide.titleLine2}
+                  </span>
+                </h1>
+
+                <h2
+                  className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold pt-2 transition-colors duration-300 ${
+                    isDark ? 'text-neutral-100' : 'text-neutral-900'
+                  }`}
                 >
-                  {activeSlide.cta}
+                  {currentSlide.subtitleAr}
+                </h2>
+              </div>
 
-                  {isRtl ? (
-                    <ArrowLeft className="h-4 w-4" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
+              <p
+                className={`text-sm sm:text-base leading-relaxed max-w-md min-h-[48px] transition-colors duration-300 ${
+                  isDark ? 'text-neutral-300' : 'text-neutral-600'
+                }`}
+              >
+                {currentSlide.description}
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-4">
+                <button
+                  onClick={() => onNavigate(currentSlide.ctaLink)}
+                  className={`py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-105 cursor-pointer ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
+                      : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
+                  }`}
+                >
+                  <span>{currentSlide.ctaText}</span>
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-          </div>
 
-          <div className={heroImageSideClass}>
-            <img
-              src={activeSlide.image}
-              alt={activeSlide.title}
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
+              <div className="flex items-center justify-between pt-6 border-t border-neutral-200/40 dark:border-neutral-800/60 max-w-md">
+                <div
+                  className="flex items-center gap-2"
+                  role="tablist"
+                  aria-label="شرائح السلايدر"
+                >
+                  {heroSlides.map((slide, idx) => {
+                    const isActive = activeSlide === idx;
 
-            <div
-              className={
-                'absolute inset-0 ' +
-                heroGradientDirection +
-                ' ' +
-                heroGradientTheme
-              }
-            />
+                    return (
+                      <button
+                        key={slide.id}
+                        onClick={() => setActiveSlide(idx)}
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-label={`الشريحة ${idx + 1}: ${slide.titleLine1}`}
+                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                          isActive
+                            ? `w-8 ${
+                                isDark
+                                  ? 'bg-white shadow-sm shadow-white/30'
+                                  : 'bg-black shadow-sm shadow-black/30'
+                              }`
+                            : `w-3 hover:w-5 ${
+                                isDark
+                                  ? 'bg-neutral-700 hover:bg-neutral-500'
+                                  : 'bg-neutral-300 hover:bg-neutral-500'
+                              }`
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
 
-            <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-between px-5 sm:px-8 lg:px-10">
-              <div className="flex items-center gap-2">
-                {heroSlides.map((slide, index) => (
+                <div className="flex items-center gap-2">
                   <button
-                    key={slide.id}
-                    type="button"
-                    aria-label={
-                      'Go to slide ' + (index + 1)
-                    }
-                    onClick={() =>
-                      setCurrentSlide(index)
-                    }
-                    className={
-                      index === currentSlide
-                        ? 'h-1.5 w-8 rounded-full bg-white transition-all duration-300'
-                        : 'h-1.5 w-2 rounded-full bg-white transition-all duration-300'
-                    }
-                  />
-                ))}
+                    onClick={prevSlide}
+                    aria-label="الشريحة السابقة"
+                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                      isDark
+                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
+                        : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
+                    }`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={nextSlide}
+                    aria-label="الشريحة التالية"
+                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                      isDark
+                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
+                        : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+            </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="الشريحة السابقة"
-                  onClick={prevSlide}
-                  className={heroControlClass}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+            {/* Right Column */}
+            <div className="lg:col-span-6 relative order-1 lg:order-2">
+              <div
+                onClick={() => onNavigate(currentSlide.ctaLink)}
+                className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
+                  isDark
+                    ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
+                    : 'bg-neutral-100 border-neutral-200 hover:border-neutral-300'
+                }`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onNavigate(currentSlide.ctaLink);
+                  }
+                }}
+                aria-label={`عرض ${currentSlide.subtitleAr}`}
+              >
+                <img
+                  key={currentSlide.imageUrl}
+                  src={resolveImageUrl(currentSlide.imageUrl)}
+                  alt={currentSlide.alt}
+                  className="w-full h-full object-cover object-top sm:object-center transition-all duration-700 ease-out group-hover:scale-105"
+                  fetchPriority="high"
+                />
 
-                <button
-                  type="button"
-                  aria-label="الشريحة التالية"
-                  onClick={nextSlide}
-                  className={heroControlClass}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
+                <div
+                  className={`absolute inset-0 pointer-events-none ${
+                    isDark
+                      ? 'bg-gradient-to-t from-black/70 via-black/10 to-transparent'
+                      : 'bg-gradient-to-t from-black/40 via-transparent to-transparent'
+                  }`}
+                />
+
+                <div className="absolute top-6 left-6 pointer-events-none select-none opacity-85 rotate-[-8deg] transition-all duration-500">
+                  <span className="font-serif italic text-lg sm:text-2xl text-white/90 drop-shadow-md">
+                    {currentSlide.badgeTop}
+                  </span>
+                </div>
+
+                <div className="absolute bottom-6 right-6 pointer-events-none select-none text-right transition-all duration-500">
+                  <span className="text-[10px] sm:text-xs uppercase font-mono tracking-widest text-white/90 block drop-shadow-sm">
+                    {currentSlide.badgeBottom}
+                  </span>
+
+                  <div className="w-8 h-0.5 bg-white/80 mt-1 mr-auto" />
+                </div>
+
+                <div className="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/20">
+                    استكشف الموديل
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={trustSectionClass}>
-        <div className="mx-auto grid max-w-[1400px] grid-cols-2 md:grid-cols-4">
-          {[
-            ['معاينة مجانية', 'عاين طلبك قبل الاستلام'],
-            ['استبدال 14 يوم', 'بدّل المقاس بسهولة'],
-            ['شحن لكل مصر', 'نوصل لجميع المحافظات'],
-            ['اختيارات مختارة', 'ستايل مختار بعناية'],
-          ].map(([title, text]) => (
-            <div
-              key={title}
-              className={trustItemClass}
-            >
-              <span className="text-xs font-black">
-                {title}
-              </span>
+      {/* =====================================================================
+          2. TRUST FEATURES
+          ===================================================================== */}
 
-              <span
-                className={
-                  'mt-1 block text-[11px] ' +
-                  mutedTextClass
-                }
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div
+          className={`rounded-2xl p-6 sm:p-8 border grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-4 text-center divide-y md:divide-y-0 md:divide-x md:divide-x-reverse transition-colors ${
+            isDark
+              ? 'bg-[#111115] border-neutral-800 divide-neutral-800/80 text-white'
+              : 'bg-white border-neutral-200 divide-neutral-200 text-black shadow-sm'
+          }`}
+        >
+          {trustFeatures.map((feat) => {
+            const Icon = feat.icon;
+
+            return (
+              <div
+                key={feat.id}
+                className="flex flex-col items-center justify-center pt-4 md:pt-0 first:pt-0 px-2"
               >
-                {text}
-              </span>
-            </div>
-          ))}
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${
+                    isDark
+                      ? 'bg-neutral-900 text-white'
+                      : 'bg-neutral-100 text-black'
+                  }`}
+                >
+                  <Icon className="w-6 h-6 stroke-[1.5]" />
+                </div>
+
+                <h4 className="text-sm sm:text-base font-bold mb-0.5">
+                  {feat.title}
+                </h4>
+
+                <p className="text-xs text-neutral-400 font-medium">
+                  {feat.subtitle}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1400px] px-5 py-16 sm:px-8 lg:px-12">
-        <div className="mb-8 text-right">
-          <p
-            className={
-              'mb-2 text-xs font-bold tracking-[0.2em] ' +
-              mutedTextClass
-            }
-          >
-            اختار ستايلك
-          </p>
+      {/* =====================================================================
+          3. REAL CATEGORIES
+          ===================================================================== */}
 
-          <h2 className="font-syne text-3xl font-black sm:text-4xl">
-            التصنيفات
-          </h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center my-6">
+          <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
+            <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
+
+            <h2 className={isDark ? 'text-white' : 'text-black'}>
+              تسوق حسب الفئة
+            </h2>
+
+            <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
+          </div>
         </div>
 
-        {activeCategories.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {activeCategories.map((category) => {
-              const categoryImage =
-                category.image_url;
+        {activeCategories.length === 0 ? (
+          <div
+            className={`rounded-2xl border p-8 text-center ${
+              isDark
+                ? 'bg-[#121216] border-neutral-800 text-neutral-400'
+                : 'bg-white border-neutral-200 text-neutral-500'
+            }`}
+          >
+            لا توجد فئات متاحة حاليًا.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            {activeCategories.map((cat) => {
+              const categoryImage = cat.image_url
+                ? resolveImageUrl(cat.image_url)
+                : null;
 
               return (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() =>
-                    handleNavigate(
-                      '/products?category=' +
-                        encodeURIComponent(category.id)
-                    )
-                  }
-                  className={
-                    'group relative aspect-[0.82] overflow-hidden rounded-2xl text-right ' +
-                    (isDark
-                      ? 'bg-neutral-900'
-                      : 'bg-neutral-100')
-                  }
+                <div
+                  key={cat.id}
+                  onClick={() => handleCategoryNavigate(cat.slug)}
+                  className={`group cursor-pointer rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col ${
+                    isDark
+                      ? 'bg-[#121216] border-neutral-800 hover:border-neutral-600 shadow-md'
+                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                  }`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCategoryNavigate(cat.slug);
+                    }
+                  }}
+                  aria-label={`تصفح فئة ${cat.name}`}
                 >
-                  {categoryImage && (
-                    <img
-                      src={categoryImage}
-                      alt={category.name}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  )}
+                  <div className="relative aspect-[4/4.5] sm:aspect-[4/5] w-full overflow-hidden bg-neutral-900/10">
+                    {categoryImage ? (
+                      <img
+                        src={categoryImage}
+                        alt={cat.name}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className={`w-full h-full flex flex-col items-center justify-center ${
+                          isDark
+                            ? 'bg-neutral-900 text-neutral-500'
+                            : 'bg-neutral-100 text-neutral-400'
+                        }`}
+                      >
+                        <span className="text-3xl font-black opacity-20">
+                          OZ
+                        </span>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                        <span className="text-xs mt-2">
+                          لا توجد صورة
+                        </span>
+                      </div>
+                    )}
 
-                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-2 text-white">
-                    <span className="font-bold">
-                      {category.name}
-                    </span>
-
-                    <ArrowLeft className="h-4 w-4 shrink-0" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
-                </button>
+
+                  <div className="p-3.5 sm:p-4 flex items-center justify-between">
+                    <div className="text-right min-w-0">
+                      <h3
+                        className={`text-sm sm:text-base font-bold transition-colors truncate ${
+                          isDark
+                            ? 'text-white group-hover:text-neutral-200'
+                            : 'text-black group-hover:text-neutral-800'
+                        }`}
+                      >
+                        {cat.name}
+                      </h3>
+
+                      <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest text-neutral-400 uppercase block mt-0.5">
+                        {cat.slug}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                        isDark
+                          ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
+                          : 'bg-neutral-200 text-black group-hover:bg-black group-hover:text-white'
+                      }`}
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
       </section>
 
-      <section className="mx-auto max-w-[1400px] px-5 pb-16 sm:px-8 lg:px-12">
-        <div className={editorialWrapperClass}>
-          <img
-            src={
-              content?.hero_image_url ||
-              '/images/hero_streetwear_editorial_1790342899745.jpg'
-            }
-            alt="Outfit Zone"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+      {/* =====================================================================
+          4. EDITORIAL PROMO BANNER
+          ===================================================================== */}
 
-          <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/30 to-transparent" />
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div
+          className={`relative rounded-3xl overflow-hidden border p-6 sm:p-10 lg:p-12 transition-colors ${
+            isDark
+              ? 'bg-[#111115] border-neutral-800 text-white'
+              : 'bg-neutral-900 border-neutral-800 text-white'
+          }`}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            <div className="md:col-span-7 space-y-4 text-right z-10">
+              <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-400">
+                <span className="w-8 h-[1px] bg-neutral-500" />
+                <span>OUTFIT ZONE</span>
+              </div>
 
-          <div className="relative z-10 flex min-h-[360px] max-w-xl flex-col justify-center px-6 py-10 text-right text-white sm:px-10">
-            <p className="mb-3 text-xs font-bold tracking-[0.2em] text-white/60">
-              OUTFIT ZONE
-            </p>
+              <div className="space-y-1">
+                <p className="text-sm sm:text-base text-neutral-300 font-medium">
+                  ...مش مجرد لبس
+                </p>
 
-            <h2 className="font-syne text-4xl font-black leading-none sm:text-5xl">
-              البسها بطريقتك.
-            </h2>
+                <h3 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                  ده حضور
+                </h3>
+              </div>
 
-            <p className="mt-4 max-w-md text-sm leading-7 text-white/70">
-              اختار القطعة، ظبط اللوك، وانزل.
-            </p>
+              <p className="text-xs sm:text-sm text-neutral-400 max-w-md leading-relaxed">
+                تصاميم تعكس ذوقك العصري مع تفاصيل متقنة وخامات قطنية ممتازة
+                تناسب كل لحظات يومك.
+              </p>
 
-            <button
-              type="button"
-              onClick={() =>
-                handleNavigate('/products')
-              }
-              className="mt-6 inline-flex w-fit flex-row-reverse items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform hover:-translate-y-0.5"
-            >
-              تسوق المجموعة
-              <ArrowLeft className="h-4 w-4" />
-            </button>
+              <div className="pt-2">
+                <button
+                  onClick={() => onNavigate('/about')}
+                  className="py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <span>اكتشف المزيد</span>
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="md:col-span-5 relative flex justify-center md:justify-end">
+              <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-800 shadow-xl bg-black">
+                <img
+                  src={resolveImageUrl(
+                    '/images/hero_streetwear_editorial_1790342899745.jpg'
+                  )}
+                  alt="Streetwear Detail"
+                  className="w-full h-full object-cover object-bottom opacity-80"
+                  loading="lazy"
+                />
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] bg-black/95 text-white border-2 border-neutral-700/80 px-4 py-2 rounded shadow-2xl font-syne font-black tracking-[0.2em] text-sm text-center">
+                  <div>OUTFIT</div>
+                  <div>ZONE</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1400px] px-5 pb-16 sm:px-8 lg:px-12">
-        <div className="mb-8 flex items-end justify-between gap-4 text-right">
-          <div>
-            <p
-              className={
-                'mb-2 text-xs font-bold tracking-[0.2em] ' +
-                mutedTextClass
-              }
-            >
-              اختياراتنا
-            </p>
+      {/* =====================================================================
+          5. FEATURED PRODUCTS
+          ===================================================================== */}
 
-            <h2 className="font-syne text-3xl font-black sm:text-4xl">
-              منتجات مختارة
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-end justify-between mb-8">
+          <div className="text-right">
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+              أحدث التشكيلات
+            </span>
+
+            <h2
+              className={`text-xl sm:text-2xl font-black ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
+              الموديلات الأكثر طلباً
             </h2>
           </div>
 
           <button
-            type="button"
-            onClick={() =>
-              handleNavigate('/products')
-            }
-            className="hidden items-center gap-2 text-sm font-bold sm:flex"
+            onClick={() => onNavigate('/products')}
+            className="text-xs font-bold text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
           >
-            عرض جميع المنتجات
-            <ArrowLeft className="h-4 w-4" />
+            <span>عرض جميع المنتجات</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+            {[1, 2, 3, 4].map((i) => (
               <div
-                key={index}
-                className={loadingCardClass}
+                key={i}
+                className="aspect-[3/4] bg-neutral-900/10 dark:bg-neutral-900/40 rounded-2xl animate-pulse"
               />
             ))}
           </div>
         ) : error ? (
-          <div className={messageClass}>
-            {error}
+          <div className="p-8 rounded-2xl border text-center space-y-3 bg-neutral-900/10 border-neutral-200 dark:bg-neutral-900/40 dark:border-neutral-800">
+            <AlertCircle className="w-8 h-8 text-neutral-400 mx-auto" />
+
+            <p className="text-sm text-neutral-400">{error}</p>
+
+            <button
+              onClick={loadProducts}
+              className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+
+              <span>إعادة المحاولة</span>
+            </button>
           </div>
-        ) : displayedProducts.length === 0 ? (
-          <div className={messageClass}>
+        ) : featuredProducts.length === 0 ? (
+          <div
+            className={`p-8 rounded-2xl border text-center ${
+              isDark
+                ? 'bg-neutral-900/40 border-neutral-800 text-neutral-400'
+                : 'bg-neutral-50 border-neutral-200 text-neutral-500'
+            }`}
+          >
             لا توجد منتجات متاحة حاليًا.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {displayedProducts.map((product) => {
-              const compareAtPrice =
-                (
-                  product as Product & {
-                    compareAtPrice?:
-                      | number
-                      | string
-                      | null;
-                  }
-                ).compareAtPrice;
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onSelect={(slug) => onSelectProduct(slug)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
-              const numericCompare =
-                compareAtPrice == null
-                  ? null
-                  : Number(compareAtPrice);
+      {/* =====================================================================
+          6. CUSTOMER REVIEWS
+          ===================================================================== */}
 
-              const numericPrice =
-                Number(product.price);
+      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
+          <div className="text-right">
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+              آراء عملائنا
+            </span>
 
-              const hasCompare =
-                numericCompare !== null &&
-                Number.isFinite(numericCompare) &&
-                Number.isFinite(numericPrice) &&
-                numericCompare > numericPrice;
+            <h2
+              className={`text-xl sm:text-2xl font-black ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
+              تجارب حقيقية من عملائنا
+            </h2>
+          </div>
 
-              const image =
-                product.images?.[0]?.image_url || '';
+          {!showReviewForm && (
+            <button
+              type="button"
+              onClick={openReviewForm}
+              className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                isDark
+                  ? 'bg-white text-black hover:bg-neutral-200'
+                  : 'bg-black text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              <span>شاركنا رأيك</span>
+            </button>
+          )}
+        </div>
+
+        {reviewMessage && (
+          <div
+            className={`mb-6 rounded-2xl border p-4 text-sm text-right ${
+              isDark
+                ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
+                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+            }`}
+          >
+            {reviewMessage}
+          </div>
+        )}
+
+        {showReviewForm && (
+          <div
+            className={`mb-8 rounded-3xl border p-5 sm:p-7 ${
+              isDark
+                ? 'bg-[#111115] border-neutral-800'
+                : 'bg-white border-neutral-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="text-right">
+                <h3
+                  className={`text-lg font-black ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  شاركنا تجربتك
+                </h3>
+
+                <p className="text-xs text-neutral-400 mt-1">
+                  رأيك يهمنا ويساعد عملاءنا يعرفوا تجربتك.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeReviewForm}
+                disabled={reviewSubmitting}
+                aria-label="إغلاق نموذج الرأي"
+                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
+                  isDark
+                    ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+                    : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="space-y-5" dir="rtl">
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  الاسم
+                </label>
+
+                <input
+                  type="text"
+                  value={reviewName}
+                  onChange={(e) => setReviewName(e.target.value)}
+                  placeholder="اكتب اسمك"
+                  maxLength={100}
+                  disabled={reviewSubmitting}
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-3 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  تقييمك
+                </label>
+
+                <div className="flex items-center gap-1" dir="ltr">
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const selected = star <= reviewRating;
+
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        disabled={reviewSubmitting}
+                        aria-label={`تقييم ${star} من 5`}
+                        className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                      >
+                        <Star
+                          className={`w-7 h-7 transition-colors ${
+                            selected
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : isDark
+                                ? 'text-neutral-700'
+                                : 'text-neutral-300'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  رأيك
+                </label>
+
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="اكتب تجربتك مع Outfit Zone..."
+                  maxLength={1000}
+                  rows={5}
+                  disabled={reviewSubmitting}
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none resize-none transition-colors ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                  }`}
+                />
+
+                <div className="text-[10px] text-neutral-400 mt-1 text-left">
+                  {reviewText.length}/1000
+                </div>
+              </div>
+
+              {reviewError && (
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    isDark
+                      ? 'bg-red-950/20 border-red-900/50 text-red-300'
+                      : 'bg-red-50 border-red-200 text-red-600'
+                  }`}
+                >
+                  {reviewError}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeReviewForm}
+                  disabled={reviewSubmitting}
+                  className={`py-3 px-6 rounded-xl border font-bold text-sm transition-colors cursor-pointer ${
+                    isDark
+                      ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-900'
+                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting}
+                  className={`py-3 px-7 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200'
+                      : 'bg-black text-white hover:bg-neutral-800'
+                  }`}
+                >
+                  <Send className="w-4 h-4" />
+
+                  <span>
+                    {reviewSubmitting ? 'جاري الإرسال...' : 'إرسال رأيي'}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {reviewsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`h-44 rounded-2xl animate-pulse ${
+                  isDark ? 'bg-neutral-900/60' : 'bg-neutral-100'
+                }`}
+              />
+            ))}
+          </div>
+        ) : reviews.length === 0 ? (
+          <div
+            className={`rounded-2xl border p-8 text-center ${
+              isDark
+                ? 'bg-[#111115] border-neutral-800 text-neutral-400'
+                : 'bg-white border-neutral-200 text-neutral-500'
+            }`}
+          >
+            <Star className="w-8 h-8 mx-auto mb-4 text-neutral-400" />
+
+            <h3
+              className={`text-base font-black ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
+              كن أول من يشارك تجربته
+            </h3>
+
+            <p className="text-xs mt-2 text-neutral-400">
+              جربت Outfit Zone؟ شاركنا رأيك وتقييمك، ويمكن لرأيك يظهر هنا بعد
+              اعتماده.
+            </p>
+
+            {!showReviewForm && (
+              <button
+                type="button"
+                onClick={openReviewForm}
+                className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                  isDark
+                    ? 'bg-white text-black hover:bg-neutral-200'
+                    : 'bg-black text-white hover:bg-neutral-800'
+                }`}
+              >
+                <Star className="w-4 h-4" />
+                <span>شاركنا رأيك</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reviews.map((review) => {
+              const productSlug = review.product?.slug;
 
               return (
                 <article
-                  key={product.id}
-                  className={productCardClass}
+                  key={review.id}
+                  onClick={() => handleReviewProduct(productSlug)}
+                  className={`group rounded-2xl border p-5 transition-all duration-300 ${
+                    productSlug ? 'cursor-pointer' : ''
+                  } ${
+                    isDark
+                      ? 'bg-[#111115] border-neutral-800 hover:border-neutral-600'
+                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                  }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleProductSelect(product)
-                    }
-                    className="relative block aspect-[0.8] w-full overflow-hidden"
+                  <div
+                    className="flex items-center gap-0.5 mb-4"
+                    dir="ltr"
                   >
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= Number(review.rating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : isDark
+                              ? 'text-neutral-700'
+                              : 'text-neutral-300'
+                        }`}
                       />
-                    ) : (
-                      <div
-                        className={
-                          isDark
-                            ? 'h-full w-full bg-neutral-800'
-                            : 'h-full w-full bg-neutral-200'
-                        }
-                      />
-                    )}
-                  </button>
+                    ))}
+                  </div>
 
-                  <div className="p-4 text-right">
-                    <h3 className="line-clamp-2 text-sm font-bold">
-                      {product.name}
-                    </h3>
+                  <p
+                    className={`text-sm leading-7 min-h-[84px] ${
+                      isDark ? 'text-neutral-200' : 'text-neutral-700'
+                    }`}
+                  >
+                    "{review.review_text}"
+                  </p>
 
-                    <div className="mt-2 flex items-center justify-end gap-2">
-                      <span className="text-sm font-black">
-                        {product.price} EGP
-                      </span>
+                  <div
+                    className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
+                      isDark
+                        ? 'border-neutral-800'
+                        : 'border-neutral-200'
+                    }`}
+                  >
+                    <div className="text-right min-w-0">
+                      <p
+                        className={`text-sm font-bold truncate ${
+                          isDark ? 'text-white' : 'text-black'
+                        }`}
+                      >
+                        {review.customer_name}
+                      </p>
 
-                      {hasCompare && (
-                        <span className={productCompareClass}>
-                          {compareAtPrice} EGP
-                        </span>
+                      {review.product?.name && (
+                        <p className="text-[10px] text-neutral-400 truncate mt-0.5">
+                          {review.product.name}
+                        </p>
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        (() => {
-                          const variant = product.variants?.[0];
-                          if (!variant) return;
-                          addItem(product, variant);
-                        })()
-                      }
-                      className={productButtonClass}
-                    >
-                      <ShoppingBag className="h-4 w-4" />
-                      أضف للسلة
-                    </button>
+                    {productSlug && (
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                          isDark
+                            ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
+                            : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
+                        }`}
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </div>
+                    )}
                   </div>
                 </article>
               );
             })}
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={() =>
-            handleNavigate('/products')
-          }
-          className="mt-6 flex w-full items-center justify-center gap-2 text-sm font-bold sm:hidden"
-        >
-          عرض جميع المنتجات
-          <ArrowLeft className="h-4 w-4" />
-        </button>
       </section>
-
-      {socialLinks.length > 0 && (
-        <section className={socialSectionClass}>
-          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
-            <p
-              className={
-                'mb-3 text-xs font-bold tracking-[0.2em] ' +
-                mutedTextClass
-              }
-            >
-              @OUTFITZONE
-            </p>
-
-            <h2 className="font-syne text-3xl font-black sm:text-5xl">
-              خليك في الـ Zone
-            </h2>
-
-            <p
-              className={
-                'mt-3 max-w-lg text-sm leading-7 ' +
-                (isDark
-                  ? 'text-white/50'
-                  : 'text-black/50')
-              }
-            >
-              تابعنا وشوف الجديد أول بأول.
-            </p>
-
-            <div className="mt-6 flex items-center gap-3">
-              {socialLinks.map((social) => {
-                const Icon = social.icon;
-
-                return (
-                  <a
-                    key={social.key}
-                    href={social.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={social.label}
-                    className={socialButtonClass}
-                  >
-                    {Icon ? (
-                      <Icon className="h-5 w-5" />
-                    ) : (
-                      <span className="text-xs font-black">
-                        TK
-                      </span>
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-    </main>
+    </div>
   );
 };
-
-export default HomePage;
