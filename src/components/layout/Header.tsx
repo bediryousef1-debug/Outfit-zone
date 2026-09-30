@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Menu, X, Search, Sun, Moon, ChevronRight, ChevronLeft, Globe } from 'lucide-react';
+import {
+  ShoppingBag,
+  Menu,
+  X,
+  Search,
+  Sun,
+  Moon,
+  ChevronRight,
+  ChevronLeft,
+  Globe,
+} from 'lucide-react';
 import { OutfitZoneLogo } from '../common/OutfitZoneLogo';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -23,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const { isDark, toggleTheme } = useTheme();
-  const { language, toggleLanguage, t, isRtl } = useLanguage();
+  const { language, toggleLanguage, t } = useLanguage();
 
   const navLinks = [
     { label: t('nav.home', 'الرئيسية'), path: '/' },
@@ -41,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const normalized = headerSearchQuery.trim();
+
     if (!normalized) return;
 
     if (normalized.toLowerCase() === 'admin') {
@@ -76,24 +87,34 @@ export const Header: React.FC<HeaderProps> = ({
             : 'bg-white/95 border-neutral-200 text-black shadow-xs'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
-          
+        <div
+          dir="ltr"
+          className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between"
+        >
           {/* Left: Navigation Menu & Search */}
           <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                isDark ? 'hover:bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-black'
+                isDark
+                  ? 'hover:bg-neutral-900 text-white'
+                  : 'hover:bg-neutral-100 text-black'
               }`}
               aria-label="القائمة الرئيسية"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
 
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                isDark ? 'hover:bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-black'
+                isDark
+                  ? 'hover:bg-neutral-900 text-white'
+                  : 'hover:bg-neutral-100 text-black'
               }`}
               aria-label="البحث عن منتج"
             >
@@ -104,6 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
             <nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
               {navLinks.map((link) => {
                 const isActive = currentPath === link.path;
+
                 return (
                   <button
                     key={link.path}
@@ -119,6 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }`}
                   >
                     {link.label}
+
                     {isActive && (
                       <span
                         className={`absolute -bottom-1 left-0 right-0 h-0.5 rounded-full ${
@@ -132,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
           </div>
 
-          {/* Center: OUTFIT ZONE Brand Lockup matching Reference Image */}
+          {/* Center: OUTFIT ZONE Brand Lockup */}
           <div className="flex items-center justify-center">
             <button
               onClick={() => handleNav('/')}
@@ -148,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right: Theme Toggle & Shopping Cart Bag */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Language Toggle (AR / EN) */}
+            {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
               className={`px-2.5 py-1 text-xs font-mono font-bold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 motion-reduce:transition-none ${
@@ -156,14 +179,18 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
                   : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
               }`}
-              title={language === 'ar' ? 'Switch to English' : 'التحويل إلى العربية'}
+              title={
+                language === 'ar'
+                  ? 'Switch to English'
+                  : 'التحويل إلى العربية'
+              }
               aria-label="تبديل اللغة"
             >
               <Globe className="w-3.5 h-3.5" />
               <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
 
-            {/* Theme Toggle (Light / Dark) */}
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
               className={`p-2 rounded-full border transition-all cursor-pointer ${
@@ -171,21 +198,32 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
                   : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
               }`}
-              title={isDark ? 'التحويل إلى الوضع الفاتح (Light Mode)' : 'التحويل إلى الوضع الداكن (Dark Mode)'}
+              title={
+                isDark
+                  ? 'التحويل إلى الوضع الفاتح (Light Mode)'
+                  : 'التحويل إلى الوضع الداكن (Dark Mode)'
+              }
               aria-label="تبديل مظهر الموقع"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
             </button>
 
             {/* Cart Bag with badge count */}
             <button
               onClick={() => setIsCartOpen(true)}
               className={`relative p-2 rounded-lg transition-colors cursor-pointer ${
-                isDark ? 'hover:bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-black'
+                isDark
+                  ? 'hover:bg-neutral-900 text-white'
+                  : 'hover:bg-neutral-100 text-black'
               }`}
               aria-label={`عربة التسوق (${itemCount} منتجات)`}
             >
               <ShoppingBag className="w-6 h-6 stroke-[1.8]" />
+
               <span
                 className={`absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center border font-mono ${
                   isDark
@@ -203,10 +241,15 @@ export const Header: React.FC<HeaderProps> = ({
         {isSearchOpen && (
           <div
             className={`border-t px-4 py-3 transition-colors ${
-              isDark ? 'bg-neutral-950/95 border-neutral-800' : 'bg-neutral-50/95 border-neutral-200'
+              isDark
+                ? 'bg-neutral-950/95 border-neutral-800'
+                : 'bg-neutral-50/95 border-neutral-200'
             }`}
           >
-            <form onSubmit={handleSearchSubmit} className="max-w-xl mx-auto relative">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="max-w-xl mx-auto relative"
+            >
               <input
                 type="text"
                 autoFocus
@@ -219,6 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-white border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                 }`}
               />
+
               <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             </form>
           </div>
@@ -228,7 +272,9 @@ export const Header: React.FC<HeaderProps> = ({
         {mobileMenuOpen && (
           <div
             className={`lg:hidden border-t px-5 py-6 space-y-4 animate-in fade-in duration-200 ${
-              isDark ? 'bg-black border-neutral-800' : 'bg-white border-neutral-200'
+              isDark
+                ? 'bg-black border-neutral-800'
+                : 'bg-white border-neutral-200'
             }`}
           >
             <div className="space-y-2">
@@ -253,7 +299,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-between text-xs text-neutral-400">
-              <span>{language === 'ar' ? 'اللغة / Language:' : 'Language:'}</span>
+              <span>
+                {language === 'ar' ? 'اللغة / Language:' : 'Language:'}
+              </span>
+
               <button
                 onClick={toggleLanguage}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold cursor-pointer ${
@@ -263,12 +312,15 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span>{language === 'ar' ? 'English (EN)' : 'العربية (AR)'}</span>
+                <span>
+                  {language === 'ar' ? 'English (EN)' : 'العربية (AR)'}
+                </span>
               </button>
             </div>
 
             <div className="pt-3 flex items-center justify-between text-xs text-neutral-400">
               <span>{language === 'ar' ? 'المظهر:' : 'Theme:'}</span>
+
               <button
                 onClick={toggleTheme}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold cursor-pointer ${
@@ -277,8 +329,15 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-neutral-100 border-neutral-300 text-black'
                 }`}
               >
-                {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                <span>{isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}</span>
+                {isDark ? (
+                  <Sun className="w-3.5 h-3.5" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5" />
+                )}
+
+                <span>
+                  {isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+                </span>
               </button>
             </div>
           </div>
