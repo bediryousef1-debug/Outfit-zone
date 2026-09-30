@@ -300,9 +300,7 @@ const HomePage = () => {
             />
 
             {/* SLIDER CONTROLS */}
-            <div
-              className={`absolute bottom-6 left-0 right-0 z-20 flex items-center justify-between px-5 sm:px-8 lg:px-10`}
-            >
+            <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-between px-5 sm:px-8 lg:px-10">
               <div className="flex items-center gap-2">
                 {heroSlides.map((slide, index) => (
                   <button
@@ -323,24 +321,16 @@ const HomePage = () => {
                 ))}
               </div>
 
-              {/*
-                Arabic:
-                - preserve the existing button order exactly.
-
-                English:
-                - reverse only the visual order of the two buttons.
-
-                The previous/next logic and icon mapping remain unchanged.
-              */}
-              <div
-                className={`flex shrink-0 items-center gap-2 ${
-                  isRtl ? '' : 'flex-row-reverse'
-                }`}
-              >
+              {/* Slider Previous / Next */}
+              <div className="flex shrink-0 items-center gap-2">
                 {/* Previous */}
                 <button
                   type="button"
-                  aria-label="Previous slide"
+                  aria-label={
+                    isRtl
+                      ? 'الشريحة السابقة'
+                      : 'Previous slide'
+                  }
                   onClick={prevSlide}
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
                     isDark
@@ -348,17 +338,17 @@ const HomePage = () => {
                       : 'border-black/20 bg-white/70 text-black hover:bg-black hover:text-white'
                   }`}
                 >
-                  {isRtl ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
 
                 {/* Next */}
                 <button
                   type="button"
-                  aria-label="Next slide"
+                  aria-label={
+                    isRtl
+                      ? 'الشريحة التالية'
+                      : 'Next slide'
+                  }
                   onClick={nextSlide}
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
                     isDark
@@ -366,11 +356,7 @@ const HomePage = () => {
                       : 'border-black/20 bg-white/70 text-black hover:bg-black hover:text-white'
                   }`}
                 >
-                  {isRtl ? (
-                    <ChevronLeft className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
