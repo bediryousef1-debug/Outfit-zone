@@ -1,3 +1,4 @@
+```json
 {
   "name": "react-example",
   "private": true,
@@ -30,9 +31,10 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "@types/express": "^4.17.21"
   }
 }
+```
