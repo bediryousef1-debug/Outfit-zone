@@ -19,6 +19,7 @@ import { api } from '../services/api';
 import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { resolveImageUrl } from '../utils/imageHelper';
 
 interface HomePageProps {
@@ -40,6 +41,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { categories, content } = useStore();
   const { isDark } = useTheme();
+  const { isRtl } = useLanguage();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<HomepageReview[]>([]);
@@ -518,8 +520,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     {currentSlide.ctaText}
                   </span>
 
-                  <ArrowRight className="hidden h-4 w-4 shrink-0 ltr:block" />
-                  <ArrowLeft className="hidden h-4 w-4 shrink-0 rtl:block" />
+                  {isRtl ? (
+                    <ArrowLeft className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  )}
                 </button>
               </div>
 
@@ -565,9 +570,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                   })}
                 </div>
 
-                {/* IMPORTANT:
-                    No local dir override here.
-                    The icons follow the actual page direction. */}
+                {/* Direction is controlled directly by LanguageContext.
+                    No local dir override and no rtl/ltr Tailwind variants. */}
 
                 <div className="flex shrink-0 items-center gap-2">
                   {/* Previous slide */}
@@ -580,8 +584,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronRight className="hidden h-4 w-4 rtl:block" />
-                    <ChevronLeft className="hidden h-4 w-4 ltr:block" />
+                    {isRtl ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronLeft className="h-4 w-4" />
+                    )}
                   </button>
 
                   {/* Next slide */}
@@ -594,8 +601,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronLeft className="hidden h-4 w-4 rtl:block" />
-                    <ChevronRight className="hidden h-4 w-4 ltr:block" />
+                    {isRtl ? (
+                      <ChevronLeft className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -816,8 +826,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                           : 'bg-neutral-200 text-black group-hover:bg-black group-hover:text-white'
                       }`}
                     >
-                      <ArrowRight className="hidden h-4 w-4 ltr:block" />
-                      <ArrowLeft className="hidden h-4 w-4 rtl:block" />
+                      {isRtl ? (
+                        <ArrowLeft className="h-4 w-4" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4" />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -867,8 +880,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3 text-xs font-extrabold text-black shadow-md transition-all hover:bg-neutral-200 sm:text-sm"
                 >
                   <span>اكتشف المزيد</span>
-                  <ArrowLeft className="hidden h-4 w-4 rtl:block" />
-                  <ArrowRight className="hidden h-4 w-4 ltr:block" />
+
+                  {isRtl ? (
+                    <ArrowLeft className="h-4 w-4" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -921,8 +938,12 @@ export const HomePage: React.FC<HomePageProps> = ({
             }`}
           >
             <span>عرض جميع المنتجات</span>
-            <ArrowLeft className="hidden h-3.5 w-3.5 rtl:block" />
-            <ArrowRight className="hidden h-3.5 w-3.5 ltr:block" />
+
+            {isRtl ? (
+              <ArrowLeft className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowRight className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
 
@@ -1322,8 +1343,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                             : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
                         }`}
                       >
-                        <ArrowLeft className="hidden h-3.5 w-3.5 rtl:block" />
-                        <ArrowRight className="hidden h-3.5 w-3.5 ltr:block" />
+                        {isRtl ? (
+                          <ArrowLeft className="h-3.5 w-3.5" />
+                        ) : (
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        )}
                       </div>
                     )}
                   </div>
