@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+```tsx
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -67,72 +68,78 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * HERO SLIDES
    * ==========================================================================
+   *
+   * Kept as a memoized value so the autoplay effect does not depend on a
+   * newly-created array on every render.
    */
 
-  const heroSlides = [
-    {
-      id: 'slide-main',
-      tag: 'NEW COLLECTION 2026',
-      titleLine1: 'WEAR IN',
-      titleLine2: 'THE ZONE',
-      subtitleAr: content?.hero_subtitle || 'ستايلك له حضور',
-      description:
-        'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
-      ctaText: content?.hero_button_text || 'تسوق الآن',
-      ctaLink: '/products',
-      imageUrl:
-        content?.hero_image_url ||
-        '/images/hero_streetwear_editorial_1790342899745.jpg',
-      badgeTop: 'Style Your Zone',
-      badgeBottom: 'STYLE BUILDS CONFIDENCE',
-      alt: 'Outfit Zone Editorial Campaign',
-    },
-    {
-      id: 'slide-boxfit',
-      tag: 'BOX FIT ESSENTIALS',
-      titleLine1: 'HEAVYWEIGHT',
-      titleLine2: 'COTTON 240+',
-      subtitleAr: 'تيشيرتات Box Fit الفاخرة',
-      description:
-        'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
-      ctaText: 'اكتشف التيشيرتات',
-      ctaLink: '/products?search=تيشيرت',
-      imageUrl: '/images/product_boxfit_tee_black_1790342911897.jpg',
-      badgeTop: 'Heavyweight Fit',
-      badgeBottom: '100% EGYPTIAN COTTON',
-      alt: 'Box Fit T-Shirt Black',
-    },
-    {
-      id: 'slide-oversized',
-      tag: 'OVERSIZED STREETWEAR',
-      titleLine1: 'EFFORTLESS',
-      titleLine2: 'OVERSIZED',
-      subtitleAr: 'تشكيلة الأوفرسايز الواسعة',
-      description:
-        'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
-      ctaText: 'تسوق الأوفرسايز',
-      ctaLink: '/products?search=اوفرسايز',
-      imageUrl: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
-      badgeTop: 'Streetwear Drop',
-      badgeBottom: 'WEAR IN THE ZONE',
-      alt: 'Oversized Tee Offwhite',
-    },
-    {
-      id: 'slide-polos',
-      tag: 'URBAN INTERLOCK',
-      titleLine1: 'MODERN',
-      titleLine2: 'POLOS & SHIRTS',
-      subtitleAr: 'بولو وقمصان إنترلوك أنيقة',
-      description:
-        'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
-      ctaText: 'عرض التشكيلة',
-      ctaLink: '/products?category=streetwear-polos',
-      imageUrl: '/images/product_interlock_polo_charcoal_1790342934447.jpg',
-      badgeTop: 'Urban Interlock',
-      badgeBottom: 'CASH ON DELIVERY',
-      alt: 'Streetwear Polo Charcoal',
-    },
-  ];
+  const heroSlides = useMemo(
+    () => [
+      {
+        id: 'slide-main',
+        tag: 'NEW COLLECTION 2026',
+        titleLine1: 'WEAR IN',
+        titleLine2: 'THE ZONE',
+        subtitleAr: content?.hero_subtitle || 'ستايلك له حضور',
+        description:
+          'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
+        ctaText: content?.hero_button_text || 'تسوق الآن',
+        ctaLink: '/products',
+        imageUrl:
+          content?.hero_image_url ||
+          '/images/hero_streetwear_editorial_1790342899745.jpg',
+        badgeTop: 'Style Your Zone',
+        badgeBottom: 'STYLE BUILDS CONFIDENCE',
+        alt: 'Outfit Zone Editorial Campaign',
+      },
+      {
+        id: 'slide-boxfit',
+        tag: 'BOX FIT ESSENTIALS',
+        titleLine1: 'HEAVYWEIGHT',
+        titleLine2: 'COTTON 240+',
+        subtitleAr: 'تيشيرتات Box Fit الفاخرة',
+        description:
+          'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
+        ctaText: 'اكتشف التيشيرتات',
+        ctaLink: '/products?search=تيشيرت',
+        imageUrl: '/images/product_boxfit_tee_black_1790342911897.jpg',
+        badgeTop: 'Heavyweight Fit',
+        badgeBottom: '100% EGYPTIAN COTTON',
+        alt: 'Box Fit T-Shirt Black',
+      },
+      {
+        id: 'slide-oversized',
+        tag: 'OVERSIZED STREETWEAR',
+        titleLine1: 'EFFORTLESS',
+        titleLine2: 'OVERSIZED',
+        subtitleAr: 'تشكيلة الأوفرسايز الواسعة',
+        description:
+          'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
+        ctaText: 'تسوق الأوفرسايز',
+        ctaLink: '/products?search=اوفرسايز',
+        imageUrl: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
+        badgeTop: 'Streetwear Drop',
+        badgeBottom: 'WEAR IN THE ZONE',
+        alt: 'Oversized Tee Offwhite',
+      },
+      {
+        id: 'slide-polos',
+        tag: 'URBAN INTERLOCK',
+        titleLine1: 'MODERN',
+        titleLine2: 'POLOS & SHIRTS',
+        subtitleAr: 'بولو وقمصان إنترلوك أنيقة',
+        description:
+          'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
+        ctaText: 'عرض التشكيلة',
+        ctaLink: '/products?category=streetwear-polos',
+        imageUrl: '/images/product_interlock_polo_charcoal_1790342934447.jpg',
+        badgeTop: 'Urban Interlock',
+        badgeBottom: 'CASH ON DELIVERY',
+        alt: 'Streetwear Polo Charcoal',
+      },
+    ],
+    [content?.hero_subtitle, content?.hero_button_text, content?.hero_image_url]
+  );
 
   const currentSlide = heroSlides[activeSlide] || heroSlides[0];
 
@@ -153,14 +160,24 @@ export const HomePage: React.FC<HomePageProps> = ({
    */
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || heroSlides.length <= 1) return;
 
-    const interval = setInterval(() => {
+    const interval = window.setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
   }, [isPaused, heroSlides.length]);
+
+  /*
+   * Keep active slide valid if the number of slides ever changes.
+   */
+
+  useEffect(() => {
+    if (activeSlide >= heroSlides.length) {
+      setActiveSlide(0);
+    }
+  }, [activeSlide, heroSlides.length]);
 
   /*
    * ==========================================================================
@@ -170,7 +187,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const loadProducts = async () => {
     setIsLoading(true);
-    setReviewsLoading(true);
     setError(null);
 
     try {
@@ -189,11 +205,6 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * LOAD PUBLIC HOMEPAGE REVIEWS
    * ==========================================================================
-   *
-   * Reviews are loaded once through getPublicReviews().
-   * General reviews have product_id = null.
-   * Product-specific reviews are matched locally against the already-loaded
-   * products instead of making one request per product.
    */
 
   const loadReviews = async () => {
@@ -397,13 +408,13 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="space-y-12 sm:space-y-16">
+    <div className="w-full min-w-0 max-w-full space-y-12 overflow-x-hidden sm:space-y-16">
       {/* =====================================================================
           1. HERO SECTION & SLIDER
           ===================================================================== */}
 
       <section
-        className={`relative overflow-hidden transition-colors ${
+        className={`relative w-full min-w-0 max-w-full overflow-hidden transition-colors ${
           isDark
             ? 'bg-gradient-to-b from-[#111115] via-[#09090b] to-[#000000]'
             : 'bg-gradient-to-b from-[#f3f4f6] via-[#f9fafb] to-[#ffffff]'
@@ -415,45 +426,48 @@ export const HomePage: React.FC<HomePageProps> = ({
         aria-roledescription="carousel"
         aria-label="عروض وتشكيلات Outfit Zone"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Column */}
-            <div className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300">
-              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-[1px] bg-neutral-500" />
+        <div className="w-full max-w-7xl min-w-0 mx-auto px-4 pt-5 pb-8 sm:px-6 sm:py-12 lg:py-16">
+          <div className="grid w-full min-w-0 grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
+            {/* =================================================================
+                HERO CONTENT
+                ================================================================= */}
 
-                  <span className="font-mono tracking-wider">
+            <div className="order-1 min-w-0 max-w-full space-y-5 text-right lg:col-span-6 lg:order-1 lg:space-y-6">
+              {/* Top metadata */}
+
+              <div className="flex min-w-0 max-w-full items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-widest">
+                <div className="flex min-w-0 max-w-[75%] items-center gap-2">
+                  <span className="h-px w-6 shrink-0 bg-neutral-500 sm:w-8" />
+
+                  <span className="min-w-0 wrap-anywhere font-mono tracking-wider">
                     {currentSlide.tag}
                   </span>
                 </div>
 
-                <div className="font-mono text-xs opacity-75">
+                <div className="shrink-0 font-mono text-[10px] opacity-75 sm:text-xs">
                   0{activeSlide + 1} / 0{heroSlides.length}
                 </div>
               </div>
 
-              <div className="space-y-1 min-h-[140px] sm:min-h-[180px] flex flex-col justify-center">
-                <h1 className="font-syne text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95]">
-                  <span
-                    className={`block transition-colors duration-300 ${
-                      isDark ? 'text-white' : 'text-black'
-                    }`}
-                  >
+              {/* Main heading */}
+
+              <div className="min-w-0 max-w-full space-y-2">
+                <h1
+                  className={`min-w-0 max-w-full wrap-anywhere font-syne text-[clamp(2.15rem,10vw,4.5rem)] font-black uppercase leading-[0.92] tracking-[-0.035em] sm:text-6xl lg:text-7xl ${
+                    isDark ? 'text-white' : 'text-black'
+                  }`}
+                >
+                  <span className="block min-w-0 max-w-full wrap-anywhere">
                     {currentSlide.titleLine1}
                   </span>
 
-                  <span
-                    className={`block transition-colors duration-300 ${
-                      isDark ? 'text-white' : 'text-black'
-                    }`}
-                  >
+                  <span className="block min-w-0 max-w-full wrap-anywhere">
                     {currentSlide.titleLine2}
                   </span>
                 </h1>
 
                 <h2
-                  className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold pt-2 transition-colors duration-300 ${
+                  className={`min-w-0 max-w-full wrap-anywhere pt-2 text-xl font-extrabold leading-tight sm:text-3xl lg:text-4xl ${
                     isDark ? 'text-neutral-100' : 'text-neutral-900'
                   }`}
                 >
@@ -461,31 +475,48 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </h2>
               </div>
 
+              {/* Description */}
+
               <p
-                className={`text-sm sm:text-base leading-relaxed max-w-md min-h-[48px] transition-colors duration-300 ${
+                className={`w-full max-w-md min-w-0 wrap-anywhere text-sm leading-7 sm:text-base sm:leading-relaxed ${
                   isDark ? 'text-neutral-300' : 'text-neutral-600'
                 }`}
               >
                 {currentSlide.description}
               </p>
 
-              <div className="pt-2 flex flex-wrap items-center gap-4">
+              {/* CTA */}
+
+              <div className="flex w-full max-w-full flex-wrap items-center gap-3 pt-1 sm:gap-4 sm:pt-2">
                 <button
                   onClick={() => onNavigate(currentSlide.ctaLink)}
-                  className={`py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-105 cursor-pointer ${
+                  className={`inline-flex max-w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold shadow-lg transition-all hover:scale-[1.02] sm:px-8 sm:py-3.5 sm:text-base ${
                     isDark
                       ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
                       : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
                   }`}
                 >
-                  <span>{currentSlide.ctaText}</span>
-                  <ArrowLeft className="w-4 h-4" />
+                  <span className="min-w-0 wrap-anywhere">
+                    {currentSlide.ctaText}
+                  </span>
+
+                  <ArrowLeft className="h-4 w-4 shrink-0" />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-neutral-200/40 dark:border-neutral-800/60 max-w-md">
+              {/* Slider controls */}
+
+              <div
+                className={`flex w-full max-w-md min-w-0 items-center justify-between gap-4 border-t pt-5 ${
+                  isDark
+                    ? 'border-neutral-800/60'
+                    : 'border-neutral-200/70'
+                }`}
+              >
+                {/* Indicators */}
+
                 <div
-                  className="flex items-center gap-2"
+                  className="flex min-w-0 shrink items-center gap-1.5"
                   role="tablist"
                   aria-label="شرائح السلايدر"
                 >
@@ -499,14 +530,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                         role="tab"
                         aria-selected={isActive}
                         aria-label={`الشريحة ${idx + 1}: ${slide.titleLine1}`}
-                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                        className={`h-2 shrink-0 rounded-full transition-all duration-300 ${
                           isActive
-                            ? `w-8 ${
+                            ? `w-7 sm:w-8 ${
                                 isDark
                                   ? 'bg-white shadow-sm shadow-white/30'
                                   : 'bg-black shadow-sm shadow-black/30'
                               }`
-                            : `w-3 hover:w-5 ${
+                            : `w-2.5 sm:w-3 ${
                                 isDark
                                   ? 'bg-neutral-700 hover:bg-neutral-500'
                                   : 'bg-neutral-300 hover:bg-neutral-500'
@@ -517,86 +548,102 @@ export const HomePage: React.FC<HomePageProps> = ({
                   })}
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Previous / Next */}
+
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={prevSlide}
                     aria-label="الشريحة السابقة"
-                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
                       isDark
-                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
-                        : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
+                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:border-white hover:bg-white hover:text-black'
+                        : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="h-4 w-4" />
                   </button>
 
                   <button
                     onClick={nextSlide}
                     aria-label="الشريحة التالية"
-                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
                       isDark
-                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
-                        : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
+                        ? 'border-neutral-800 bg-neutral-900/80 text-white hover:border-white hover:bg-white hover:text-black'
+                        : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Right Column */}
-            <div className="lg:col-span-6 relative order-1 lg:order-2">
+            {/* =================================================================
+                HERO IMAGE
+                ================================================================= */}
+
+            <div className="order-2 min-w-0 w-full max-w-full lg:col-span-6 lg:order-2">
               <div
                 onClick={() => onNavigate(currentSlide.ctaLink)}
-                className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
+                className={`group relative mx-auto w-full max-w-[620px] overflow-hidden rounded-2xl border shadow-2xl transition-all duration-500 sm:rounded-3xl ${
                   isDark
-                    ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
-                    : 'bg-neutral-100 border-neutral-200 hover:border-neutral-300'
+                    ? 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
+                    : 'border-neutral-200 bg-neutral-100 hover:border-neutral-300'
                 }`}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
                     onNavigate(currentSlide.ctaLink);
                   }
                 }}
                 aria-label={`عرض ${currentSlide.subtitleAr}`}
               >
-                <img
-                  key={currentSlide.imageUrl}
-                  src={resolveImageUrl(currentSlide.imageUrl)}
-                  alt={currentSlide.alt}
-                  className="w-full h-full object-cover object-top sm:object-center transition-all duration-700 ease-out group-hover:scale-105"
-                  fetchPriority="high"
-                />
+                <div className="relative aspect-[4/5] w-full sm:aspect-[4/4.5] lg:aspect-[5/6]">
+                  <img
+                    key={currentSlide.imageUrl}
+                    src={resolveImageUrl(currentSlide.imageUrl)}
+                    alt={currentSlide.alt}
+                    className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.03] sm:object-center"
+                    fetchPriority="high"
+                  />
 
-                <div
-                  className={`absolute inset-0 pointer-events-none ${
-                    isDark
-                      ? 'bg-gradient-to-t from-black/70 via-black/10 to-transparent'
-                      : 'bg-gradient-to-t from-black/40 via-transparent to-transparent'
-                  }`}
-                />
+                  {/* Image overlay */}
 
-                <div className="absolute top-6 left-6 pointer-events-none select-none opacity-85 rotate-[-8deg] transition-all duration-500">
-                  <span className="font-serif italic text-lg sm:text-2xl text-white/90 drop-shadow-md">
-                    {currentSlide.badgeTop}
-                  </span>
-                </div>
+                  <div
+                    className={`pointer-events-none absolute inset-0 ${
+                      isDark
+                        ? 'bg-gradient-to-t from-black/75 via-black/10 to-transparent'
+                        : 'bg-gradient-to-t from-black/45 via-transparent to-transparent'
+                    }`}
+                  />
 
-                <div className="absolute bottom-6 right-6 pointer-events-none select-none text-right transition-all duration-500">
-                  <span className="text-[10px] sm:text-xs uppercase font-mono tracking-widest text-white/90 block drop-shadow-sm">
-                    {currentSlide.badgeBottom}
-                  </span>
+                  {/* Top badge */}
 
-                  <div className="w-8 h-0.5 bg-white/80 mt-1 mr-auto" />
-                </div>
+                  <div className="pointer-events-none absolute left-4 top-4 max-w-[70%] select-none opacity-90 transition-all duration-500 sm:left-6 sm:top-6">
+                    <span className="wrap-anywhere font-serif text-base italic text-white/95 drop-shadow-md sm:text-2xl">
+                      {currentSlide.badgeTop}
+                    </span>
+                  </div>
 
-                <div className="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/20">
-                    استكشف الموديل
-                  </span>
+                  {/* Bottom badge */}
+
+                  <div className="pointer-events-none absolute bottom-4 right-4 max-w-[75%] select-none text-right sm:bottom-6 sm:right-6">
+                    <span className="block wrap-anywhere text-[9px] font-mono uppercase tracking-[0.14em] text-white/95 drop-shadow-sm sm:text-xs sm:tracking-widest">
+                      {currentSlide.badgeBottom}
+                    </span>
+
+                    <div className="mr-auto mt-1 h-0.5 w-8 bg-white/80" />
+                  </div>
+
+                  {/* Desktop hover label */}
+
+                  <div className="pointer-events-none absolute bottom-4 left-4 hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:block">
+                    <span className="rounded-full border border-white/20 bg-black/75 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-md">
+                      استكشف الموديل
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -608,12 +655,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           2. TRUST FEATURES
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
         <div
-          className={`rounded-2xl p-6 sm:p-8 border grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-4 text-center divide-y md:divide-y-0 md:divide-x md:divide-x-reverse transition-colors ${
+          className={`grid grid-cols-2 gap-6 rounded-2xl border p-6 text-center transition-colors sm:gap-4 sm:p-8 md:grid-cols-4 md:divide-x md:divide-x-reverse md:divide-y-0 ${
             isDark
-              ? 'bg-[#111115] border-neutral-800 divide-neutral-800/80 text-white'
-              : 'bg-white border-neutral-200 divide-neutral-200 text-black shadow-sm'
+              ? 'divide-neutral-800/80 border-neutral-800 bg-[#111115] text-white'
+              : 'divide-neutral-200 border-neutral-200 bg-white text-black shadow-sm'
           }`}
         >
           {trustFeatures.map((feat) => {
@@ -622,23 +669,23 @@ export const HomePage: React.FC<HomePageProps> = ({
             return (
               <div
                 key={feat.id}
-                className="flex flex-col items-center justify-center pt-4 md:pt-0 first:pt-0 px-2"
+                className="flex min-w-0 flex-col items-center justify-center px-2 pt-4 first:pt-0 md:pt-0"
               >
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${
+                  className={`mb-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${
                     isDark
                       ? 'bg-neutral-900 text-white'
                       : 'bg-neutral-100 text-black'
                   }`}
                 >
-                  <Icon className="w-6 h-6 stroke-[1.5]" />
+                  <Icon className="h-6 w-6 stroke-[1.5]" />
                 </div>
 
-                <h4 className="text-sm sm:text-base font-bold mb-0.5">
+                <h4 className="wrap-anywhere text-sm font-bold sm:text-base">
                   {feat.title}
                 </h4>
 
-                <p className="text-xs text-neutral-400 font-medium">
+                <p className="mt-0.5 wrap-anywhere text-xs font-medium text-neutral-400">
                   {feat.subtitle}
                 </p>
               </div>
@@ -651,16 +698,20 @@ export const HomePage: React.FC<HomePageProps> = ({
           3. REAL CATEGORIES
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center my-6">
-          <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
-            <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="my-6 text-center">
+          <div className="inline-flex max-w-full items-center gap-3 text-lg font-black tracking-tight sm:text-2xl">
+            <span className="h-[2px] w-8 shrink-0 bg-neutral-400 sm:w-12" />
 
-            <h2 className={isDark ? 'text-white' : 'text-black'}>
+            <h2
+              className={`min-w-0 wrap-anywhere ${
+                isDark ? 'text-white' : 'text-black'
+              }`}
+            >
               تسوق حسب الفئة
             </h2>
 
-            <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
+            <span className="h-[2px] w-8 shrink-0 bg-neutral-400 sm:w-12" />
           </div>
         </div>
 
@@ -668,14 +719,14 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div
             className={`rounded-2xl border p-8 text-center ${
               isDark
-                ? 'bg-[#121216] border-neutral-800 text-neutral-400'
-                : 'bg-white border-neutral-200 text-neutral-500'
+                ? 'border-neutral-800 bg-[#121216] text-neutral-400'
+                : 'border-neutral-200 bg-white text-neutral-500'
             }`}
           >
             لا توجد فئات متاحة حاليًا.
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
             {activeCategories.map((cat) => {
               const categoryImage = cat.image_url
                 ? resolveImageUrl(cat.image_url)
@@ -685,10 +736,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div
                   key={cat.id}
                   onClick={() => handleCategoryNavigate(cat.slug)}
-                  className={`group cursor-pointer rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col ${
+                  className={`group min-w-0 cursor-pointer overflow-hidden rounded-2xl border transition-all duration-300 ${
                     isDark
-                      ? 'bg-[#121216] border-neutral-800 hover:border-neutral-600 shadow-md'
-                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                      ? 'border-neutral-800 bg-[#121216] shadow-md hover:border-neutral-600'
+                      : 'border-neutral-200 bg-white hover:border-neutral-400 hover:shadow-lg'
                   }`}
                   role="button"
                   tabIndex={0}
@@ -699,17 +750,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                   }}
                   aria-label={`تصفح فئة ${cat.name}`}
                 >
-                  <div className="relative aspect-[4/4.5] sm:aspect-[4/5] w-full overflow-hidden bg-neutral-900/10">
+                  <div className="relative aspect-[4/4.5] w-full overflow-hidden bg-neutral-900/10 sm:aspect-[4/5]">
                     {categoryImage ? (
                       <img
                         src={categoryImage}
                         alt={cat.name}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+                        className="h-full w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
                         loading="lazy"
                       />
                     ) : (
                       <div
-                        className={`w-full h-full flex flex-col items-center justify-center ${
+                        className={`flex h-full w-full flex-col items-center justify-center ${
                           isDark
                             ? 'bg-neutral-900 text-neutral-500'
                             : 'bg-neutral-100 text-neutral-400'
@@ -719,19 +770,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                           OZ
                         </span>
 
-                        <span className="text-xs mt-2">
-                          لا توجد صورة
-                        </span>
+                        <span className="mt-2 text-xs">لا توجد صورة</span>
                       </div>
                     )}
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   </div>
 
-                  <div className="p-3.5 sm:p-4 flex items-center justify-between">
-                    <div className="text-right min-w-0">
+                  <div className="flex min-w-0 items-center justify-between gap-2 p-3.5 sm:p-4">
+                    <div className="min-w-0 text-right">
                       <h3
-                        className={`text-sm sm:text-base font-bold transition-colors truncate ${
+                        className={`min-w-0 truncate text-sm font-bold transition-colors sm:text-base ${
                           isDark
                             ? 'text-white group-hover:text-neutral-200'
                             : 'text-black group-hover:text-neutral-800'
@@ -740,19 +789,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                         {cat.name}
                       </h3>
 
-                      <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest text-neutral-400 uppercase block mt-0.5">
+                      <span className="mt-0.5 block min-w-0 truncate text-[10px] font-mono font-bold uppercase tracking-widest text-neutral-400 sm:text-xs">
                         {cat.slug}
                       </span>
                     </div>
 
                     <div
-                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-hover:-translate-x-1 ${
                         isDark
                           ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
                           : 'bg-neutral-200 text-black group-hover:bg-black group-hover:text-white'
                       }`}
                     >
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="h-4 w-4" />
                     </div>
                   </div>
                 </div>
@@ -766,32 +815,32 @@ export const HomePage: React.FC<HomePageProps> = ({
           4. EDITORIAL PROMO BANNER
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
         <div
-          className={`relative rounded-3xl overflow-hidden border p-6 sm:p-10 lg:p-12 transition-colors ${
+          className={`relative overflow-hidden rounded-3xl border p-6 transition-colors sm:p-10 lg:p-12 ${
             isDark
-              ? 'bg-[#111115] border-neutral-800 text-white'
-              : 'bg-neutral-900 border-neutral-800 text-white'
+              ? 'border-neutral-800 bg-[#111115] text-white'
+              : 'border-neutral-800 bg-neutral-900 text-white'
           }`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            <div className="md:col-span-7 space-y-4 text-right z-10">
-              <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-400">
-                <span className="w-8 h-[1px] bg-neutral-500" />
+          <div className="grid min-w-0 grid-cols-1 items-center gap-8 md:grid-cols-12">
+            <div className="z-10 min-w-0 space-y-4 text-right md:col-span-7">
+              <div className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
+                <span className="h-px w-8 shrink-0 bg-neutral-500" />
                 <span>OUTFIT ZONE</span>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm sm:text-base text-neutral-300 font-medium">
+                <p className="text-sm font-medium text-neutral-300 sm:text-base">
                   ...مش مجرد لبس
                 </p>
 
-                <h3 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                <h3 className="text-3xl font-black leading-tight tracking-tight sm:text-5xl">
                   ده حضور
                 </h3>
               </div>
 
-              <p className="text-xs sm:text-sm text-neutral-400 max-w-md leading-relaxed">
+              <p className="max-w-md text-xs leading-relaxed text-neutral-400 sm:text-sm">
                 تصاميم تعكس ذوقك العصري مع تفاصيل متقنة وخامات قطنية ممتازة
                 تناسب كل لحظات يومك.
               </p>
@@ -799,26 +848,26 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => onNavigate('/about')}
-                  className="py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3 text-xs font-extrabold text-black shadow-md transition-all hover:bg-neutral-200 sm:text-sm"
                 >
                   <span>اكتشف المزيد</span>
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            <div className="md:col-span-5 relative flex justify-center md:justify-end">
-              <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-800 shadow-xl bg-black">
+            <div className="relative flex min-w-0 justify-center md:col-span-5 md:justify-end">
+              <div className="relative aspect-[4/3] w-full max-w-sm overflow-hidden rounded-2xl border border-neutral-800 bg-black shadow-xl">
                 <img
                   src={resolveImageUrl(
                     '/images/hero_streetwear_editorial_1790342899745.jpg'
                   )}
                   alt="Streetwear Detail"
-                  className="w-full h-full object-cover object-bottom opacity-80"
+                  className="h-full w-full object-cover object-bottom opacity-80"
                   loading="lazy"
                 />
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] bg-black/95 text-white border-2 border-neutral-700/80 px-4 py-2 rounded shadow-2xl font-syne font-black tracking-[0.2em] text-sm text-center">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] rounded border-2 border-neutral-700/80 bg-black/95 px-4 py-2 text-center font-syne text-sm font-black tracking-[0.2em] text-white shadow-2xl">
                   <div>OUTFIT</div>
                   <div>ZONE</div>
                 </div>
@@ -832,15 +881,15 @@ export const HomePage: React.FC<HomePageProps> = ({
           5. FEATURED PRODUCTS
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-8">
-          <div className="text-right">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="mb-8 flex min-w-0 items-end justify-between gap-4">
+          <div className="min-w-0 text-right">
+            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-400">
               أحدث التشكيلات
             </span>
 
             <h2
-              className={`text-xl sm:text-2xl font-black ${
+              className={`min-w-0 wrap-anywhere text-xl font-black sm:text-2xl ${
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
@@ -850,49 +899,51 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           <button
             onClick={() => onNavigate('/products')}
-            className="text-xs font-bold text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+            className={`flex shrink-0 items-center gap-1 text-xs font-bold text-neutral-400 transition-colors ${
+              isDark ? 'hover:text-white' : 'hover:text-black'
+            }`}
           >
             <span>عرض جميع المنتجات</span>
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="aspect-[3/4] bg-neutral-900/10 dark:bg-neutral-900/40 rounded-2xl animate-pulse"
+                className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-900/10 dark:bg-neutral-900/40"
               />
             ))}
           </div>
         ) : error ? (
-          <div className="p-8 rounded-2xl border text-center space-y-3 bg-neutral-900/10 border-neutral-200 dark:bg-neutral-900/40 dark:border-neutral-800">
-            <AlertCircle className="w-8 h-8 text-neutral-400 mx-auto" />
+          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-900/10 p-8 text-center dark:border-neutral-800 dark:bg-neutral-900/40">
+            <AlertCircle className="mx-auto h-8 w-8 text-neutral-400" />
 
             <p className="text-sm text-neutral-400">{error}</p>
 
             <button
               onClick={loadProducts}
-              className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-700"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" />
 
               <span>إعادة المحاولة</span>
             </button>
           </div>
         ) : featuredProducts.length === 0 ? (
           <div
-            className={`p-8 rounded-2xl border text-center ${
+            className={`rounded-2xl border p-8 text-center ${
               isDark
-                ? 'bg-neutral-900/40 border-neutral-800 text-neutral-400'
-                : 'bg-neutral-50 border-neutral-200 text-neutral-500'
+                ? 'border-neutral-800 bg-neutral-900/40 text-neutral-400'
+                : 'border-neutral-200 bg-neutral-50 text-neutral-500'
             }`}
           >
             لا توجد منتجات متاحة حاليًا.
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -908,15 +959,15 @@ export const HomePage: React.FC<HomePageProps> = ({
           6. CUSTOMER REVIEWS
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
-          <div className="text-right">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="mb-8 flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 text-right">
+            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-400">
               آراء عملائنا
             </span>
 
             <h2
-              className={`text-xl sm:text-2xl font-black ${
+              className={`min-w-0 wrap-anywhere text-xl font-black sm:text-2xl ${
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
@@ -928,13 +979,13 @@ export const HomePage: React.FC<HomePageProps> = ({
             <button
               type="button"
               onClick={openReviewForm}
-              className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-all hover:scale-[1.02] ${
                 isDark
                   ? 'bg-white text-black hover:bg-neutral-200'
                   : 'bg-black text-white hover:bg-neutral-800'
               }`}
             >
-              <Star className="w-4 h-4" />
+              <Star className="h-4 w-4" />
               <span>شاركنا رأيك</span>
             </button>
           )}
@@ -942,10 +993,10 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {reviewMessage && (
           <div
-            className={`mb-6 rounded-2xl border p-4 text-sm text-right ${
+            className={`mb-6 rounded-2xl border p-4 text-right text-sm ${
               isDark
-                ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
-                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                ? 'border-neutral-800 bg-neutral-900 text-neutral-200'
+                : 'border-neutral-200 bg-neutral-50 text-neutral-700'
             }`}
           >
             {reviewMessage}
@@ -956,12 +1007,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div
             className={`mb-8 rounded-3xl border p-5 sm:p-7 ${
               isDark
-                ? 'bg-[#111115] border-neutral-800'
-                : 'bg-white border-neutral-200 shadow-sm'
+                ? 'border-neutral-800 bg-[#111115]'
+                : 'border-neutral-200 bg-white shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="text-right">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div className="min-w-0 text-right">
                 <h3
                   className={`text-lg font-black ${
                     isDark ? 'text-white' : 'text-black'
@@ -970,7 +1021,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   شاركنا تجربتك
                 </h3>
 
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="mt-1 text-xs text-neutral-400">
                   رأيك يهمنا ويساعد عملاءنا يعرفوا تجربتك.
                 </p>
               </div>
@@ -980,20 +1031,20 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={closeReviewForm}
                 disabled={reviewSubmitting}
                 aria-label="إغلاق نموذج الرأي"
-                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${
                   isDark
                     ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
                     : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100'
                 }`}
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmitReview} className="space-y-5" dir="rtl">
               <div>
                 <label
-                  className={`block text-sm font-bold mb-2 ${
+                  className={`mb-2 block text-sm font-bold ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
@@ -1009,15 +1060,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                   disabled={reviewSubmitting}
                   className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
                     isDark
-                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
-                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                      ? 'border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'border-neutral-200 bg-white text-black placeholder:text-neutral-400 focus:border-neutral-500'
                   }`}
                 />
               </div>
 
               <div>
                 <label
-                  className={`block text-sm font-bold mb-3 ${
+                  className={`mb-3 block text-sm font-bold ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
@@ -1035,10 +1086,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                         onClick={() => setReviewRating(star)}
                         disabled={reviewSubmitting}
                         aria-label={`تقييم ${star} من 5`}
-                        className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                        className="cursor-pointer p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed"
                       >
                         <Star
-                          className={`w-7 h-7 transition-colors ${
+                          className={`h-7 w-7 transition-colors ${
                             selected
                               ? 'fill-yellow-400 text-yellow-400'
                               : isDark
@@ -1054,7 +1105,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <div>
                 <label
-                  className={`block text-sm font-bold mb-2 ${
+                  className={`mb-2 block text-sm font-bold ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
@@ -1068,14 +1119,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                   maxLength={1000}
                   rows={5}
                   disabled={reviewSubmitting}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none resize-none transition-colors ${
+                  className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
                     isDark
-                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
-                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                      ? 'border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                      : 'border-neutral-200 bg-white text-black placeholder:text-neutral-400 focus:border-neutral-500'
                   }`}
                 />
 
-                <div className="text-[10px] text-neutral-400 mt-1 text-left">
+                <div className="mt-1 text-left text-[10px] text-neutral-400">
                   {reviewText.length}/1000
                 </div>
               </div>
@@ -1084,20 +1135,20 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div
                   className={`rounded-xl border px-4 py-3 text-sm ${
                     isDark
-                      ? 'bg-red-950/20 border-red-900/50 text-red-300'
-                      : 'bg-red-50 border-red-200 text-red-600'
+                      ? 'border-red-900/50 bg-red-950/20 text-red-300'
+                      : 'border-red-200 bg-red-50 text-red-600'
                   }`}
                 >
                   {reviewError}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={closeReviewForm}
                   disabled={reviewSubmitting}
-                  className={`py-3 px-6 rounded-xl border font-bold text-sm transition-colors cursor-pointer ${
+                  className={`rounded-xl border px-6 py-3 text-sm font-bold transition-colors ${
                     isDark
                       ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-900'
                       : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
@@ -1109,13 +1160,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <button
                   type="submit"
                   disabled={reviewSubmitting}
-                  className={`py-3 px-7 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                  className={`flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                     isDark
                       ? 'bg-white text-black hover:bg-neutral-200'
                       : 'bg-black text-white hover:bg-neutral-800'
                   }`}
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="h-4 w-4" />
 
                   <span>
                     {reviewSubmitting ? 'جاري الإرسال...' : 'إرسال رأيي'}
@@ -1127,11 +1178,11 @@ export const HomePage: React.FC<HomePageProps> = ({
         )}
 
         {reviewsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className={`h-44 rounded-2xl animate-pulse ${
+                className={`h-44 animate-pulse rounded-2xl ${
                   isDark ? 'bg-neutral-900/60' : 'bg-neutral-100'
                 }`}
               />
@@ -1141,11 +1192,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div
             className={`rounded-2xl border p-8 text-center ${
               isDark
-                ? 'bg-[#111115] border-neutral-800 text-neutral-400'
-                : 'bg-white border-neutral-200 text-neutral-500'
+                ? 'border-neutral-800 bg-[#111115] text-neutral-400'
+                : 'border-neutral-200 bg-white text-neutral-500'
             }`}
           >
-            <Star className="w-8 h-8 mx-auto mb-4 text-neutral-400" />
+            <Star className="mx-auto mb-4 h-8 w-8 text-neutral-400" />
 
             <h3
               className={`text-base font-black ${
@@ -1155,7 +1206,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               كن أول من يشارك تجربته
             </h3>
 
-            <p className="text-xs mt-2 text-neutral-400">
+            <p className="mt-2 text-xs text-neutral-400">
               جربت Outfit Zone؟ شاركنا رأيك وتقييمك، ويمكن لرأيك يظهر هنا بعد
               اعتماده.
             </p>
@@ -1164,19 +1215,19 @@ export const HomePage: React.FC<HomePageProps> = ({
               <button
                 type="button"
                 onClick={openReviewForm}
-                className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                className={`mt-5 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-all hover:scale-[1.02] ${
                   isDark
                     ? 'bg-white text-black hover:bg-neutral-200'
                     : 'bg-black text-white hover:bg-neutral-800'
                 }`}
               >
-                <Star className="w-4 h-4" />
+                <Star className="h-4 w-4" />
                 <span>شاركنا رأيك</span>
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {reviews.map((review) => {
               const productSlug = review.product?.slug;
 
@@ -1184,22 +1235,22 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <article
                   key={review.id}
                   onClick={() => handleReviewProduct(productSlug)}
-                  className={`group rounded-2xl border p-5 transition-all duration-300 ${
+                  className={`group min-w-0 rounded-2xl border p-5 transition-all duration-300 ${
                     productSlug ? 'cursor-pointer' : ''
                   } ${
                     isDark
-                      ? 'bg-[#111115] border-neutral-800 hover:border-neutral-600'
-                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                      ? 'border-neutral-800 bg-[#111115] hover:border-neutral-600'
+                      : 'border-neutral-200 bg-white hover:border-neutral-400 hover:shadow-lg'
                   }`}
                 >
                   <div
-                    className="flex items-center gap-0.5 mb-4"
+                    className="mb-4 flex items-center gap-0.5"
                     dir="ltr"
                   >
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`w-4 h-4 ${
+                        className={`h-4 w-4 ${
                           star <= Number(review.rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : isDark
@@ -1211,7 +1262,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </div>
 
                   <p
-                    className={`text-sm leading-7 min-h-[84px] ${
+                    className={`min-h-[84px] wrap-anywhere text-sm leading-7 ${
                       isDark ? 'text-neutral-200' : 'text-neutral-700'
                     }`}
                   >
@@ -1219,15 +1270,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </p>
 
                   <div
-                    className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
+                    className={`mt-5 flex items-center justify-between gap-3 border-t pt-4 ${
                       isDark
                         ? 'border-neutral-800'
                         : 'border-neutral-200'
                     }`}
                   >
-                    <div className="text-right min-w-0">
+                    <div className="min-w-0 text-right">
                       <p
-                        className={`text-sm font-bold truncate ${
+                        className={`truncate text-sm font-bold ${
                           isDark ? 'text-white' : 'text-black'
                         }`}
                       >
@@ -1235,7 +1286,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       </p>
 
                       {review.product?.name && (
-                        <p className="text-[10px] text-neutral-400 truncate mt-0.5">
+                        <p className="mt-0.5 truncate text-[10px] text-neutral-400">
                           {review.product.name}
                         </p>
                       )}
@@ -1243,13 +1294,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                     {productSlug && (
                       <div
-                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-hover:-translate-x-1 ${
                           isDark
                             ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
                             : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
                         }`}
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <ArrowLeft className="h-3.5 w-3.5" />
                       </div>
                     )}
                   </div>
@@ -1262,3 +1313,6 @@ export const HomePage: React.FC<HomePageProps> = ({
     </div>
   );
 };
+```
+
+[/END]
