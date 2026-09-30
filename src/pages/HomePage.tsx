@@ -7,7 +7,6 @@ ChevronRight,
 Heart,
 Instagram,
 MessageCircle,
-Play,
 ShoppingBag,
 Star,
 } from 'lucide-react';
@@ -349,11 +348,16 @@ className={`font-mono text-xs font-bold tracking-[0.2em] ${
                 <ChevronRight
                   className="h-4 w-4"
                   style={{
-                    transform: 'scaleX(-1)',
+                    direction: 'ltr',
                   }}
                 />
               ) : (
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft
+                  className="h-4 w-4"
+                  style={{
+                    direction: 'ltr',
+                  }}
+                />
               )}
             </button>
 
@@ -376,11 +380,16 @@ className={`font-mono text-xs font-bold tracking-[0.2em] ${
                 <ChevronLeft
                   className="h-4 w-4"
                   style={{
-                    transform: 'scaleX(-1)',
+                    direction: 'ltr',
                   }}
                 />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight
+                  className="h-4 w-4"
+                  style={{
+                    direction: 'ltr',
+                  }}
+                />
               )}
             </button>
           </div>
