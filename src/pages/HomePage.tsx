@@ -34,7 +34,6 @@ import type {
 const HomePage = () => {
   const { isDark } = useTheme();
   const { isRtl } = useLanguage();
-
   const { addToCart } = useCart();
 
   const {
@@ -82,9 +81,6 @@ const HomePage = () => {
   const activeSlide =
     heroSlides[currentSlide] ?? heroSlides[0];
 
-  const isLongHeroTitle =
-    activeSlide.title.length > 18;
-
   useEffect(() => {
     const loadHomeData = async () => {
       try {
@@ -119,7 +115,7 @@ const HomePage = () => {
 
     const interval = window.setInterval(() => {
       setCurrentSlide((previous) =>
-        previous === heroSlides.length - 1
+        previous >= heroSlides.length - 1
           ? 0
           : previous + 1
       );
@@ -132,7 +128,7 @@ const HomePage = () => {
 
   const nextSlide = () => {
     setCurrentSlide((previous) =>
-      previous === heroSlides.length - 1
+      previous >= heroSlides.length - 1
         ? 0
         : previous + 1
     );
@@ -140,7 +136,7 @@ const HomePage = () => {
 
   const prevSlide = () => {
     setCurrentSlide((previous) =>
-      previous === 0
+      previous <= 0
         ? heroSlides.length - 1
         : previous - 1
     );
@@ -171,7 +167,7 @@ const HomePage = () => {
       setReviewText('');
       setReviewRating(5);
 
-      alert(
+      window.alert(
         isRtl
           ? 'تم إرسال تقييمك بنجاح وسيتم مراجعته.'
           : 'Your review was submitted successfully and will be reviewed.'
@@ -182,7 +178,7 @@ const HomePage = () => {
         error
       );
 
-      alert(
+      window.alert(
         isRtl
           ? 'حدث خطأ أثناء إرسال التقييم.'
           : 'Something went wrong while submitting your review.'
@@ -191,6 +187,9 @@ const HomePage = () => {
       setReviewSubmitting(false);
     }
   };
+
+  const isLongHeroTitle =
+    activeSlide.title.length > 18;
 
   return (
     <main
@@ -668,9 +667,7 @@ const HomePage = () => {
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => {
-            const favorite = isFavorite(
-              product.id
-            );
+            const favorite = isFavorite(product.id);
 
             const productWithCompareAtPrice =
               product as Product & {
