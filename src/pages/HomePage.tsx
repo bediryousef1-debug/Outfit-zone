@@ -51,6 +51,24 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
+   * LANGUAGE / DIRECTION
+   * ==========================================================================
+   *
+   * The application already controls the document direction through the
+   * language system. We read that direction here so icons can follow the
+   * actual language instead of being permanently hardcoded for RTL.
+   */
+
+  const isRTL =
+    typeof document !== 'undefined'
+      ? document.documentElement.dir === 'rtl'
+      : true;
+
+  const ForwardArrow = isRTL ? ArrowLeft : ArrowRight;
+  const BackArrow = isRTL ? ArrowRight : ArrowLeft;
+
+  /*
+   * ==========================================================================
    * REVIEW FORM
    * ==========================================================================
    */
@@ -128,7 +146,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
         ctaText: 'عرض التشكيلة',
         ctaLink: '/products?category=streetwear-polos',
-        imageUrl: '/images/product_interlock_polo_charcoal_1790342934447.jpg',
+        imageUrl:
+          '/images/product_interlock_polo_charcoal_1790342934447.jpg',
         badgeTop: 'Urban Interlock',
         badgeBottom: 'CASH ON DELIVERY',
         alt: 'Streetwear Polo Charcoal',
@@ -142,6 +161,12 @@ export const HomePage: React.FC<HomePageProps> = ({
   );
 
   const currentSlide = heroSlides[activeSlide] || heroSlides[0];
+
+  /*
+   * Long English slide titles need a little more room on desktop.
+   * The main slide keeps the larger editorial typography.
+   */
+  const isCompactHeroTitle = currentSlide.id !== 'slide-main';
 
   const nextSlide = () => {
     setActiveSlide((prev) => (prev + 1) % heroSlides.length);
@@ -423,15 +448,15 @@ export const HomePage: React.FC<HomePageProps> = ({
         aria-label="عروض وتشكيلات Outfit Zone"
       >
         <div className="mx-auto w-full min-w-0 max-w-7xl px-4 pt-5 pb-8 sm:px-6 sm:py-12 lg:py-16">
-          <div className="grid w-full min-w-0 grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
+          <div className="grid w-full min-w-0 grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12">
             {/* =================================================================
                 HERO CONTENT
                 ================================================================= */}
 
-            <div className="order-1 min-w-0 max-w-full space-y-5 text-right lg:col-span-6 lg:order-1 lg:space-y-6">
+            <div className="order-1 min-w-0 w-full max-w-full space-y-5 text-right lg:order-1 lg:space-y-6">
               {/* Top metadata */}
 
-              <div className="flex min-w-0 max-w-full items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 sm:text-xs sm:tracking-widest">
+              <div className="flex min-w-0 w-full max-w-full items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 sm:text-xs sm:tracking-widest">
                 <div className="flex min-w-0 max-w-[72%] items-center gap-2">
                   <span className="h-px w-6 shrink-0 bg-neutral-500 sm:w-8" />
 
@@ -447,17 +472,24 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               {/* Main heading */}
 
-              <div className="w-full min-w-0 max-w-full space-y-2">
+              <div className="w-full min-w-0 max-w-[620px] space-y-2 lg:max-w-[580px]">
                 <h1
-                  className={`block w-full min-w-0 max-w-full wrap-anywhere font-syne text-[clamp(2rem,9vw,3rem)] font-black uppercase leading-[0.9] tracking-[-0.03em] sm:text-6xl lg:text-[clamp(3.5rem,5vw,4.5rem)] ${
+                  className={`block w-full min-w-0 max-w-full whitespace-normal font-syne font-black uppercase leading-[0.9] tracking-[-0.03em] ${
+                    isCompactHeroTitle
+                      ? 'text-[clamp(2rem,8vw,3.1rem)] sm:text-[clamp(2.7rem,5vw,3.7rem)] lg:text-[clamp(2.75rem,4vw,4rem)]'
+                      : 'text-[clamp(2.15rem,9vw,3rem)] sm:text-6xl lg:text-[clamp(3.5rem,5vw,4.5rem)]'
+                  } ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
+                  style={{
+                    overflowWrap: 'anywhere',
+                  }}
                 >
-                  <span className="block w-full min-w-0 max-w-full wrap-anywhere">
+                  <span className="block w-full min-w-0 max-w-full">
                     {currentSlide.titleLine1}
                   </span>
 
-                  <span className="block w-full min-w-0 max-w-full wrap-anywhere">
+                  <span className="block w-full min-w-0 max-w-full">
                     {currentSlide.titleLine2}
                   </span>
                 </h1>
@@ -496,7 +528,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     {currentSlide.ctaText}
                   </span>
 
-                  <ArrowLeft className="h-4 w-4 shrink-0" />
+                  <ForwardArrow className="h-4 w-4 shrink-0" />
                 </button>
               </div>
 
@@ -542,7 +574,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                   })}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                {/* Direction is deliberately LTR here so RTL cannot mirror
+                    the actual physical arrow icons. The icon itself is chosen
+                    from the current language direction above. */}
+
+                <div
+                  className="flex shrink-0 items-center gap-2"
+                  dir="ltr"
+                >
                   <button
                     onClick={prevSlide}
                     aria-label="الشريحة السابقة"
@@ -552,7 +591,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    {isRTL ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronLeft className="h-4 w-4" />
+                    )}
                   </button>
 
                   <button
@@ -564,7 +607,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black shadow-xs hover:border-black hover:bg-black hover:text-white'
                     }`}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    {isRTL ? (
+                      <ChevronLeft className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -574,7 +621,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 HERO IMAGE
                 ================================================================= */}
 
-            <div className="order-2 w-full min-w-0 max-w-full lg:col-span-6 lg:order-2">
+            <div className="order-2 w-full min-w-0 max-w-full lg:order-2">
               <div
                 onClick={() => onNavigate(currentSlide.ctaLink)}
                 className={`group relative mx-auto w-full max-w-[620px] overflow-hidden rounded-2xl border shadow-2xl transition-all duration-500 sm:rounded-3xl ${
@@ -785,7 +832,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           : 'bg-neutral-200 text-black group-hover:bg-black group-hover:text-white'
                       }`}
                     >
-                      <ArrowRight className="h-4 w-4" />
+                      <ForwardArrow className="h-4 w-4" />
                     </div>
                   </div>
                 </div>
@@ -835,7 +882,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3 text-xs font-extrabold text-black shadow-md transition-all hover:bg-neutral-200 sm:text-sm"
                 >
                   <span>اكتشف المزيد</span>
-                  <ArrowLeft className="h-4 w-4" />
+                  <ForwardArrow className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -888,7 +935,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             }`}
           >
             <span>عرض جميع المنتجات</span>
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ForwardArrow className="h-3.5 w-3.5" />
           </button>
         </div>
 
@@ -1288,7 +1335,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                             : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
                         }`}
                       >
-                        <ArrowLeft className="h-3.5 w-3.5" />
+                        <ForwardArrow className="h-3.5 w-3.5" />
                       </div>
                     )}
                   </div>
