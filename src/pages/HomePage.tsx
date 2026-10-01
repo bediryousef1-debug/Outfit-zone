@@ -89,117 +89,12 @@ const [reviewError, setReviewError] = useState<string | null>(null);
 * ==========================================================================
   */
 
-const fallbackHeroSlides: HeroSlide[] = [
-{
-id: 'slide-main',
-tag_ar: 'NEW COLLECTION 2026',
-tag_en: 'NEW COLLECTION 2026',
-title_line1_ar: 'WEAR IN',
-title_line1_en: 'WEAR IN',
-title_line2_ar: 'THE ZONE',
-title_line2_en: 'THE ZONE',
-subtitle_ar: content?.hero_subtitle || 'ستايلك له حضور',
-subtitle_en: 'Your style has presence',
-description_ar:
-'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
-description_en:
-'Carefully selected pieces that reflect your personality, made with premium Egyptian cotton.',
-button_text_ar: content?.hero_button_text || 'تسوق الآن',
-button_text_en: 'Shop Now',
-button_link: '/products',
-image_url:
-content?.hero_image_url ||
-'/images/hero_streetwear_editorial_1790342899745.jpg',
-badge_top_ar: 'Style Your Zone',
-badge_top_en: 'Style Your Zone',
-badge_bottom_ar: 'STYLE BUILDS CONFIDENCE',
-badge_bottom_en: 'STYLE BUILDS CONFIDENCE',
-sort_order: 0,
-is_active: true,
-},
-{
-id: 'slide-boxfit',
-tag_ar: 'BOX FIT ESSENTIALS',
-tag_en: 'BOX FIT ESSENTIALS',
-title_line1_ar: 'HEAVYWEIGHT',
-title_line1_en: 'HEAVYWEIGHT',
-title_line2_ar: 'COTTON 240+',
-title_line2_en: 'COTTON 240+',
-subtitle_ar: 'تيشيرتات Box Fit الفاخرة',
-subtitle_en: 'Premium Box Fit T-Shirts',
-description_ar:
-'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
-description_en:
-'Comfortable cuts and premium finishing designed to last while maintaining the fabric quality.',
-button_text_ar: 'اكتشف التيشيرتات',
-button_text_en: 'Discover T-Shirts',
-button_link: '/products?search=تيشيرت',
-image_url: '/images/product_boxfit_tee_black_1790342911897.jpg',
-badge_top_ar: 'Heavyweight Fit',
-badge_top_en: 'Heavyweight Fit',
-badge_bottom_ar: '100% EGYPTIAN COTTON',
-badge_bottom_en: '100% EGYPTIAN COTTON',
-sort_order: 1,
-is_active: true,
-},
-{
-id: 'slide-oversized',
-tag_ar: 'OVERSIZED STREETWEAR',
-tag_en: 'OVERSIZED STREETWEAR',
-title_line1_ar: 'EFFORTLESS',
-title_line1_en: 'EFFORTLESS',
-title_line2_ar: 'OVERSIZED',
-title_line2_en: 'OVERSIZED',
-subtitle_ar: 'تشكيلة الأوفرسايز الواسعة',
-subtitle_en: 'Oversized Streetwear Collection',
-description_ar:
-'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
-description_en:
-'Modern streetwear with relaxed oversized cuts for a distinctive look throughout the day.',
-button_text_ar: 'تسوق الأوفرسايز',
-button_text_en: 'Shop Oversized',
-button_link: '/products?search=اوفرسايز',
-image_url: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
-badge_top_ar: 'Streetwear Drop',
-badge_top_en: 'Streetwear Drop',
-badge_bottom_ar: 'WEAR IN THE ZONE',
-badge_bottom_en: 'WEAR IN THE ZONE',
-sort_order: 2,
-is_active: true,
-},
-{
-id: 'slide-polos',
-tag_ar: 'URBAN INTERLOCK',
-tag_en: 'URBAN INTERLOCK',
-title_line1_ar: 'MODERN',
-title_line1_en: 'MODERN',
-title_line2_ar: 'POLOS & SHIRTS',
-title_line2_en: 'POLOS & SHIRTS',
-subtitle_ar: 'بولو وقمصان إنترلوك أنيقة',
-subtitle_en: 'Modern Interlock Polos & Shirts',
-description_ar:
-'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
-description_en:
-'A perfect balance between polished and casual style with soft, cool and comfortable interlock fabric.',
-button_text_ar: 'عرض التشكيلة',
-button_text_en: 'View Collection',
-button_link: '/products?category=streetwear-polos',
-image_url:
-'/images/product_interlock_polo_charcoal_1790342934447.jpg',
-badge_top_ar: 'Urban Interlock',
-badge_top_en: 'Urban Interlock',
-badge_bottom_ar: 'CASH ON DELIVERY',
-badge_bottom_en: 'CASH ON DELIVERY',
-sort_order: 3,
-is_active: true,
-},
-];
 
 const currentSlides =
 heroSlides.length > 0 ? heroSlides : fallbackHeroSlides;
 
 const currentSlide =
-currentSlides[activeSlide] || currentSlides[0] || fallbackHeroSlides[0];
+currentSlides[activeSlide] || currentSlides[0];
 
 /*
 
