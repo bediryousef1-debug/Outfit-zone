@@ -10,6 +10,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { ShippingRate } from '../types';
 import {
