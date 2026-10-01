@@ -19,6 +19,7 @@ import { api } from '../services/api';
 import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { resolveImageUrl } from '../utils/imageHelper';
 
 interface HomePageProps {
@@ -40,6 +41,9 @@ onSelectProduct,
 }) => {
 const { categories, content, heroSlides } = useStore();
 const { isDark } = useTheme();
+const { isRtl } = useLanguage();
+
+const isRTL = isRtl;
 
 const [products, setProducts] = useState<Product[]>([]);
 const [reviews, setReviews] = useState<HomepageReview[]>([]);
@@ -81,31 +85,6 @@ const [reviewError, setReviewError] = useState<string | null>(null);
 /*
 
 * ==========================================================================
-* LANGUAGE
-* ==========================================================================
-  */
-
-const getIsRTL = () => {
-if (typeof document === 'undefined') return true;
-
-const dir = document.documentElement.dir?.toLowerCase();
-
-if (dir === 'ltr') return false;
-if (dir === 'rtl') return true;
-
-const lang = document.documentElement.lang?.toLowerCase();
-
-if (lang.startsWith('en')) return false;
-
-return true;
-
-};
-
-const isRTL = getIsRTL();
-
-/*
-
-* ==========================================================================
 * FALLBACK HERO SLIDES
 * ==========================================================================
   */
@@ -125,17 +104,16 @@ description_ar:
 'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
 description_en:
 'Carefully selected pieces that reflect your personality, made with premium Egyptian cotton.',
-cta_text_ar: content?.hero_button_text || 'تسوق الآن',
-cta_text_en: 'Shop Now',
-cta_link: '/products',
+button_text_ar: content?.hero_button_text || 'تسوق الآن',
+button_text_en: 'Shop Now',
+button_link: '/products',
 image_url:
 content?.hero_image_url ||
 '/images/hero_streetwear_editorial_1790342899745.jpg',
-badge_top: 'Style Your Zone',
+badge_top_ar: 'Style Your Zone',
 badge_top_en: 'Style Your Zone',
-badge_bottom: 'STYLE BUILDS CONFIDENCE',
+badge_bottom_ar: 'STYLE BUILDS CONFIDENCE',
 badge_bottom_en: 'STYLE BUILDS CONFIDENCE',
-alt: 'Outfit Zone Editorial Campaign',
 sort_order: 0,
 is_active: true,
 },
@@ -153,15 +131,14 @@ description_ar:
 'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
 description_en:
 'Comfortable cuts and premium finishing designed to last while maintaining the fabric quality.',
-cta_text_ar: 'اكتشف التيشيرتات',
-cta_text_en: 'Discover T-Shirts',
-cta_link: '/products?search=تيشيرت',
+button_text_ar: 'اكتشف التيشيرتات',
+button_text_en: 'Discover T-Shirts',
+button_link: '/products?search=تيشيرت',
 image_url: '/images/product_boxfit_tee_black_1790342911897.jpg',
-badge_top: 'Heavyweight Fit',
+badge_top_ar: 'Heavyweight Fit',
 badge_top_en: 'Heavyweight Fit',
-badge_bottom: '100% EGYPTIAN COTTON',
+badge_bottom_ar: '100% EGYPTIAN COTTON',
 badge_bottom_en: '100% EGYPTIAN COTTON',
-alt: 'Box Fit T-Shirt Black',
 sort_order: 1,
 is_active: true,
 },
@@ -179,15 +156,14 @@ description_ar:
 'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
 description_en:
 'Modern streetwear with relaxed oversized cuts for a distinctive look throughout the day.',
-cta_text_ar: 'تسوق الأوفرسايز',
-cta_text_en: 'Shop Oversized',
-cta_link: '/products?search=اوفرسايز',
+button_text_ar: 'تسوق الأوفرسايز',
+button_text_en: 'Shop Oversized',
+button_link: '/products?search=اوفرسايز',
 image_url: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
-badge_top: 'Streetwear Drop',
+badge_top_ar: 'Streetwear Drop',
 badge_top_en: 'Streetwear Drop',
-badge_bottom: 'WEAR IN THE ZONE',
+badge_bottom_ar: 'WEAR IN THE ZONE',
 badge_bottom_en: 'WEAR IN THE ZONE',
-alt: 'Oversized Tee Offwhite',
 sort_order: 2,
 is_active: true,
 },
@@ -205,16 +181,15 @@ description_ar:
 'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
 description_en:
 'A perfect balance between polished and casual style with soft, cool and comfortable interlock fabric.',
-cta_text_ar: 'عرض التشكيلة',
-cta_text_en: 'View Collection',
-cta_link: '/products?category=streetwear-polos',
+button_text_ar: 'عرض التشكيلة',
+button_text_en: 'View Collection',
+button_link: '/products?category=streetwear-polos',
 image_url:
 '/images/product_interlock_polo_charcoal_1790342934447.jpg',
-badge_top: 'Urban Interlock',
+badge_top_ar: 'Urban Interlock',
 badge_top_en: 'Urban Interlock',
-badge_bottom: 'CASH ON DELIVERY',
+badge_bottom_ar: 'CASH ON DELIVERY',
 badge_bottom_en: 'CASH ON DELIVERY',
-alt: 'Streetwear Polo Charcoal',
 sort_order: 3,
 is_active: true,
 },
@@ -259,19 +234,19 @@ const localizedDescription =
 : currentSlide.description_ar;
 
 const localizedCta =
-!isRTL && currentSlide.cta_text_en
-? currentSlide.cta_text_en
-: currentSlide.cta_text_ar;
+!isRTL && currentSlide.button_text_en
+? currentSlide.button_text_en
+: currentSlide.button_text_ar;
 
 const localizedBadgeTop =
 !isRTL && currentSlide.badge_top_en
 ? currentSlide.badge_top_en
-: currentSlide.badge_top;
+: currentSlide.badge_top_ar;
 
 const localizedBadgeBottom =
 !isRTL && currentSlide.badge_bottom_en
 ? currentSlide.badge_bottom_en
-: currentSlide.badge_bottom;
+: currentSlide.badge_bottom_ar;
 
 /*
 
@@ -755,7 +730,7 @@ return (
 
           <div className="pt-2 flex flex-wrap items-center gap-4">
             <button
-              onClick={() => onNavigate(currentSlide.cta_link)}
+              onClick={() => onNavigate(currentSlide.button_link)}
               className={`py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-105 cursor-pointer ${
                 isDark
                   ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
@@ -840,7 +815,7 @@ return (
 
         <div className="lg:col-span-6 relative order-1 lg:order-2">
           <div
-            onClick={() => onNavigate(currentSlide.cta_link)}
+            onClick={() => onNavigate(currentSlide.button_link)}
             className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
               isDark
                 ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
@@ -850,7 +825,7 @@ return (
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                onNavigate(currentSlide.cta_link);
+                onNavigate(currentSlide.button_link);
               }
             }}
             aria-label={
@@ -862,7 +837,7 @@ return (
             <img
               key={currentSlide.image_url}
               src={resolveImageUrl(currentSlide.image_url)}
-              alt={currentSlide.alt}
+              alt={localizedSubtitle}
               className="w-full h-full object-cover object-top sm:object-center transition-all duration-700 ease-out group-hover:scale-105"
               fetchPriority="high"
               draggable={false}
