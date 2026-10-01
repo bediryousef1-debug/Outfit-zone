@@ -769,100 +769,102 @@ export const api = {
 
   // 4. Fetch Single Product By Slug
   async getProductBySlug(slug: string): Promise<Product> {
-    const cacheKey = `product_slug_${slug}`;
+    // The slug may arrive percent-encoded (after a browser refresh,
+    // window.location.pathname is always encoded) or raw (in-app navigation).
+    // Normalize once so both paths resolve to the same product.
+    let normalizedSlug = String(slug || '').trim();
+    try {
+      normalizedSlug = decodeURIComponent(normalizedSlug);
+    } catch {
+      // keep the raw value when it is not valid percent-encoding
+    }
+    normalizedSlug = normalizedSlug.replace(/\/+$/, '');
+
+    const notFound = () => {
+      const err: Error & { code?: string } = new Error('PRODUCT_NOT_FOUND');
+      err.code = 'PRODUCT_NOT_FOUND';
+      return err;
+    };
+
+    if (!normalizedSlug) throw notFound();
+
+    const cacheKey = `product_slug_${normalizedSlug}`;
     const cached = getCached<Product>(cacheKey);
     if (cached) return cached;
 
+    const sortImages = (images: any[] = []) =>
+      [...images].sort(
+        (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+      );
+
+    // 1) Supabase (direct from the browser)
     if (isSupabaseConfigured && supabase) {
-      const { data: pData, error: pErr } =
-        await supabase
+      try {
+        const { data: pData, error: pErr } = await supabase
           .from('products')
           .select('*')
-          .eq('slug', decodeURIComponent(slug))
-          .or('is_active.eq.true,is_active.is.null')
+          .eq('slug', normalizedSlug)
+          .neq('is_active', false)
           .maybeSingle();
 
-      if (pErr) {
-        throw new Error(
-          pErr.message ||
-            'تعذر جلب تفاصيل المنتج'
-        );
+        if (!pErr && pData) {
+          const [imgRes, varRes, catRes] = await Promise.all([
+            supabase.from('product_images').select('*').eq('product_id', pData.id),
+            supabase.from('product_variants').select('*').eq('product_id', pData.id),
+            pData.category_id
+              ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
+
+          if (varRes.error) {
+            throw new Error(varRes.error.message || 'Failed to load product variants');
+          }
+
+          const result: Product = {
+            ...pData,
+            category: catRes.data || undefined,
+            images: sortImages(imgRes.data || []),
+            variants: varRes.data || [],
+          };
+
+          setCached(cacheKey, result, 60_000);
+          return result;
+        }
+
+        if (pErr) {
+          console.warn('Supabase getProductBySlug notice:', pErr.message);
+        }
+      } catch (err) {
+        console.warn('Supabase getProductBySlug notice:', err);
       }
-
-      if (!pData) {
-        throw new Error(
-          'المنتج غير متوفر أو تم إيقافه'
-        );
-      }
-
-      const [
-        imgRes,
-        varRes,
-        catRes,
-      ] = await Promise.all([
-        supabase
-          .from('product_images')
-          .select('*')
-          .eq('product_id', pData.id),
-
-        supabase
-          .from('product_variants')
-          .select('*')
-          .eq('product_id', pData.id),
-
-        pData.category_id
-          ? supabase
-              .from('categories')
-              .select('*')
-              .eq('id', pData.category_id)
-              .maybeSingle()
-          : Promise.resolve({
-              data: null,
-            }),
-      ]);
-
-      const result = {
-        ...pData,
-        category:
-          catRes.data ||
-          undefined,
-        images:
-          (imgRes.data || [])
-            .sort(
-              (
-                a: any,
-                b: any
-              ) =>
-                (a.sort_order ?? 0) -
-                (b.sort_order ?? 0)
-            ),
-        variants:
-          varRes.data || [],
-      };
-
-      setCached(cacheKey, result, 60_000);
-      return result;
+      // Fall through to the server API instead of reporting "not available":
+      // the product may exist on the server catalog even when the direct
+      // Supabase lookup failed or returned nothing.
     }
 
-    const res = await fetch(
-      `${API_BASE}/products/${slug}`
-    );
+    // 2) Server API
+    const res = await fetch(`${API_BASE}/products/${encodeURIComponent(normalizedSlug)}`);
+
+    if (res.status === 404) {
+      throw notFound();
+    }
 
     if (!res.ok) {
-      const err =
-        await res
-          .json()
-          .catch(() => ({}));
-
-      throw new Error(
-        err.error ||
-          'المنتج غير متوفر'
-      );
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to load product (${res.status})`);
     }
 
     const json = await res.json();
-    setCached(cacheKey, json, 60_000);
-    return json;
+    if (!json || !json.id) throw notFound();
+
+    const result: Product = {
+      ...json,
+      images: sortImages(json.images || []),
+      variants: json.variants || [],
+    };
+
+    setCached(cacheKey, result, 60_000);
+    return result;
   },
 
   // 4b. Fetch Single Product By ID
