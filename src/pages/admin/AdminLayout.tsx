@@ -157,7 +157,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <button
             type="button"
             onClick={handleLogout}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 transition-colors font-semibold cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-200 transition-colors font-semibold"
             title="تسجيل الخروج"
           >
             <LogOut className="w-4 h-4" />
@@ -170,11 +170,3 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     </div>
   );
 };
-
-مهم: التعديل هنا فقط:
-
-- إضافة "Images" من "lucide-react".
-- إضافة "'hero-slider'" إلى "AdminTab".
-- إضافة زر Hero Slider للقائمة.
-
-الخطوة التالية هي "App.tsx" عشان الزر ده يفتح الصفحة فعلًا.
