@@ -2092,7 +2092,16 @@ app.get(
 app.get(
   '/api/products/:slug',
   async (req: Request, res: Response) => {
-    const { slug } = req.params;
+    let slug = String(req.params.slug || '');
+
+    // Defensive: tolerate a slug that is still percent-encoded (double-encoded URLs).
+    if (slug.includes('%')) {
+      try {
+        slug = decodeURIComponent(slug);
+      } catch {
+        // keep as-is
+      }
+    }
 
     if (supabaseClient) {
       const { data, error } =
@@ -2102,9 +2111,9 @@ app.get(
             '*, category:categories(*), images:product_images(*), variants:product_variants(*)'
           )
           .eq('slug', slug)
-          .eq(
+          .neq(
             'is_active',
-            true
+            false
           )
           .maybeSingle();
 
@@ -2129,7 +2138,7 @@ app.get(
       db.products.find(
         (p) =>
           p.slug === slug &&
-          p.is_active
+          p.is_active !== false
       );
 
     if (!product) {
@@ -4330,17 +4339,23 @@ async function startServer() {
     );
   }
 
-  app.listen(
-    PORT,
-    () => {
-      console.log(
-        `[Outfit Zone] Server running on port ${PORT} (Production: ${isProduction})`
-      );
-    }
-  );
+  // On Vercel the exported app is invoked per request; binding a port is only for
+  // local development and self-hosted production.
+  if (!process.env.VERCEL) {
+    app.listen(
+      PORT,
+      () => {
+        console.log(
+          `[Outfit Zone] Server running on port ${PORT} (Production: ${isProduction})`
+        );
+      }
+    );
+  }
 }
 
 startServer();
+
+export default app;
 
 // ==============================================================================
 // Telegram Order Notifications
