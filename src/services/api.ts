@@ -1254,6 +1254,7 @@ export const api = {
       );
     }
 
+    invalidateApiCache('product');
     return res.json();
   },
 
@@ -1382,6 +1383,9 @@ export const api = {
                       color_hex:
                         v.color_hex ||
                         '#333333',
+                      image_url:
+                        v.image_url ||
+                        null,
                       size:
                         v.size,
                       stock_quantity:
@@ -1394,6 +1398,7 @@ export const api = {
             }
           }
 
+          invalidateApiCache('product');
           return updatedProd;
         }
       } catch (err) {
@@ -1433,6 +1438,7 @@ export const api = {
       );
     }
 
+    invalidateApiCache('product');
     return res.json();
   },
 

@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
   :root {
     font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --bg-main: #f9f9fb;
@@ -39,12 +45,30 @@
     --text-main: #f4f4f5;
   }
 
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--bg-main);
     color: var(--text-main);
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    position: relative;
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    min-height: 100vh;
   }
 
   /* Custom scrollbar */

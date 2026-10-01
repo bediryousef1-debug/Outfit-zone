@@ -36,10 +36,40 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
     return Array.from(colorSet);
   }, [variants]);
 
+  // Extract all sizes available for this product (merging standard sizes with any variant sizes)
+  const productSizes = useMemo(() => {
+    const sizeSet = new Set<string>();
+    // If variants exist, prioritize sizes that actually exist in variants or standard sizes
+    const variantSizes = new Set(variants.map((v) => v.size).filter(Boolean));
+    STANDARD_SIZES.forEach((sz) => {
+      // Include standard size if present in product variants or if variants has it
+      if (variantSizes.has(sz) || variantSizes.size === 0) {
+        sizeSet.add(sz);
+      }
+    });
+    variants.forEach((v) => {
+      if (v.size) sizeSet.add(v.size);
+    });
+    // Fallback: if empty, default to STANDARD_SIZES
+    if (sizeSet.size === 0) {
+      STANDARD_SIZES.forEach((sz) => sizeSet.add(sz));
+    }
+
+    const standardOrder = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+    return Array.from(sizeSet).sort((a, b) => {
+      const idxA = standardOrder.indexOf(a);
+      const idxB = standardOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [variants]);
+
   // For the selected color, determine stock per size
   const sizesForColor = useMemo(() => {
     const map: Record<string, number> = {};
-    STANDARD_SIZES.forEach((sz) => {
+    productSizes.forEach((sz) => {
       map[sz] = 0;
     });
 
@@ -50,7 +80,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
       });
 
     return map;
-  }, [variants, selectedColor]);
+  }, [variants, selectedColor, productSizes]);
 
   // Selected variant specific stock
   const currentVariant = useMemo(() => {
@@ -154,8 +184,8 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          {STANDARD_SIZES.map((size) => {
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+          {productSizes.map((size) => {
             const stock = sizesForColor[size] || 0;
             const isAvailable = stock > 0;
             const isSelected = selectedSize === size;

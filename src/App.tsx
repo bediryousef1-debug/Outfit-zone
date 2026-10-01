@@ -246,7 +246,7 @@ function AppContent() {
   // ==============================================================================
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors ${
+      className={`min-h-screen flex flex-col font-sans transition-colors w-full max-w-full overflow-x-hidden ${
         isDark
           ? 'bg-[#09090b] text-[#f4f4f5] selection:bg-neutral-800 selection:text-white'
           : 'bg-[#f9f9fb] text-[#09090b] selection:bg-neutral-200 selection:text-black'
@@ -262,7 +262,7 @@ function AppContent() {
       />
 
       {/* Main Storefront Views */}
-      <main className="flex-1 pb-24 md:pb-16">
+      <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
         {/* / (Home) */}
         {currentPath === '/' && (
           <HomePage

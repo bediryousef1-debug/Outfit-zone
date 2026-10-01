@@ -3686,6 +3686,9 @@ app.put(
                       color_hex:
                         v.color_hex ||
                         '#333333',
+                      image_url:
+                        v.image_url ||
+                        null,
                       size:
                         v.size,
                       stock_quantity:

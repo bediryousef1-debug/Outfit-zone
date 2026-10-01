@@ -29,9 +29,47 @@ export interface ProductVariant {
   product_id: string;
   color: string;
   color_hex: string;
-  size: 'M' | 'L' | 'XL' | '2XL' | string;
+  size: 'M' | 'L' | 'XL' | '2XL' | '3XL' | string;
   stock_quantity: number;
   image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HeroSlide {
+  id: string;
+  tag_ar?: string;
+  tag_en?: string;
+  title_line1_ar: string;
+  title_line1_en?: string;
+  title_line2_ar: string;
+  title_line2_en?: string;
+  subtitle_ar: string;
+  subtitle_en?: string;
+  description_ar: string;
+  description_en?: string;
+  button_text_ar: string;
+  button_text_en?: string;
+  button_link: string;
+  image_url: string;
+  badge_top_ar?: string;
+  badge_top_en?: string;
+  badge_bottom_ar?: string;
+  badge_bottom_en?: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Customer {
+  id: string;
+  normalized_phone: string;
+  original_phone: string;
+  names_used: string[];
+  has_multiple_names: boolean;
+  order_count: number;
+  last_order_at: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -155,17 +193,27 @@ export interface StoreContent {
   id: string;
   // Hero Section
   hero_title: string;
+  hero_title_en?: string;
   hero_subtitle: string;
+  hero_subtitle_en?: string;
   hero_button_text: string;
+  hero_button_text_en?: string;
   hero_image_url: string;
 
   // Section Titles
   featured_section_title: string;
+  featured_section_title_en?: string;
   new_arrivals_section_title: string;
+  new_arrivals_section_title_en?: string;
   categories_section_title: string;
+  categories_section_title_en?: string;
   cta_title: string;
+  cta_title_en?: string;
   cta_text: string;
+  cta_text_en?: string;
   announcement_text: string;
+  announcement_text_ar?: string;
+  announcement_text_en?: string;
 
   // Visibility Toggles
   show_hero: boolean;
@@ -177,16 +225,25 @@ export interface StoreContent {
 
   // Pages
   about_text: string;
+  about_text_en?: string;
   about_story: string;
+  about_story_en?: string;
   contact_text: string;
+  contact_text_en?: string;
 
   // Policies & Footer
   footer_text: string;
+  footer_text_en?: string;
   shipping_text: string;
+  shipping_text_en?: string;
   inspection_text: string;
+  inspection_text_en?: string;
   exchange_policy: string;
+  exchange_policy_en?: string;
   return_policy: string;
+  return_policy_en?: string;
   cod_text: string;
+  cod_text_en?: string;
 
   updated_at?: string;
 }

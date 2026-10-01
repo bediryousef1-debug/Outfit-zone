@@ -397,7 +397,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="space-y-12 sm:space-y-16">
+    <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
       {/* =====================================================================
           1. HERO SECTION & SLIDER
           ===================================================================== */}
@@ -434,7 +434,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               <div className="space-y-1 min-h-[140px] sm:min-h-[180px] flex flex-col justify-center">
-                <h1 className="font-syne text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95]">
+                <h1 className="font-syne text-[30px] xs:text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
                   <span
                     className={`block transition-colors duration-300 ${
                       isDark ? 'text-white' : 'text-black'

@@ -240,7 +240,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 text-right">
+    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-12 text-right w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <button
@@ -274,7 +274,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
       >
         {/* Left: Customer & Delivery Info */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-6 min-w-0">
           <div
             className={`p-5 sm:p-6 rounded-2xl border transition-colors ${
               isDark
@@ -542,7 +542,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Right: Order Summary with Dynamic Shipping */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 min-w-0">
           <div
             className={`p-5 sm:p-6 rounded-2xl border space-y-4 transition-colors ${
               isDark
@@ -645,7 +645,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !isGovAvailable}
-              className={`w-full py-4 px-6 font-extrabold text-sm sm:text-base rounded-full transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50 ${
+              className={`w-full py-4 px-3 sm:px-6 font-extrabold text-xs sm:text-base rounded-full transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50 ${
                 isDark
                   ? 'bg-white text-black hover:bg-neutral-200'
                   : 'bg-black text-white hover:bg-neutral-800'
@@ -656,7 +656,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               ) : (
                 <>
                   <span>تأكيد الطلب الآن (دفع عند الاستلام)</span>
-                  <CheckCircle2 className="w-5 h-5" />
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </>
               )}
             </button>

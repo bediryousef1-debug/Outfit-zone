@@ -2,7 +2,9 @@ import React from 'react';
 import { ArrowRight, Trash2, ShoppingBag, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatPrice } from '../utils/constants';
+import { resolveImageUrl } from '../utils/imageHelper';
 
 interface CartPageProps {
   onNavigate: (path: string) => void;
@@ -11,23 +13,40 @@ interface CartPageProps {
 export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   const { items, removeItem, updateQuantity, subtotal } = useCart();
   const { settings } = useStore();
+  const { isDark } = useTheme();
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal + shippingFee;
 
   if (items.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-right">
-        <div className="w-16 h-16 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mx-auto text-neutral-400 mb-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-right w-full max-w-full overflow-x-hidden">
+        <div
+          className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-4 ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-800 text-neutral-400'
+              : 'bg-neutral-100 border-neutral-200 text-neutral-600'
+          }`}
+        >
           <ShoppingBag className="w-8 h-8 stroke-[1.5]" />
         </div>
-        <h1 className="text-2xl font-extrabold text-white mb-2">سلة المشتريات فارغة</h1>
+        <h1
+          className={`text-2xl font-extrabold mb-2 ${
+            isDark ? 'text-white' : 'text-neutral-900'
+          }`}
+        >
+          سلة المشتريات فارغة
+        </h1>
         <p className="text-xs sm:text-sm text-neutral-400 max-w-md mx-auto mb-8 leading-relaxed">
           لم تقم بإضافة أي قطع إلى سلتك بعد. تصفح تشكيلة الستريت وير واختر المقاس المناسب لك بنظام الدفع عند الاستلام.
         </p>
         <button
           onClick={() => onNavigate('/products')}
-          className="py-3 px-8 bg-white text-black font-extrabold text-xs rounded-xl hover:bg-neutral-200 transition-colors inline-flex items-center gap-2 shadow-lg"
+          className={`py-3 px-8 font-extrabold text-xs rounded-xl transition-colors inline-flex items-center gap-2 shadow-lg cursor-pointer ${
+            isDark
+              ? 'bg-white text-black hover:bg-neutral-200'
+              : 'bg-black text-white hover:bg-neutral-800'
+          }`}
         >
           <span>تصفح تشكيلة الستريت وير</span>
           <ArrowRight className="w-4 h-4" />
@@ -37,18 +56,26 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-right">
+    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 text-right w-full max-w-full overflow-x-hidden">
       {/* Breadcrumb navigation */}
       <button
         onClick={() => onNavigate('/products')}
-        className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white mb-6 transition-colors"
+        className={`inline-flex items-center gap-1.5 text-xs mb-6 transition-colors cursor-pointer ${
+          isDark
+            ? 'text-neutral-400 hover:text-white'
+            : 'text-neutral-500 hover:text-black'
+        }`}
       >
         <ArrowRight className="w-4 h-4" />
         <span>متابعة التسوق وإضافة موديلات أخرى</span>
       </button>
 
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+        <h1
+          className={`text-2xl sm:text-3xl font-extrabold ${
+            isDark ? 'text-white' : 'text-neutral-900'
+          }`}
+        >
           سلة المشتريات
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
@@ -58,19 +85,23 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Cart Items List */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="lg:col-span-8 space-y-4 min-w-0">
           {items.map((item) => {
-            const primaryImg =
-              item.product.images?.[0]?.image_url ||
-              '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg';
+            const primaryImg = resolveImageUrl(
+              item.product.images?.[0]?.image_url
+            );
 
             return (
               <div
                 key={item.variantId}
-                className="p-4 sm:p-5 rounded-2xl bg-[#121216] border border-neutral-800/80 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+                className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors ${
+                  isDark
+                    ? 'bg-[#121216] border-neutral-800/80'
+                    : 'bg-white border-neutral-200 shadow-sm'
+                }`}
               >
                 {/* Product Info */}
-                <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
                   <img
                     src={primaryImg}
                     alt={item.product.name}
@@ -80,50 +111,64 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <button
                       onClick={() => onNavigate(`/products/${item.product.slug}`)}
-                      className="font-bold text-white text-sm hover:text-neutral-300 transition-colors text-right line-clamp-1"
+                      className={`font-bold text-sm transition-colors text-right line-clamp-1 cursor-pointer ${
+                        isDark ? 'text-white hover:text-neutral-300' : 'text-neutral-900 hover:text-neutral-600'
+                      }`}
                     >
                       {item.product.name}
                     </button>
                     <div className="flex items-center gap-2 text-xs text-neutral-400">
-                      <span>اللون: <strong className="text-neutral-200">{item.color}</strong></span>
+                      <span>اللون: <strong className={isDark ? 'text-neutral-200' : 'text-neutral-700'}>{item.color}</strong></span>
                       <span>·</span>
-                      <span>المقاس: <strong className="text-neutral-200 font-mono">{item.size}</strong></span>
+                      <span>المقاس: <strong className={`font-mono ${isDark ? 'text-neutral-200' : 'text-neutral-700'}`}>{item.size}</strong></span>
                     </div>
-                    <div className="text-xs font-mono-numbers text-neutral-300 pt-1">
+                    <div className={`text-xs font-mono-numbers pt-1 ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
                       {formatPrice(item.unitPrice)} للقطعة
                     </div>
                   </div>
                 </div>
 
                 {/* Controls: Quantity & Remove */}
-                <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-800/60">
-                  <div className="flex items-center border border-neutral-700 rounded-lg bg-neutral-900 overflow-hidden">
+                <div className={`flex items-center justify-between sm:justify-end gap-2 xs:gap-4 sm:gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 ${
+                  isDark ? 'border-neutral-800/60' : 'border-neutral-100'
+                }`}>
+                  <div className={`flex items-center border rounded-lg overflow-hidden ${
+                    isDark ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-300 bg-neutral-100'
+                  }`}>
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                      className="px-2.5 py-1 text-sm text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+                      className={`px-2.5 py-1 text-sm transition-colors cursor-pointer ${
+                        isDark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
+                      }`}
                       aria-label="تقليل الكمية"
                     >
                       -
                     </button>
-                    <span className="px-3 py-1 text-xs font-mono-numbers text-white font-bold min-w-[2rem] text-center">
+                    <span className={`px-2.5 sm:px-3 py-1 text-xs font-mono-numbers font-bold min-w-[1.75rem] text-center ${
+                      isDark ? 'text-white' : 'text-neutral-900'
+                    }`}>
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                      className="px-2.5 py-1 text-sm text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+                      className={`px-2.5 py-1 text-sm transition-colors cursor-pointer ${
+                        isDark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
+                      }`}
                       aria-label="زيادة الكمية"
                     >
                       +
                     </button>
                   </div>
 
-                  <div className="font-mono-numbers font-bold text-white text-sm min-w-[5rem] text-left">
+                  <div className={`font-mono-numbers font-bold text-sm min-w-[4rem] sm:min-w-[5rem] text-left ${
+                    isDark ? 'text-white' : 'text-neutral-900'
+                  }`}>
                     {formatPrice(item.unitPrice * item.quantity)}
                   </div>
 
                   <button
                     onClick={() => removeItem(item.variantId)}
-                    className="p-2 text-neutral-500 hover:text-red-400 hover:bg-neutral-900 rounded-lg transition-colors"
+                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors cursor-pointer"
                     title="حذف من السلة"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -135,45 +180,57 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
           {/* Trust strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-            <div className="p-3 rounded-xl bg-neutral-950/60 border border-neutral-900 flex items-center gap-2.5 text-xs text-neutral-400">
-              <Truck className="w-4 h-4 text-neutral-300 shrink-0" />
+            <div className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs ${
+              isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
+            }`}>
+              <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>دفع كاش عند الاستلام</span>
             </div>
-            <div className="p-3 rounded-xl bg-neutral-950/60 border border-neutral-900 flex items-center gap-2.5 text-xs text-neutral-400">
-              <ShieldCheck className="w-4 h-4 text-neutral-300 shrink-0" />
+            <div className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs ${
+              isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
+            }`}>
+              <ShieldCheck className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>معاينة قبل الدفع</span>
             </div>
-            <div className="p-3 rounded-xl bg-neutral-950/60 border border-neutral-900 flex items-center gap-2.5 text-xs text-neutral-400">
-              <RotateCcw className="w-4 h-4 text-neutral-300 shrink-0" />
+            <div className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs ${
+              isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
+            }`}>
+              <RotateCcw className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>استبدال المقاس 14 يوم</span>
             </div>
           </div>
         </div>
 
         {/* Order Summary Sidebar */}
-        <div className="lg:col-span-4 p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-6 sticky top-24">
-          <h2 className="text-base font-bold text-white border-b border-neutral-800 pb-3">
+        <div className={`lg:col-span-4 p-5 sm:p-6 rounded-2xl border space-y-6 sticky top-24 ${
+          isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
+        }`}>
+          <h2 className={`text-base font-bold pb-3 border-b ${
+            isDark ? 'text-white border-neutral-800' : 'text-neutral-900 border-neutral-100'
+          }`}>
             ملخص الطلب
           </h2>
 
           <div className="space-y-3 text-xs text-neutral-400">
             <div className="flex items-center justify-between">
               <span>إجمالي المنتجات ({items.reduce((s, i) => s + i.quantity, 0)} قطعة):</span>
-              <span className="font-mono-numbers text-white font-semibold">{formatPrice(subtotal)}</span>
+              <span className={`font-mono-numbers font-semibold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{formatPrice(subtotal)}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span>مصاريف الشحن والتوصيل:</span>
-              <span className="font-mono-numbers text-neutral-200">{formatPrice(shippingFee)}</span>
+              <span className={`font-mono-numbers ${isDark ? 'text-neutral-200' : 'text-neutral-700'}`}>{formatPrice(shippingFee)}</span>
             </div>
 
-            <div className="pt-3 border-t border-neutral-800 flex items-baseline justify-between text-base">
-              <span className="font-bold text-white">الإجمالي الكلي:</span>
+            <div className={`pt-3 border-t flex items-baseline justify-between text-base ${
+              isDark ? 'border-neutral-800' : 'border-neutral-100'
+            }`}>
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>الإجمالي الكلي:</span>
               <div className="text-left">
-                <span className="font-mono-numbers font-black text-xl text-white">
+                <span className={`font-mono-numbers font-black text-xl ${isDark ? 'text-white' : 'text-neutral-900'}`}>
                   {formatPrice(grandTotal)}
                 </span>
-                <span className="block text-[10px] text-neutral-500 font-normal">
+                <span className="block text-[10px] text-neutral-400 font-normal">
                   شامل الشحن لجميع المحافظات
                 </span>
               </div>
@@ -183,7 +240,9 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
           <div className="space-y-3 pt-2">
             <button
               onClick={() => onNavigate('/checkout')}
-              className="w-full py-4 px-6 bg-white hover:bg-neutral-200 text-black font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+              className={`w-full py-4 px-6 font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                isDark ? 'bg-white hover:bg-neutral-200 text-black' : 'bg-black hover:bg-neutral-800 text-white'
+              }`}
             >
               <span>المتابعة لإتمام الطلب</span>
               <ArrowRight className="w-4 h-4" />
@@ -191,13 +250,19 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate('/products')}
-              className="w-full py-3 px-4 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold rounded-xl border border-neutral-800 transition-colors"
+              className={`w-full py-3 px-4 text-xs font-semibold rounded-xl border transition-colors cursor-pointer ${
+                isDark
+                  ? 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border-neutral-800'
+                  : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-black border-neutral-200'
+              }`}
             >
               متابعة التسوق
             </button>
           </div>
 
-          <div className="pt-2 border-t border-neutral-800/80 text-[11px] text-neutral-500 text-center">
+          <div className={`pt-2 border-t text-[11px] text-neutral-400 text-center ${
+            isDark ? 'border-neutral-800/80' : 'border-neutral-100'
+          }`}>
             الدفع نقدًا عند الاستلام فقط لجميع المحافظات داخل مصر
           </div>
         </div>

@@ -399,7 +399,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
       {/* Back button */}
       <button
         onClick={onBack}
@@ -416,7 +416,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       {/* Main PDP Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
         {/* Left/Right Column: Image Gallery with Color-Specific Images */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-4 min-w-0">
           <div
             className={`relative aspect-[3/4] w-full rounded-3xl overflow-hidden border shadow-2xl transition-all duration-300 ${
               isDark
@@ -447,7 +447,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
           {/* Thumbnails row */}
           {images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-none w-full max-w-full min-w-0">
               {images.map((img, idx) => {
                 const isCurrent =
                   displayedImageUrl === img.image_url ||

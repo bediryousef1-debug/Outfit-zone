@@ -50,10 +50,35 @@ export async function uploadProductImage(file: File): Promise<string> {
         }
       }
     } catch {
-      // Fall back to client data URL if storage bucket is offline
+      // Fall back to server upload route
     }
   }
 
+  // Fallback 1: Try server-side upload endpoint
+  try {
+    const token = localStorage.getItem('oz_admin_token') || '';
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.url) {
+        return json.url;
+      }
+    }
+  } catch {
+    // Fall back to FileReader data URL
+  }
+
+  // Fallback 2: Read as data URL
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {

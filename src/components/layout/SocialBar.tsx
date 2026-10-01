@@ -26,7 +26,8 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
 
   const links = [];
 
-  if (contactSocial?.whatsapp_number) {
+  // In inline variant, include WhatsApp; in floating-mobile variant, WhatsAppFloatingButton is already present
+  if (contactSocial?.whatsapp_number && variant === 'inline') {
     links.push({
       id: 'whatsapp',
       name: 'واتساب',

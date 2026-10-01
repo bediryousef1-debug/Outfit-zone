@@ -54,8 +54,8 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
   const hasFullDetails = Boolean(order && (order.has_full_access || (order.customer_name && order.phone)));
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-right">
-      <div className="p-6 sm:p-10 rounded-3xl bg-[#121216] border border-neutral-800 shadow-2xl space-y-8">
+    <div className="max-w-3xl mx-auto px-3.5 sm:px-6 py-8 sm:py-16 text-right w-full max-w-full overflow-x-hidden">
+      <div className="p-5 sm:p-10 rounded-3xl bg-[#121216] border border-neutral-800 shadow-2xl space-y-8 min-w-0">
         
         {/* Success Icon & Header */}
         <div className="text-center space-y-3 pb-6 border-b border-neutral-800/80">
@@ -67,9 +67,9 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
             تم استلام طلبك بنجاح 🎉
           </h1>
 
-          <div className="inline-block bg-neutral-900 border border-neutral-800 px-4 py-1.5 rounded-lg">
+          <div className="inline-block bg-neutral-900 border border-neutral-800 px-3 sm:px-4 py-1.5 rounded-lg max-w-full">
             <span className="text-xs text-neutral-400 ml-2">رقم الطلب الخاص بك:</span>
-            <span className="font-mono text-sm sm:text-base font-bold text-white tracking-wider">
+            <span className="font-mono text-xs sm:text-base font-bold text-white tracking-wider break-all">
               #{orderNumber}
             </span>
           </div>
@@ -94,9 +94,9 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
             href={whatsappUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="py-2.5 px-5 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm rounded-lg flex items-center gap-2 transition-colors shadow-md whitespace-nowrap"
+            className="w-full sm:w-auto py-2.5 px-4 sm:px-5 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md text-center"
           >
-            <MessageCircle className="w-4 h-4 fill-current" />
+            <MessageCircle className="w-4 h-4 fill-current shrink-0" />
             <span>تواصل معنا عبر WhatsApp</span>
           </a>
         </div>

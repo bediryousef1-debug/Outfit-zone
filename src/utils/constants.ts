@@ -36,7 +36,7 @@ export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string 
   cancelled: { label: 'ملغي', color: 'text-rose-400 bg-rose-950/40 border-rose-800/50' },
 };
 
-export const STANDARD_SIZES = ['M', 'L', 'XL', '2XL'];
+export const STANDARD_SIZES = ['M', 'L', 'XL', '2XL', '3XL'];
 
 export const POPULAR_COLORS = [
   { name: 'أسود', hex: '#111111' },
@@ -50,6 +50,29 @@ export const POPULAR_COLORS = [
 
 // Egyptian mobile phone regex: starts with 010, 011, 012, or 015 followed by 8 digits
 export const EGYPT_PHONE_REGEX = /^(010|011|012|015)[0-9]{8}$/;
+
+/**
+ * Normalizes an Egyptian phone number to canonical 11-digit local format: 01XXXXXXXXX
+ * Handles:
+ * - 01012345678 -> 01012345678
+ * - +201012345678 -> 01012345678
+ * - 201012345678 -> 01012345678
+ * - 1012345678 -> 01012345678
+ */
+export function normalizePhone(rawPhone: string): string {
+  if (!rawPhone) return '';
+  let cleaned = rawPhone.toString().trim().replace(/[\s\-\(\)\.]/g, '');
+  if (cleaned.startsWith('+20')) {
+    cleaned = '0' + cleaned.slice(3);
+  } else if (cleaned.startsWith('0020')) {
+    cleaned = '0' + cleaned.slice(4);
+  } else if (cleaned.startsWith('20') && cleaned.length === 12) {
+    cleaned = '0' + cleaned.slice(2);
+  } else if (cleaned.length === 10 && (cleaned.startsWith('10') || cleaned.startsWith('11') || cleaned.startsWith('12') || cleaned.startsWith('15'))) {
+    cleaned = '0' + cleaned;
+  }
+  return cleaned;
+}
 
 export function validateEgyptianPhone(phone: string): boolean {
   const cleanPhone = phone.replace(/[\s-]/g, '');

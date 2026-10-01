@@ -3,6 +3,7 @@ import { SlidersHorizontal, Search, RotateCcw } from 'lucide-react';
 import { Product } from '../types';
 import { api } from '../services/api';
 import { useStore } from '../context/StoreContext';
+import { useTheme } from '../context/ThemeContext';
 import { ProductCard } from '../components/product/ProductCard';
 import {
   FilterState,
@@ -21,6 +22,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   initialFilter = '',
 }) => {
   const { categories } = useStore();
+  const { isDark } = useTheme();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -250,12 +252,16 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
 
       {/* Title */}
       <div className="mb-8 space-y-4">
         <div className="text-right">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h1
+            className={`text-2xl sm:text-3xl font-extrabold ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}
+          >
             {selectedCategory
               ? selectedCategory.name
               : initialFilter === 'new'
@@ -306,10 +312,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   }
                 }
               }}
-              className="w-full bg-[#121216] border border-neutral-800 rounded-lg py-2.5 pr-10 pl-4 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-600 transition-colors"
+              className={`w-full rounded-lg py-2.5 pr-10 pl-4 text-xs transition-colors focus:outline-none border ${
+                isDark
+                  ? 'bg-[#121216] border-neutral-800 text-white placeholder-neutral-500 focus:border-neutral-600'
+                  : 'bg-white border-neutral-200 text-black placeholder-neutral-400 focus:border-neutral-400 shadow-xs'
+              }`}
             />
 
-            <Search className="w-4 h-4 text-neutral-500 absolute top-3 right-3.5" />
+            <Search className="w-4 h-4 text-neutral-400 absolute top-3 right-3.5" />
           </div>
 
           {/* Filter */}
@@ -318,10 +328,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               onClick={() =>
                 setIsFilterModalOpen(true)
               }
-              className={`flex items-center gap-2 py-2.5 px-4 rounded-lg border text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-2 py-2.5 px-4 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
                 activeFiltersCount > 0
-                  ? 'bg-neutral-800 text-white border-neutral-600'
-                  : 'bg-[#121216] text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                  ? isDark
+                    ? 'bg-neutral-800 text-white border-neutral-600'
+                    : 'bg-black text-white border-black'
+                  : isDark
+                  ? 'bg-[#121216] text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                  : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400 shadow-xs'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -329,7 +343,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               <span>تصفية وترتيب</span>
 
               {activeFiltersCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-white text-black font-bold text-[10px] flex items-center justify-center font-mono-numbers">
+                <span
+                  className={`w-5 h-5 rounded-full font-bold text-[10px] flex items-center justify-center font-mono-numbers ${
+                    isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                  }`}
+                >
                   {activeFiltersCount}
                 </span>
               )}
@@ -338,7 +356,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             {activeFiltersCount > 0 && (
               <button
                 onClick={resetAllFilters}
-                className="p-2.5 rounded-lg border border-neutral-800 bg-[#121216] text-neutral-400 hover:text-white transition-colors"
+                className={`p-2.5 rounded-lg border transition-colors cursor-pointer ${
+                  isDark
+                    ? 'border-neutral-800 bg-[#121216] text-neutral-400 hover:text-white'
+                    : 'border-neutral-200 bg-white text-neutral-600 hover:text-black shadow-xs'
+                }`}
                 title="إعادة تعيين الفلاتر"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -348,14 +370,18 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         {/* Categories */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs w-full max-w-full min-w-0">
 
           <button
             onClick={() => selectCategory('')}
-            className={`py-1.5 px-3.5 rounded-lg border whitespace-nowrap transition-colors ${
+            className={`py-1.5 px-3.5 rounded-lg border whitespace-nowrap transition-colors cursor-pointer ${
               !filters.categoryId
-                ? 'bg-white text-black font-bold border-white'
-                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                ? isDark
+                  ? 'bg-white text-black font-bold border-white'
+                  : 'bg-black text-white font-bold border-black'
+                : isDark
+                ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400 shadow-xs'
             }`}
           >
             جميع الموديلات ({products.length})
@@ -367,10 +393,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               onClick={() =>
                 selectCategory(cat.id)
               }
-              className={`py-1.5 px-3.5 rounded-lg border whitespace-nowrap transition-colors ${
+              className={`py-1.5 px-3.5 rounded-lg border whitespace-nowrap transition-colors cursor-pointer ${
                 filters.categoryId === cat.id
-                  ? 'bg-white text-black font-bold border-white'
-                  : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                  ? isDark
+                    ? 'bg-white text-black font-bold border-white'
+                    : 'bg-black text-white font-bold border-black'
+                  : isDark
+                  ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                  : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400 shadow-xs'
               }`}
             >
               {cat.name}

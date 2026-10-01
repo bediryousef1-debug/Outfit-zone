@@ -23,7 +23,7 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
   return (
     <aside
       aria-label="تواصل معنا عبر واتساب"
-      className="fixed left-3 sm:left-6 z-50 print:hidden transition-all duration-300 pointer-events-auto"
+      className="fixed left-3 sm:left-6 z-50 print:hidden transition-all duration-300 pointer-events-auto max-w-[calc(100vw-24px)]"
       style={{
         bottom: 'var(--whatsapp-btn-bottom, 220px)',
       }}
@@ -32,7 +32,7 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
         href={whatsappUrl}
         target="_blank"
         rel="noreferrer noopener"
-        className={`group flex items-center gap-2.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 border ${
+        className={`group flex items-center gap-2 sm:gap-2.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 border max-w-full ${
           isDark
             ? 'bg-[#141417]/95 border-neutral-800 text-white shadow-black/60 focus:ring-offset-black focus:ring-emerald-500 hover:border-neutral-700'
             : 'bg-white/95 border-neutral-200/90 text-neutral-900 shadow-neutral-300/50 focus:ring-offset-white focus:ring-emerald-500 hover:border-neutral-300'

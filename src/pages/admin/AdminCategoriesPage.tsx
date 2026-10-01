@@ -3,6 +3,7 @@ import { Category } from '../../types';
 import { api } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
 import { Plus, Edit2, Archive, Trash2, Check, Layers, AlertCircle, RefreshCw, Image } from 'lucide-react';
+import { AdminImageUpload } from '../../components/admin/AdminImageUpload';
 
 export const AdminCategoriesPage: React.FC = () => {
   const { refreshData } = useStore();
@@ -320,19 +321,13 @@ export const AdminCategoriesPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  رابط صورة القسم (اختياري)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://... أو /src/assets/images/..."
-                  value={formImageUrl}
-                  onChange={(e) => setFormImageUrl(e.target.value)}
-                  dir="ltr"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-white transition-colors font-mono"
-                />
-              </div>
+              <AdminImageUpload
+                label="صورة القسم"
+                value={formImageUrl}
+                onChange={(url) => setFormImageUrl(url)}
+                helperText="تظهر في واجهة الأقسام على الصفحة الرئيسية وتصفح الموديلات"
+                aspectRatio="portrait"
+              />
 
               {editingCategory && (
                 <div className="flex items-center gap-2 pt-2">

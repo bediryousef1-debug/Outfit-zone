@@ -62,10 +62,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
   // Active sizes for this product
   const [availableSizes, setAvailableSizes] = useState<string[]>([
-    'M',
-    'L',
-    'XL',
-    '2XL',
+    ...STANDARD_SIZES,
   ]);
   const [newSizeInput, setNewSizeInput] = useState('');
 
@@ -79,6 +76,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
         L: 8,
         XL: 4,
         '2XL': 2,
+        '3XL': 0,
       },
     },
   ]);
@@ -167,7 +165,8 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
               });
 
               if (sizeSet.size > 0) {
-                setAvailableSizes(Array.from(sizeSet));
+                const combined = Array.from(new Set([...STANDARD_SIZES, ...sizeSet]));
+                setAvailableSizes(combined);
               }
 
               setExistingVariantsMap(idMap);
@@ -390,7 +389,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
         ...group,
         sizes: {
           ...group.sizes,
-          [sz]: 5,
+          [sz]: 0,
         },
       }))
     );
@@ -525,7 +524,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
           ...group,
           sizes: {
             ...group.sizes,
-            [sizeToAdd]: 5,
+            [sizeToAdd]: 0,
           },
         };
       })
