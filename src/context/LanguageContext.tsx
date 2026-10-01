@@ -355,7 +355,7 @@ const translations: Record<Language, Record<string, string>> = {
     'about.explore': 'Explore Products Now',
 
     // Product Detail
-    'product.direct_order': 'Order Now',
+    'product.direct_order': 'اطلب الآن',
     'product.direct_order_sub': 'Cash on Delivery • Open Package Inspection',
     'home.reviews_title': 'آراء عملائنا',
     'home.reviews_subtitle': 'تجارب حقيقية من عملائنا',
@@ -503,7 +503,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.shipping_by_governorate': 'Shipping Fee',
     'checkout.calculating': 'Calculating...',
     'checkout.total_on_delivery': 'Total on Delivery:',
-    'checkout.confirm_cod': 'Confirm Order Now (Cash on Delivery)',
+    'checkout.confirm_cod': 'تأكيد الطلب الآن (الدفع عند الاستلام)',
     'checkout.policy_agreement': "By confirming your order, you agree to Outfit Zone's exchange and return policies.",
     'checkout.page_title': 'Fast Direct Checkout',
     'checkout.subtitle': 'Cash on Delivery across Egypt • Full package inspection before paying',
@@ -524,7 +524,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.shipping': 'Shipping Fee:',
     'checkout.total': 'Total to Pay:',
     'checkout.free_shipping': 'Free Shipping',
-    'checkout.submit_order': 'Confirm Order Now',
+    'checkout.submit_order': 'تأكيد الطلب الآن',
     'checkout.submitting': 'Confirming your order...',
     'checkout.cod_badge': 'Cash on Delivery',
     'checkout.inspection_badge': 'Inspect Before Paying',
