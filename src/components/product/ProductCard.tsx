@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { Heart } from 'lucide-react';
 import { Product } from '../../types';
 import { formatPrice } from '../../utils/constants';
@@ -11,6 +12,8 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
+  const { t } = useLanguage();
+
   const { isDark } = useTheme();
 
   const rawImage =
@@ -61,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 items-end">
           {isOutOfStock ? (
             <span className="text-[10px] font-bold bg-neutral-900/90 text-neutral-300 px-2 py-0.5 rounded-full backdrop-blur-sm">
-              نفد من المخزون
+              {t('product.out_of_stock', 'Out of Stock')}
             </span>
           ) : product.is_new ? (
             <span className="text-[10px] font-bold bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider">
@@ -86,7 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
               ? 'bg-black/40 text-neutral-300 hover:text-red-400 hover:bg-black/70'
               : 'bg-white/70 text-neutral-600 hover:text-red-500 hover:bg-white'
           }`}
-          aria-label="إضافة للمفضلة"
+          aria-label="{t('product.add_favorite', 'Add to Favorites')}"
         >
           <Heart className="w-4 h-4" />
         </button>
@@ -97,9 +100,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
         <div>
           {/* Category / Style */}
           <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-1 flex items-center gap-1.5 font-medium">
-            <span>{product.category?.name || 'ستريت وير'}</span>
+            <span>{product.category?.name || t('product.streetwear', 'Streetwear')}</span>
             <span aria-hidden="true">·</span>
-            <span>قطن مصري</span>
+            <span>{t('product.egyptian_cotton', 'Egyptian Cotton')}</span>
           </div>
 
           <h3
@@ -129,7 +132,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           </div>
 
           <span className="text-[10px] text-neutral-400 font-medium">
-            {isOutOfStock ? 'غير متوفر' : 'متوفر بالمقاسات'}
+            {isOutOfStock ? t('product.unavailable', 'Unavailable') : t('product.available_sizes', 'Available Sizes')}
           </span>
         </div>
       </div>
