@@ -11,6 +11,7 @@ import {
   ShippingRate,
   StoreContent,
   StoreSettings,
+  HeroSlide,
 } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { EGYPTIAN_GOVERNORATES } from '../utils/constants';
@@ -158,12 +159,14 @@ export const api = {
       } catch {}
     }
 
-    const finalRates = result || EGYPTIAN_GOVERNORATES.map((gov) => ({
-      id: `sr_${gov.id}`,
-      governorate: gov.nameAr,
-      shipping_fee: 65,
-      is_active: true,
-    }));
+    const finalRates =
+      result ||
+      EGYPTIAN_GOVERNORATES.map((gov) => ({
+        id: `sr_${gov.id}`,
+        governorate: gov.nameAr,
+        shipping_fee: 65,
+        is_active: true,
+      }));
 
     setCached(cacheKey, finalRates, 120_000);
     return finalRates;
@@ -221,6 +224,331 @@ export const api = {
     }
 
     return await res.json();
+  },
+
+  // 1d. Public: Get Hero Slides
+  // Loads only active slides for the storefront.
+  async getHeroSlides(): Promise<HeroSlide[]> {
+    const cached = getCached<HeroSlide[]>('hero_slides_public');
+    if (cached) return cached;
+
+    let result: HeroSlide[] | null = null;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (!error && data) {
+          result = data as HeroSlide[];
+        }
+      } catch (err) {
+        console.warn('Supabase getHeroSlides notice:', err);
+      }
+    }
+
+    if (!result) {
+      try {
+        const res = await fetch(`${API_BASE}/hero-slides`);
+
+        if (res.ok) {
+          const json = await res.json();
+
+          if (Array.isArray(json)) {
+            result = json;
+          }
+        }
+      } catch {}
+    }
+
+    const finalSlides = result || [];
+
+    setCached('hero_slides_public', finalSlides, 60_000);
+
+    return finalSlides;
+  },
+
+  // 1e. Admin: Get All Hero Slides
+  async adminGetHeroSlides(): Promise<HeroSlide[]> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (!error && data) {
+          return data as HeroSlide[];
+        }
+      } catch (err) {
+        console.warn(
+          'Supabase adminGetHeroSlides notice:',
+          err
+        );
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+
+    const res = await fetch(
+      `${API_BASE}/admin/hero-slides`,
+      {
+        headers: authHeaders,
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || 'فشل جلب شرائح البانر'
+      );
+    }
+
+    return res.json();
+  },
+
+  // 1f. Admin: Create Hero Slide
+  async adminCreateHeroSlide(
+    slideData: Partial<HeroSlide>
+  ): Promise<HeroSlide> {
+    const payload = {
+      ...slideData,
+      sort_order:
+        slideData.sort_order !== undefined
+          ? slideData.sort_order
+          : 0,
+      is_active:
+        slideData.is_active !== undefined
+          ? slideData.is_active
+          : true,
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (!error && data) {
+          invalidateApiCache('hero_slides');
+          return data as HeroSlide;
+        }
+
+        if (error) {
+          throw new Error(error.message);
+        }
+      } catch (err) {
+        console.warn(
+          'Supabase adminCreateHeroSlide notice:',
+          err
+        );
+
+        if (err instanceof Error) {
+          throw err;
+        }
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+
+    const res = await fetch(
+      `${API_BASE}/admin/hero-slides`,
+      {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || 'فشل إضافة شريحة البانر'
+      );
+    }
+
+    invalidateApiCache('hero_slides');
+
+    return res.json();
+  },
+
+  // 1g. Admin: Update Hero Slide
+  async adminUpdateHeroSlide(
+    id: string,
+    updates: Partial<HeroSlide>
+  ): Promise<HeroSlide> {
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .update(payload)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          invalidateApiCache('hero_slides');
+          return data as HeroSlide;
+        }
+
+        if (error) {
+          throw new Error(error.message);
+        }
+      } catch (err) {
+        console.warn(
+          'Supabase adminUpdateHeroSlide notice:',
+          err
+        );
+
+        if (err instanceof Error) {
+          throw err;
+        }
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+
+    const res = await fetch(
+      `${API_BASE}/admin/hero-slides/${id}`,
+      {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify(updates),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || 'فشل تحديث شريحة البانر'
+      );
+    }
+
+    invalidateApiCache('hero_slides');
+
+    return res.json();
+  },
+
+  // 1h. Admin: Delete Hero Slide
+  async adminDeleteHeroSlide(
+    id: string
+  ): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('hero_slides')
+          .delete()
+          .eq('id', id);
+
+        if (!error) {
+          invalidateApiCache('hero_slides');
+          return;
+        }
+
+        throw new Error(error.message);
+      } catch (err) {
+        console.warn(
+          'Supabase adminDeleteHeroSlide notice:',
+          err
+        );
+
+        if (err instanceof Error) {
+          throw err;
+        }
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+
+    const res = await fetch(
+      `${API_BASE}/admin/hero-slides/${id}`,
+      {
+        method: 'DELETE',
+        headers: authHeaders,
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || 'فشل حذف شريحة البانر'
+      );
+    }
+
+    invalidateApiCache('hero_slides');
+  },
+
+  // 1i. Admin: Reorder Hero Slides
+  async adminReorderHeroSlides(
+    slides: Array<{
+      id: string;
+      sort_order: number;
+    }>
+  ): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        for (const slide of slides) {
+          const { error } = await supabase
+            .from('hero_slides')
+            .update({
+              sort_order: slide.sort_order,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', slide.id);
+
+          if (error) {
+            throw new Error(error.message);
+          }
+        }
+
+        invalidateApiCache('hero_slides');
+        return;
+      } catch (err) {
+        console.warn(
+          'Supabase adminReorderHeroSlides notice:',
+          err
+        );
+
+        if (err instanceof Error) {
+          throw err;
+        }
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+
+    const res = await fetch(
+      `${API_BASE}/admin/hero-slides/reorder`,
+      {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify({ slides }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || 'فشل ترتيب شرائح البانر'
+      );
+    }
+
+    invalidateApiCache('hero_slides');
   },
 
   // 2. Fetch Categories
