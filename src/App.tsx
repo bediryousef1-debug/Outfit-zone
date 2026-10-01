@@ -3,7 +3,7 @@ import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -31,6 +31,7 @@ const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then(
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage').then(m => ({ default: m.AdminContentPage })));
 const AdminContactPage = lazy(() => import('./pages/admin/AdminContactPage').then(m => ({ default: m.AdminContactPage })));
+const AdminHeroSliderPage = lazy(() => import('./pages/admin/AdminHeroSliderPage').then(m => ({ default: m.AdminHeroSliderPage })));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 function AdminLoadingSpinner() {
@@ -138,6 +139,8 @@ function AppContent() {
       activeTab = 'content';
     } else if (currentPath.startsWith('/admin/contact')) {
       activeTab = 'contact';
+    } else if (currentPath.startsWith('/admin/hero-slider')) {
+      activeTab = 'hero-slider';
     } else if (currentPath.startsWith('/admin/settings')) {
       activeTab = 'settings';
     }
@@ -164,6 +167,7 @@ function AppContent() {
             if (tab === 'orders') navigate('/admin/orders');
             if (tab === 'content') navigate('/admin/content');
             if (tab === 'contact') navigate('/admin/contact');
+            if (tab === 'hero-slider') navigate('/admin/hero-slider');
             if (tab === 'settings') navigate('/admin/settings');
           }}
           onExitAdmin={() => navigate('/')}
@@ -178,6 +182,7 @@ function AppContent() {
                 if (tab === 'orders') navigate('/admin/orders');
                 if (tab === 'content') navigate('/admin/content');
                 if (tab === 'contact') navigate('/admin/contact');
+                if (tab === 'hero-slider') navigate('/admin/hero-slider');
                 if (tab === 'settings') navigate('/admin/settings');
               }}
               onSelectOrder={(id) => navigate(`/admin/orders/${id}`)}
@@ -233,6 +238,9 @@ function AppContent() {
 
           {/* /admin/contact */}
           {activeTab === 'contact' && <AdminContactPage />}
+
+          {/* /admin/hero-slider */}
+          {activeTab === 'hero-slider' && <AdminHeroSliderPage />}
 
           {/* /admin/settings */}
           {activeTab === 'settings' && <AdminSettingsPage />}
