@@ -3,6 +3,7 @@ import {
   ShieldCheck,
   Truck,
   ArrowRight,
+  ArrowLeft,
   Lock,
   CheckCircle2,
   AlertTriangle,
@@ -12,6 +13,7 @@ import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
+import { resolveImageUrl } from '../utils/imageHelper';
 import { ShippingRate } from '../types';
 import {
   EGYPTIAN_GOVERNORATES,
@@ -28,7 +30,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onOrderSuccess,
   onNavigate,
 }) => {
-  const { t } = useLanguage();
+  const { t, isRtl } = useLanguage();
+  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
   const { items, subtotal, clearCart } = useCart();
   const { settings } = useStore();
   const { isDark } = useTheme();
@@ -216,7 +219,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   if (items.length === 0) {
     return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center text-right">
+      <div className="max-w-md mx-auto px-4 py-20 text-center text-start">
         <h2
           className={`text-xl font-bold mb-2 ${
             isDark ? 'text-white' : 'text-black'
@@ -242,14 +245,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-12 text-right w-full max-w-full overflow-x-hidden">
+    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-12 text-start w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => onNavigate('/cart')}
           className="text-xs text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1.5 mb-3 transition-colors cursor-pointer"
         >
-          <ArrowRight className="w-4 h-4" />
+          <BackIcon className="w-4 h-4" />
           <span>{t("checkout.back_to_cart", "Back to Cart")}</span>
         </button>
         <h1
@@ -315,7 +318,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       customer_name: e.target.value,
                     })
                   }
-                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                     errors.customer_name
                       ? 'border-red-500'
                       : isDark
@@ -348,7 +351,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right font-mono focus:outline-none transition-colors border ${
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start font-mono focus:outline-none transition-colors border ${
                     errors.phone
                       ? 'border-red-500'
                       : isDark
@@ -397,7 +400,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         (r) => r.governorate === gov.nameAr
                       );
                       const feeText = rate
-                        ? ` · ${rate.shipping_fee} EGP`
+                        ? ` · ${rate.shipping_fee} ${isRtl ? 'جنيه' : 'EGP'}`
                         : '';
                       const inactiveText =
                         rate && !rate.is_active ? ` (${t("checkout.shipping_unavailable", "Unavailable")})` : "";
@@ -412,7 +415,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               : 'bg-white text-black'
                           }
                         >
-                          {gov.nameAr} {feeText} {inactiveText}
+                          {isRtl ? gov.nameAr : gov.nameEn} {feeText} {inactiveText}
                         </option>
                       );
                     })}
@@ -446,7 +449,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     onChange={(e) =>
                       setFormData({ ...formData, city: e.target.value })
                     }
-                    className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                    className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                       errors.city
                         ? 'border-red-500'
                         : isDark
@@ -479,7 +482,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
-                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                  className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                     errors.address
                       ? 'border-red-500'
                       : isDark
@@ -510,7 +513,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  className={`w-full rounded-xl py-2 px-3.5 text-xs text-right focus:outline-none transition-colors border ${
+                  className={`w-full rounded-xl py-2 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                     isDark
                       ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
                       : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
@@ -567,11 +570,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {items.map((item) => (
                 <div key={item.variantId} className="flex gap-3 text-xs">
                   <img
-                    src={
-                      item.product.images?.[0]?.image_url ||
-                      '/images/product_boxfit_tee_black_1790342911897.jpg'
-                    }
-                    alt={item.product.name}
+                    src={resolveImageUrl(
+                      item.product?.images?.find((img) => img.is_primary)?.image_url ||
+                        item.product?.images?.[0]?.image_url
+                    )}
+                    alt={item.product?.name || ''}
                     className="w-12 h-14 object-cover rounded-lg bg-neutral-900 border border-neutral-800 shrink-0"
                   />
                   <div className="flex-1 flex flex-col justify-between">
@@ -581,7 +584,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           isDark ? 'text-white' : 'text-black'
                         }`}
                       >
-                        {item.product.name}
+                        {item.product?.name}
                       </h4>
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
                         <span>{item.color}</span>
@@ -619,7 +622,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="flex justify-between">
-                <span>{t("checkout.shipping_by_governorate", "Shipping Fee")} ({selectedGovNameAr}):</span>
+                <span>{t("checkout.shipping_by_governorate", "Shipping Fee")} ({isRtl ? selectedGovNameAr : (selectedGovObj?.nameEn || selectedGovNameAr)}):</span>
                 <span
                   className={`font-mono-numbers font-medium ${
                     isDark ? 'text-white' : 'text-black'

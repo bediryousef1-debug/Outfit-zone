@@ -121,9 +121,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         if (searchQuery.trim()) {
           const q = searchQuery.trim().toLowerCase();
 
-          const matchName = p.name.toLowerCase().includes(q);
-          const matchDesc = p.description.toLowerCase().includes(q);
-          const matchFabric = p.fabric_details
+          const matchName = (p.name || '').toLowerCase().includes(q);
+          const matchDesc = (p.description || '').toLowerCase().includes(q);
+          const matchFabric = (p.fabric_details || '')
             .toLowerCase()
             .includes(q);
 
@@ -150,7 +150,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           return false;
         }
 
-        if (p.price > filters.maxPrice) {
+        // 2000 is the slider's upper bound and means "no upper limit";
+        // otherwise products priced above it would silently disappear.
+        if (filters.maxPrice < 2000 && p.price > filters.maxPrice) {
           return false;
         }
 

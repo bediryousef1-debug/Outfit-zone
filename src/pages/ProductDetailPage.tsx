@@ -1,4 +1,3 @@
-import { flushSync } from 'react-dom';
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
@@ -45,7 +44,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Store an error *kind*, not a translated sentence, so the message always
+  // follows the current language (even if the user toggles it on the error screen).
+  const [loadError, setLoadError] = useState<'not_found' | 'load_failed' | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [customColorImage, setCustomColorImage] = useState<string | null>(null);
@@ -78,7 +80,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     let isMounted = true;
     const loadProduct = async () => {
       setIsLoading(true);
-      setError(null);
+      setLoadError(null);
+      setOrderError(null);
       setProduct(null);
       setSelectedImageIndex(0);
       setCustomColorImage(null);
@@ -95,7 +98,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         if (!isMounted) return;
 
         if (!data || !data.id) {
-          throw new Error(t('product.not_found_detail', 'This product could not be found.'));
+          const notFound: Error & { code?: string } = new Error('PRODUCT_NOT_FOUND');
+          notFound.code = 'PRODUCT_NOT_FOUND';
+          throw notFound;
         }
 
         setProduct(data);
@@ -113,7 +118,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       } catch (err: any) {
         if (!isMounted) return;
         console.error('Failed to load product detail:', err);
-        setError(err.message || t('product.load_error', 'Failed to load product data'));
+        setLoadError(err?.code === 'PRODUCT_NOT_FOUND' ? 'not_found' : 'load_failed');
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -195,7 +200,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     );
   }
 
-  if (error || !product) {
+  if (loadError || !product) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h2
@@ -207,7 +212,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </h2>
 
         <p className="text-xs text-neutral-400 mb-6">
-          {error || t('product.not_found_detail', 'This product could not be found.')}
+          {loadError === 'load_failed'
+            ? t('product.load_error', 'Failed to load product data')
+            : t('product.not_found_detail', 'This product could not be found.')}
         </p>
 
         <button
@@ -318,27 +325,55 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   };
 
-  // 1. Direct Order — Primary Action
-  const handleDirectOrder = () => {
-    if (!selectedColor || !selectedSize || !selectedVariant || !canAddToCart) {
-      return;
+  // Re-validates the selection against the loaded variants and adds it to the cart.
+  // Returns true only when the exact variant is really in the cart afterwards.
+  const addSelectionToCart = (): boolean => {
+    setOrderError(null);
+
+    const variant = variants.find(
+      (v) => v.color === selectedColor && v.size === selectedSize
+    );
+
+    if (!variant || !(variant.stock_quantity > 0) || quantity < 1) {
+      setOrderError(
+        t(
+          'product.stock_unavailable',
+          'Sorry, the selected size or color is currently unavailable. Please choose another option.'
+        )
+      );
+      return false;
     }
 
-    // Commit the cart update before changing the route so CheckoutPage
-    // always receives the newly added item in the same interaction.
-    flushSync(() => {
-      addItem(product, selectedVariant, quantity);
-    });
-    onNavigate('/checkout');
+    const result = addItem(product, variant, Math.min(quantity, variant.stock_quantity));
+    if (!result.ok) {
+      setOrderError(
+        t(
+          'product.stock_unavailable',
+          'Sorry, the selected size or color is currently unavailable. Please choose another option.'
+        )
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // 1. Direct Order — Primary Action
+  // The cart is updated synchronously (CartContext keeps a ref), so by the time we
+  // navigate the variant is guaranteed to be in the cart that CheckoutPage reads.
+  const handleDirectOrder = () => {
+    if (!canAddToCart) return;
+    if (addSelectionToCart()) {
+      onNavigate('/checkout');
+    }
   };
 
   // 2. Add to Cart — Secondary Action
   const handleAddToCart = () => {
-    if (!selectedVariant || !canAddToCart) return;
-
-    addItem(product, selectedVariant, quantity);
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 2000);
+    if (!canAddToCart) return;
+    if (addSelectionToCart()) {
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+    }
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -350,7 +385,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       return;
     }
     if (!reviewText.trim()) {
-      setReviewMessage(t('product.review_rating_required', 'Please enter your rating first.'));
+      setReviewMessage(t('product.review_text_required', 'Please write your review first.'));
       return;
     }
     if (reviewRating < 1 || reviewRating > 5) {
@@ -640,6 +675,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               )}
             </button>
 
+            {orderError && (
+              <p role="alert" className="text-[11px] text-red-400 text-center">
+                {orderError}
+              </p>
+            )}
+
             {/* Secondary CTA: ADD TO CART */}
             <button
               onClick={handleAddToCart}
@@ -920,7 +961,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                    {t('product.rating', 'Rating')}
+                    {t('product.review_text_label', 'Your Review')}
                   </label>
                   <textarea
                     value={reviewText}
@@ -959,7 +1000,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 >
                   <Send className="w-4 h-4" />
                   <span>
-                    {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                    {reviewSubmitting
+                      ? t('product.submitting_review', 'Submitting...')
+                      : t('product.submit_review', 'Submit Review')}
                   </span>
                 </button>
               </form>
