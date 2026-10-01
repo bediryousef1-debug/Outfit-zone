@@ -3,7 +3,8 @@ import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { LanguageProvider } from './context/LanguageContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -50,15 +51,19 @@ function AppContent() {
   const { content } = useStore();
   const { itemCount, isCartOpen, setIsCartOpen } = useCart();
   const { isDark } = useTheme();
+  const { language } = useLanguage();
 
-  const [currentPath, setCurrentPath] = useState<string>(() => {
-    return window.location.pathname || '/';
-  });
+  // currentPath always includes the query string (e.g. /products?category=polo),
+  // both after in-app navigation AND after a browser refresh / back button.
+  const readLocation = () =>
+    (window.location.pathname || '/') + (window.location.search || '');
+
+  const [currentPath, setCurrentPath] = useState<string>(readLocation);
 
   // Sync browser history
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || '/');
+      setCurrentPath(readLocation());
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -70,37 +75,49 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // SEO document title sync per page
+  const pathname = currentPath.split('?')[0].replace(/(.)\/+$/, '$1') || '/';
+  const search = currentPath.includes('?') ? currentPath.slice(currentPath.indexOf('?')) : '';
+
+  // SEO document title sync per page (follows the selected language)
   useEffect(() => {
-    if (currentPath === '/') {
-      document.title = 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري';
-    } else if (currentPath.startsWith('/products/')) {
-      document.title = 'تفاصيل الموديل | Outfit Zone';
-    } else if (currentPath.startsWith('/products')) {
-      document.title = 'تشكيلة الستريت وير | Outfit Zone';
-    } else if (currentPath === '/cart') {
-      document.title = 'سلة المشتريات | Outfit Zone';
-    } else if (currentPath === '/checkout') {
-      document.title = 'إتمام الطلب (الدفع عند الاستلام) | Outfit Zone';
-    } else if (currentPath.startsWith('/order-success/')) {
-      document.title = 'تم استلام طلبك بنجاح | Outfit Zone';
-    } else if (currentPath === '/about') {
-      document.title = 'قصتنا وعن البراند | Outfit Zone';
-    } else if (currentPath === '/contact') {
-      document.title = 'تواصل معنا | Outfit Zone';
-    } else if (currentPath.startsWith('/admin')) {
+    const isAr = language === 'ar';
+    if (pathname === '/') {
+      document.title = isAr
+        ? 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري'
+        : 'Outfit Zone | Wear In The Zone - Egyptian Streetwear Brand';
+    } else if (pathname.startsWith('/products/')) {
+      document.title = isAr ? 'تفاصيل الموديل | Outfit Zone' : 'Product Details | Outfit Zone';
+    } else if (pathname.startsWith('/products')) {
+      document.title = isAr ? 'تشكيلة الستريت وير | Outfit Zone' : 'Streetwear Collection | Outfit Zone';
+    } else if (pathname === '/cart') {
+      document.title = isAr ? 'سلة المشتريات | Outfit Zone' : 'Shopping Bag | Outfit Zone';
+    } else if (pathname === '/checkout') {
+      document.title = isAr
+        ? 'إتمام الطلب (الدفع عند الاستلام) | Outfit Zone'
+        : 'Checkout (Cash on Delivery) | Outfit Zone';
+    } else if (pathname.startsWith('/order-success/')) {
+      document.title = isAr ? 'تم استلام طلبك بنجاح | Outfit Zone' : 'Order Received | Outfit Zone';
+    } else if (pathname === '/about') {
+      document.title = isAr ? 'قصتنا وعن البراند | Outfit Zone' : 'About the Brand | Outfit Zone';
+    } else if (pathname === '/contact') {
+      document.title = isAr ? 'تواصل معنا | Outfit Zone' : 'Contact Us | Outfit Zone';
+    } else if (pathname.startsWith('/admin')) {
       document.title = 'لوحة التحكم | Outfit Zone Admin';
     }
-  }, [currentPath]);
+  }, [pathname, language]);
 
   // Route Parsers
-  const isProductDetail = currentPath.startsWith('/products/') && currentPath !== '/products';
-  const productSlug = isProductDetail ? currentPath.replace('/products/', '').split('?')[0] : '';
+  // The slug is passed on exactly as it appears in the URL; the API layer decodes it,
+  // so refreshing /products/<slug> resolves the same product as clicking a card.
+  const productSlug = pathname.startsWith('/products/') ? pathname.slice('/products/'.length) : '';
+  const isProductDetail = productSlug.length > 0;
 
-  const isOrderSuccess = currentPath.startsWith('/order-success/');
-  const orderNumber = isOrderSuccess ? currentPath.replace('/order-success/', '').split('?')[0] : '';
+  const orderNumber = pathname.startsWith('/order-success/')
+    ? pathname.slice('/order-success/'.length)
+    : '';
+  const isOrderSuccess = orderNumber.length > 0;
 
-  const isAdminRoute = currentPath.startsWith('/admin');
+  const isAdminRoute = pathname.startsWith('/admin');
 
   // ==============================================================================
   // ADMIN ROUTES (Lazy-loaded and strictly isolated from customer interface)
@@ -123,38 +140,38 @@ function AppContent() {
     }
 
     // If authenticated user visits /admin/login, direct them to /admin dashboard directly
-    if (currentPath === '/admin/login') {
+    if (pathname === '/admin/login') {
       window.history.replaceState({}, '', '/admin');
     }
 
     // Authenticated admin routing:
     let activeTab: AdminTab = 'dashboard';
-    if (currentPath.startsWith('/admin/products')) {
+    if (pathname.startsWith('/admin/products')) {
       activeTab = 'products';
-    } else if (currentPath.startsWith('/admin/categories')) {
+    } else if (pathname.startsWith('/admin/categories')) {
       activeTab = 'categories';
-    } else if (currentPath.startsWith('/admin/orders')) {
+    } else if (pathname.startsWith('/admin/orders')) {
       activeTab = 'orders';
-    } else if (currentPath.startsWith('/admin/content')) {
+    } else if (pathname.startsWith('/admin/content')) {
       activeTab = 'content';
-    } else if (currentPath.startsWith('/admin/contact')) {
+    } else if (pathname.startsWith('/admin/contact')) {
       activeTab = 'contact';
-    } else if (currentPath.startsWith('/admin/hero-slider')) {
+    } else if (pathname.startsWith('/admin/hero-slider')) {
       activeTab = 'hero-slider';
-    } else if (currentPath.startsWith('/admin/settings')) {
+    } else if (pathname.startsWith('/admin/settings')) {
       activeTab = 'settings';
     }
 
     // Parse edit product / view order IDs
-    const isNewProduct = currentPath === '/admin/products/new';
-    const isEditProduct = currentPath.startsWith('/admin/products/') && currentPath.endsWith('/edit');
+    const isNewProduct = pathname === '/admin/products/new';
+    const isEditProduct = pathname.startsWith('/admin/products/') && pathname.endsWith('/edit');
     const editProductId = isEditProduct
-      ? currentPath.replace('/admin/products/', '').replace('/edit', '')
+      ? pathname.replace('/admin/products/', '').replace('/edit', '')
       : null;
 
     const isOrderDetail =
-      currentPath.startsWith('/admin/orders/') && currentPath !== '/admin/orders';
-    const orderDetailId = isOrderDetail ? currentPath.replace('/admin/orders/', '') : null;
+      pathname.startsWith('/admin/orders/') && pathname !== '/admin/orders';
+    const orderDetailId = isOrderDetail ? pathname.replace('/admin/orders/', '') : null;
 
     return (
       <Suspense fallback={<AdminLoadingSpinner />}>
@@ -265,33 +282,27 @@ function AppContent() {
         itemCount={itemCount}
         setIsCartOpen={setIsCartOpen}
         onNavigate={(path) => navigate(path)}
-        currentPath={currentPath}
+        currentPath={pathname}
         announcementText={content?.announcement_text}
       />
 
       {/* Main Storefront Views */}
       <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
         {/* / (Home) */}
-        {currentPath === '/' && (
+        <ErrorBoundary resetKey={currentPath}>
+        {pathname === '/' && (
           <HomePage
             onNavigate={(path) => navigate(path)}
             onSelectProduct={(slug) => navigate(`/products/${slug}`)}
           />
         )}
 
-        {/* /products */}
-        {currentPath === '/products' && (
+        {/* /products and /products?category=...&filter=... (works after refresh too) */}
+        {pathname === '/products' && (
           <ProductsPage
             onSelectProduct={(slug) => navigate(`/products/${slug}`)}
-          />
-        )}
-
-        {/* /products?category=... */}
-        {currentPath.startsWith('/products?') && !isProductDetail && (
-          <ProductsPage
-            onSelectProduct={(slug) => navigate(`/products/${slug}`)}
-            initialCategory={new URLSearchParams(currentPath.split('?')[1]).get('category') || ''}
-            initialFilter={new URLSearchParams(currentPath.split('?')[1]).get('filter') || ''}
+            initialCategory={new URLSearchParams(search).get('category') || ''}
+            initialFilter={new URLSearchParams(search).get('filter') || ''}
           />
         )}
 
@@ -305,14 +316,14 @@ function AppContent() {
         )}
 
         {/* /cart */}
-        {currentPath === '/cart' && (
+        {pathname === '/cart' && (
           <CartPage
             onNavigate={(path) => navigate(path)}
           />
         )}
 
         {/* /checkout */}
-        {currentPath === '/checkout' && (
+        {pathname === '/checkout' && (
           <CheckoutPage
             onNavigate={(path) => navigate(path)}
             onOrderSuccess={(orderNum, token) => {
@@ -331,14 +342,15 @@ function AppContent() {
         )}
 
         {/* /about */}
-        {currentPath === '/about' && (
+        {pathname === '/about' && (
           <AboutPage onNavigate={(path) => navigate(path)} />
         )}
 
         {/* /contact */}
-        {currentPath === '/contact' && (
+        {pathname === '/contact' && (
           <ContactPage />
         )}
+        </ErrorBoundary>
       </main>
 
       {/* Customer Footer */}
@@ -360,7 +372,9 @@ export function App() {
         <StoreProvider>
           <CartProvider>
             <AdminAuthProvider>
-              <AppContent />
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
             </AdminAuthProvider>
           </CartProvider>
         </StoreProvider>
