@@ -3811,51 +3811,31 @@ app.put(
             }
           }
 
-          if (
-            Array.isArray(
-              variants
-            )
-          ) {
-            await supabaseClient
-              .from(
-                'product_variants'
-              )
+          if (Array.isArray(variants)) {
+            const { error: variantsDeleteError } = await supabaseClient
+              .from('product_variants')
               .delete()
-              .eq(
-                'product_id',
-                id
-              );
+              .eq('product_id', id);
 
-            if (
-              variants.length >
-              0
-            ) {
-              await supabaseClient
-                .from(
-                  'product_variants'
-                )
+            if (variantsDeleteError) {
+              throw variantsDeleteError;
+            }
+
+            if (variants.length > 0) {
+              const { error: variantsInsertError } = await supabaseClient
+                .from('product_variants')
                 .insert(
-                  variants.map(
-                    (v: any) => ({
-                      product_id:
-                        id,
-                      color:
-                        v.color,
-                      color_hex:
-                        v.color_hex ||
-                        '#333333',
-                      image_url:
-                        v.image_url ||
-                        null,
-                      size:
-                        v.size,
-                      stock_quantity:
-                        Number(
-                          v.stock_quantity
-                        ) || 0,
-                    })
-                  )
+                  variants.map((v: any) => ({
+                    product_id: id,
+                    color: v.color,
+                    size: v.size,
+                    stock_quantity: Number(v.stock_quantity) || 0,
+                  }))
                 );
+
+              if (variantsInsertError) {
+                throw variantsInsertError;
+              }
             }
           }
 
