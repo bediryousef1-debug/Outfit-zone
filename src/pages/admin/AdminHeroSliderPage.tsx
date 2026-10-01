@@ -102,9 +102,7 @@ setForm((previous) => ({
 
 const openCreateForm = () => {
 setEditingSlideId(null);
-setForm({
-...emptyForm,
-});
+setForm({ ...emptyForm });
 setError(null);
 setIsFormOpen(true);
 };
@@ -141,7 +139,7 @@ if (isSaving) return;
 ```
 setIsFormOpen(false);
 setEditingSlideId(null);
-setForm(emptyForm);
+setForm({ ...emptyForm });
 ```
 
 };
