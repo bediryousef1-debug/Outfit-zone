@@ -9,6 +9,7 @@ import {
   Layers,
   FileText,
   Share2,
+  Images,
 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { OutfitZoneLogo } from '../../components/common/OutfitZoneLogo';
@@ -20,6 +21,7 @@ export type AdminTab =
   | 'orders'
   | 'content'
   | 'contact'
+  | 'hero-slider'
   | 'settings';
 
 interface AdminLayoutProps {
@@ -50,6 +52,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     { id: 'orders', label: 'الطلبات', icon: ShoppingBag },
     { id: 'content', label: 'محتوى المتجر', icon: FileText },
     { id: 'contact', label: 'التواصل والسوشيال', icon: Share2 },
+    { id: 'hero-slider', label: 'Hero Slider', icon: Images },
     { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
   ];
 
@@ -167,3 +170,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     </div>
   );
 };
+
+مهم: التعديل هنا فقط:
+
+- إضافة "Images" من "lucide-react".
+- إضافة "'hero-slider'" إلى "AdminTab".
+- إضافة زر Hero Slider للقائمة.
+
+الخطوة التالية هي "App.tsx" عشان الزر ده يفتح الصفحة فعلًا.
