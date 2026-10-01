@@ -91,30 +91,30 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       !formData.customer_name.trim() ||
       formData.customer_name.trim().length < 3
     ) {
-      errs.customer_name = 'يرجى كتابة الاسم الثلاثي بالكامل.';
+      errs.customer_name = t("checkout.name_required", "Please enter your full name.");
     }
 
     if (!formData.phone.trim()) {
-      errs.phone = 'رقم الهاتف مطلوب لتأكيد الشحن.';
+      errs.phone = t("checkout.phone_required", "Phone number is required to confirm delivery.");
     } else if (!validateEgyptianPhone(formData.phone)) {
       errs.phone =
-        'يرجى إدخال رقم محمول مصري صحيح يبدأ بـ 010 أو 011 أو 012 أو 015.';
+        t("checkout.phone_invalid", "Please enter a valid Egyptian mobile number starting with 010, 011, 012, or 015.");
     }
 
     if (!formData.governorate) {
-      errs.governorate = 'يرجى اختيار المحافظة.';
+      errs.governorate = t("checkout.governorate_required", "Please select your governorate.");
     } else if (!isGovAvailable) {
       errs.governorate =
-        'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.';
+        t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.");
     }
 
     if (!formData.city.trim() || formData.city.trim().length < 2) {
-      errs.city = 'يرجى إدخال اسم المدينة أو الحي أو المركز.';
+      errs.city = t("checkout.city_required", "Please enter the city, district, or area.");
     }
 
     if (!formData.address.trim() || formData.address.trim().length < 5) {
       errs.address =
-        'يرجى كتابة العنوان التفصيلي (اسم الشارع، رقم العمارة، الشقة).';
+        t("checkout.address_required", "Please enter the detailed address (street, building, and apartment).");
     }
 
     setErrors(errs);
@@ -139,7 +139,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setSubmitError(null);
 
     if (items.length === 0) {
-      setSubmitError('سلة المشتريات فارغة.');
+      setSubmitError(t("checkout.empty_cart", "Your shopping cart is empty."));
       return;
     }
 
@@ -149,7 +149,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     if (!isGovAvailable) {
       setSubmitError(
-        'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.'
+        t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.")
       );
       return;
     }
@@ -189,7 +189,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         onOrderSuccess(res.order_number, res.receipt_token);
       } else {
         throw new Error(
-          res.error || 'تعذر تأكيد الطلب، يرجى إعادة المحاولة.'
+          res.error || t("checkout.order_error", "An error occurred while submitting your order. Please try again.")
         );
       }
     } catch (err: any) {
@@ -200,12 +200,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         rawMsg.includes('OZ_SHIPPING_SETTINGS_MISSING')
       ) {
         setSubmitError(
-          'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.'
+          t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.")
         );
       } else if (rawMsg.includes('OZ_INSUFFICIENT_STOCK')) {
-        setSubmitError('عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.');
+        setSubmitError(t("checkout.out_of_stock", "Some products in your cart do not have enough stock."));
       } else {
-        setSubmitError(rawMsg || 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
+        setSubmitError(rawMsg || t("checkout.order_error", "An error occurred while submitting your order. Please try again."));
       }
     } finally {
       setIsSubmitting(false);
@@ -220,10 +220,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          سلتك فارغة حاليًا
+          {t("checkout.empty_title", "Your cart is currently empty")}
         </h2>
         <p className="text-xs text-neutral-400 mb-6">
-          أضف بعض قطع الستريت وير إلى سلتك للمتابعة لإتمام الطلب.
+          {t("checkout.empty_text", "Add some streetwear pieces to your cart to continue checkout.")}
         </p>
         <button
           onClick={() => onNavigate('/products')}
@@ -233,7 +233,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
-          تصفح الموديلات الآن
+              {t("checkout.browse_products", "Browse Products Now")}
         </button>
       </div>
     );
@@ -248,17 +248,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           className="text-xs text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1.5 mb-3 transition-colors cursor-pointer"
         >
           <ArrowRight className="w-4 h-4" />
-          <span>الرجوع إلى سلة المشتريات</span>
+          <span>{t("checkout.back_to_cart", "Back to Cart")}</span>
         </button>
         <h1
           className={`text-2xl sm:text-3xl font-black ${
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          إتمام الطلب
+          {t("checkout.page_title", "Checkout")}
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
-          الدفع عند الاستلام كاش · معاينة مجانية للطلب قبل الاستلام والدفع
+          {t("checkout.cod_description", "Cash on Delivery · Free order inspection before receiving and paying")}
         </p>
       </div>
 
@@ -289,7 +289,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   : 'text-black border-neutral-100'
               }`}
             >
-              بيانات المستلم وعنوان التوصيل
+              {t("checkout.shipping_info", "Recipient and Delivery Information")}
             </h2>
 
             <div className="space-y-4">
@@ -300,12 +300,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-neutral-300' : 'text-neutral-700'
                   }`}
                 >
-                  الاسم بالكامل (ثلاثي) <span className="text-red-400">*</span>
+                  {t("checkout.full_name", "Full Name")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="مثال:  أكتب اسمك بالكامل "
+                  placeholder={t("checkout.customer_name_placeholder", "Enter your full name")}
                   value={formData.customer_name}
                   onChange={(e) =>
                     setFormData({
@@ -335,7 +335,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-neutral-300' : 'text-neutral-700'
                   }`}
                 >
-                  رقم الهاتف المحمول <span className="text-red-400">*</span>
+                  {t("checkout.phone_label", "Mobile Phone Number")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
@@ -360,7 +360,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </p>
                 )}
                 <p className="text-[10px] text-neutral-400 mt-1">
-                  سيتصل بك مندوب الشحن على هذا الرقم لتنسيق ميعاد التسليم.
+                  {t("checkout.phone_help", "The courier will call this number to arrange your delivery time.")}
                 </p>
               </div>
 
@@ -372,7 +372,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       isDark ? 'text-neutral-300' : 'text-neutral-700'
                     }`}
                   >
-                    المحافظة <span className="text-red-400">*</span>
+                    {t("checkout.governorate", "Governorate")} <span className="text-red-400">*</span>
                   </label>
                   <select
                     value={formData.governorate}
@@ -395,10 +395,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         (r) => r.governorate === gov.nameAr
                       );
                       const feeText = rate
-                        ? ` · ${rate.shipping_fee} ج.م`
+                        ? ` · ${rate.shipping_fee} EGP`
                         : '';
                       const inactiveText =
-                        rate && !rate.is_active ? ' (غير متاح)' : '';
+                        rate && !rate.is_active ? ` (${t("checkout.shipping_unavailable", "Unavailable")})` : "";
                       return (
                         <option
                           key={gov.id}
@@ -422,7 +422,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   )}
                   {!isGovAvailable && (
                     <p className="text-[11px] text-red-400 mt-1">
-                      الشحن لهذه المحافظة غير متاح حاليًا.
+                      {t("checkout.shipping_unavailable", "Shipping to this governorate is currently unavailable.")}
                     </p>
                   )}
                 </div>
@@ -433,13 +433,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       isDark ? 'text-neutral-300' : 'text-neutral-700'
                     }`}
                   >
-                    المدينة / المركز / الحي{' '}
+                    {t("checkout.city", "City / District / Area")} {" "}
                     <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="مثال: مدينة نصر / المنصورة / سموحة"
+                    placeholder={t("checkout.city_placeholder", "e.g. Nasr City / Mansoura / Smouha")}
                     value={formData.city}
                     onChange={(e) =>
                       setFormData({ ...formData, city: e.target.value })
@@ -467,12 +467,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-neutral-300' : 'text-neutral-700'
                   }`}
                 >
-                  العنوان بالتفصيل <span className="text-red-400">*</span>
+                  {t("checkout.address", "Detailed Address")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="اسم الشارع، رقم العمارة، الدور، رقم الشقة، علامة مميزة"
+                  placeholder={t("checkout.address_placeholder", "Street, building, floor, apartment, landmark")}
                   value={formData.address}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
@@ -499,11 +499,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-neutral-300' : 'text-neutral-700'
                   }`}
                 >
-                  ملاحظات إضافية للتوصيل (اختياري)
+                  {t("checkout.additional_notes", "Additional Delivery Notes (Optional)")}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="أي تعليمات للمندوب مثل مواعيد الاتصال أو علامة مميزة بجوار المنزل"
+                  placeholder={t("checkout.notes_placeholder", "Any instructions for the courier, such as call times or a nearby landmark")}
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
@@ -530,10 +530,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
               <div>
                 <span className="text-xs font-bold block">
-                  الدفع عند الاستلام كاش (COD)
+                  {t("checkout.cod_title", "Cash on Delivery (COD)")}
                 </span>
                 <span className="text-[11px] text-neutral-400">
-                  تدفع ثمن طلبك للمندوب بعد معاينة الشحنة والتأكد من مطابقتها.
+                  {t("checkout.cod_description_full", "Pay the courier after inspecting the package and confirming it matches your order.")}
                 </span>
               </div>
             </div>
@@ -557,7 +557,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   : 'text-black border-neutral-100'
               }`}
             >
-              ملخص طلبك ({items.length} منتجات)
+              {t("checkout.order_summary", "Your Order Summary")} ({items.length} {t("checkout.items_count", "items")})
             </h2>
 
             {/* Items list */}
@@ -586,7 +586,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <span>·</span>
                         <span className="font-mono">{item.size}</span>
                         <span>·</span>
-                        <span>الكمية: {item.quantity}</span>
+                        <span>{t("checkout.quantity", "Quantity:")} {item.quantity}</span>
                       </div>
                     </div>
                     <div className="font-mono-numbers font-bold">
@@ -606,7 +606,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               }`}
             >
               <div className="flex justify-between">
-                <span>قيمة المشتريات:</span>
+                <span>{t("checkout.products_value", "Products Value:")}</span>
                 <span
                   className={`font-mono-numbers font-medium ${
                     isDark ? 'text-white' : 'text-black'
@@ -617,13 +617,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="flex justify-between">
-                <span>مصاريف الشحن ({selectedGovNameAr}):</span>
+                <span>{t("checkout.shipping_by_governorate", "Shipping Fee")} ({selectedGovNameAr}):</span>
                 <span
                   className={`font-mono-numbers font-medium ${
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
-                  {ratesLoading ? 'جاري الحساب...' : formatPrice(shippingFee)}
+                  {ratesLoading ? t("checkout.calculating", "Calculating...") : formatPrice(shippingFee)}
                 </span>
               </div>
 
@@ -634,7 +634,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     : 'border-neutral-100 text-black'
                 }`}
               >
-                <span>الإجمالي عند الاستلام:</span>
+                <span>{t("checkout.total_on_delivery", "Total on Delivery:")}</span>
                 <span className="font-mono-numbers text-lg">
                   {formatPrice(grandTotal)}
                 </span>
@@ -655,15 +655,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>تأكيد الطلب الآن (دفع عند الاستلام)</span>
+                  <span>{t("checkout.confirm_cod", "Confirm Order Now (Cash on Delivery)")}</span>
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </>
               )}
             </button>
 
             <p className="text-[10px] text-center text-neutral-400">
-              بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع
-              الخاصة بـ Outfit Zone.
+              {t("checkout.policy_agreement", "By confirming your order, you agree to Outfit Zone exchange and return policies.")}
             </p>
           </div>
         </div>
