@@ -62,7 +62,7 @@ const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
 const [isFormOpen, setIsFormOpen] = useState(false);
 const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
-const [form, setForm] = useState<SlideForm>(emptyForm);
+const [form, setForm] = useState<SlideForm>({ ...emptyForm });
 
 const fetchSlides = async () => {
 setIsLoading(true);
@@ -212,9 +212,7 @@ try {
 
     showSuccess('تم تعديل السلايد بنجاح.');
   } else {
-    await api.adminCreateHeroSlide(
-      buildSlideData(slides.length)
-    );
+    await api.adminCreateHeroSlide(buildSlideData(slides.length));
 
     showSuccess('تم إضافة السلايد بنجاح.');
   }
@@ -256,14 +254,16 @@ setError(null);
 
 ```
 try {
+  const nextActiveState = !slide.is_active;
+
   await api.adminUpdateHeroSlide(slide.id, {
-    is_active: !slide.is_active,
+    is_active: nextActiveState,
   });
 
   setSlides((previous) =>
     previous.map((item) =>
       item.id === slide.id
-        ? { ...item, is_active: !item.is_active }
+        ? { ...item, is_active: nextActiveState }
         : item
     )
   );
@@ -849,7 +849,8 @@ return ( <div className="space-y-6 max-w-6xl mx-auto pb-12"> <div className="fle
     </div>
   )}
 </div>
-  
+```
+
 );
 };
 
