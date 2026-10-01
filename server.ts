@@ -1229,6 +1229,164 @@ app.put(
 );
 
 // ==============================================================================
+
+// ==============================================================================
+// Hero Slider
+// ==============================================================================
+
+app.get(
+  '/api/hero-slides',
+  async (_req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.json([]);
+    }
+
+    const { data, error } = await supabaseClient
+      .from('hero_slides')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  }
+);
+
+app.get(
+  '/api/admin/hero-slides',
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.json([]);
+    }
+
+    const { data, error } = await supabaseClient
+      .from('hero_slides')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  }
+);
+
+app.post(
+  '/api/admin/hero-slides',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.status(503).json({
+        error: 'Supabase is not configured',
+      });
+    }
+
+    const { data, error } = await supabaseClient
+      .from('hero_slides')
+      .insert(req.body)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  }
+);
+
+app.put(
+  '/api/admin/hero-slides/:id',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.status(503).json({
+        error: 'Supabase is not configured',
+      });
+    }
+
+    const { data, error } = await supabaseClient
+      .from('hero_slides')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  }
+);
+
+app.delete(
+  '/api/admin/hero-slides/:id',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.status(503).json({
+        error: 'Supabase is not configured',
+      });
+    }
+
+    const { error } = await supabaseClient
+      .from('hero_slides')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  }
+);
+
+app.post(
+  '/api/admin/hero-slides/reorder',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    if (!supabaseClient) {
+      return res.status(503).json({
+        error: 'Supabase is not configured',
+      });
+    }
+
+    const slides = Array.isArray(req.body)
+      ? req.body
+      : req.body.slides;
+
+    if (!Array.isArray(slides)) {
+      return res.status(400).json({
+        error: 'Invalid slides data',
+      });
+    }
+
+    for (const slide of slides) {
+      const { error } = await supabaseClient
+        .from('hero_slides')
+        .update({
+          sort_order: slide.sort_order,
+        })
+        .eq('id', slide.id);
+
+      if (error) {
+        return res.status(500).json({
+          error: error.message,
+        });
+      }
+    }
+
+    res.json({ success: true });
+  }
+);
+
 // Categories
 // ==============================================================================
 
