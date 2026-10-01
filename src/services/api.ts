@@ -778,7 +778,7 @@ export const api = {
         await supabase
           .from('products')
           .select('*')
-          .eq('slug', slug)
+          .eq('slug', decodeURIComponent(slug))
           .or('is_active.eq.true,is_active.is.null')
           .maybeSingle();
 
