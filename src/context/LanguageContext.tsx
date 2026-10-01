@@ -226,7 +226,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.shipping': 'الشحن:',
     'checkout.total': 'الإجمالي المطلوب دفعه:',
     'checkout.free_shipping': 'شحن مجاني',
-    'checkout.submit_order': 'تأكيد الطلب الآن',
+    'checkout.submit_order': 'Confirm Order Now',
     'checkout.submitting': 'جاري تأكيد الطلب...',
     'checkout.cod_badge': 'الدفع كاش عند الاستلام',
     'checkout.inspection_badge': 'حق المعاينة قبل الاستلام',
@@ -356,7 +356,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Product Detail
     'product.direct_order': 'اطلب الآن',
-    'product.direct_order_sub': 'Cash on Delivery • Open Package Inspection',
+    'product.direct_order_sub': 'الدفع عند الاستلام • معاينة الطلب قبل الدفع',
     'home.reviews_title': 'آراء عملائنا',
     'home.reviews_subtitle': 'تجارب حقيقية من عملائنا',
     'home.share_review': 'شاركنا رأيك',
@@ -503,7 +503,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.shipping_by_governorate': 'Shipping Fee',
     'checkout.calculating': 'Calculating...',
     'checkout.total_on_delivery': 'Total on Delivery:',
-    'checkout.confirm_cod': 'تأكيد الطلب الآن (الدفع عند الاستلام)',
+    'checkout.confirm_cod': 'Confirm Order Now (Cash on Delivery)',
     'checkout.policy_agreement': "By confirming your order, you agree to Outfit Zone's exchange and return policies.",
     'checkout.page_title': 'Fast Direct Checkout',
     'checkout.subtitle': 'Cash on Delivery across Egypt • Full package inspection before paying',
