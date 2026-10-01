@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,6 +34,24 @@ interface HomepageReview extends ProductReview {
   };
 }
 
+interface HeroSlide {
+  id: string;
+  tag: string;
+  titleLine1: string;
+  titleLine2: string;
+  subtitleAr: string;
+  subtitleEn?: string;
+  description: string;
+  descriptionEn?: string;
+  ctaText: string;
+  ctaTextEn?: string;
+  ctaLink: string;
+  imageUrl: string;
+  badgeTop: string;
+  badgeBottom: string;
+  alt: string;
+}
+
 export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
   onSelectProduct,
@@ -48,6 +66,20 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+
+  /*
+   * ==========================================================================
+   * HERO SWIPE / DRAG
+   * ==========================================================================
+   */
+
+  const heroPointerStartX = useRef<number | null>(null);
+  const heroPointerStartY = useRef<number | null>(null);
+  const heroPointerId = useRef<number | null>(null);
+  const heroSwipeDetected = useRef(false);
+
+  const SWIPE_THRESHOLD = 50;
 
   /*
    * ==========================================================================
@@ -65,11 +97,14 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
-   * HERO SLIDES
+   * FALLBACK HERO SLIDES
    * ==========================================================================
+   *
+   * These remain only as a safe fallback until the API/StoreContext is connected
+   * to the Admin-managed hero_slides table.
    */
 
-  const heroSlides = [
+  const fallbackHeroSlides: HeroSlide[] = [
     {
       id: 'slide-main',
       tag: 'NEW COLLECTION 2026',
@@ -134,16 +169,260 @@ export const HomePage: React.FC<HomePageProps> = ({
     },
   ];
 
-  const currentSlide = heroSlides[activeSlide] || heroSlides[0];
+  /*
+   * ==========================================================================
+   * LOAD HERO SLIDES
+   * ==========================================================================
+   *
+   * api.getHeroSlides will be added to the API layer in the next step.
+   * Until then, the existing slides remain as a safe fallback.
+   */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHeroSlides = async () => {
+      try {
+        const apiWithHeroSlides = api as typeof api & {
+          getHeroSlides?: () => Promise<any[]>;
+        };
+
+        if (typeof apiWithHeroSlides.getHeroSlides !== 'function') {
+          if (!cancelled) {
+            setHeroSlides(fallbackHeroSlides);
+          }
+          return;
+        }
+
+        const data = await apiWithHeroSlides.getHeroSlides();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          if (!cancelled) {
+            setHeroSlides(fallbackHeroSlides);
+          }
+          return;
+        }
+
+        const normalizedSlides: HeroSlide[] = data
+          .map((slide: any, index: number) => ({
+            id: String(slide.id ?? `slide-${index}`),
+
+            tag:
+              slide.tag_ar ??
+              slide.tagAr ??
+              slide.tag ??
+              '',
+
+            titleLine1:
+              slide.title_line1_ar ??
+              slide.titleLine1Ar ??
+              slide.title_line1 ??
+              slide.titleLine1 ??
+              '',
+
+            titleLine2:
+              slide.title_line2_ar ??
+              slide.titleLine2Ar ??
+              slide.title_line2 ??
+              slide.titleLine2 ??
+              '',
+
+            subtitleAr:
+              slide.subtitle_ar ??
+              slide.subtitleAr ??
+              slide.subtitle ??
+              '',
+
+            subtitleEn:
+              slide.subtitle_en ??
+              slide.subtitleEn ??
+              '',
+
+            description:
+              slide.description_ar ??
+              slide.descriptionAr ??
+              slide.description ??
+              '',
+
+            descriptionEn:
+              slide.description_en ??
+              slide.descriptionEn ??
+              '',
+
+            ctaText:
+              slide.cta_text_ar ??
+              slide.ctaTextAr ??
+              slide.cta_text ??
+              slide.ctaText ??
+              '',
+
+            ctaTextEn:
+              slide.cta_text_en ??
+              slide.ctaTextEn ??
+              '',
+
+            ctaLink:
+              slide.cta_link ??
+              slide.ctaLink ??
+              '/products',
+
+            imageUrl:
+              slide.image_url ??
+              slide.imageUrl ??
+              '',
+
+            badgeTop:
+              slide.badge_top ??
+              slide.badgeTop ??
+              '',
+
+            badgeBottom:
+              slide.badge_bottom ??
+              slide.badgeBottom ??
+              '',
+
+            alt:
+              slide.alt ??
+              slide.title_line1_ar ??
+              slide.titleLine1 ??
+              'Outfit Zone',
+          }))
+          .filter((slide) => slide.imageUrl);
+
+        if (!cancelled) {
+          setHeroSlides(
+            normalizedSlides.length > 0
+              ? normalizedSlides
+              : fallbackHeroSlides
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching hero slides:', err);
+
+        if (!cancelled) {
+          setHeroSlides(fallbackHeroSlides);
+        }
+      }
+    };
+
+    loadHeroSlides();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content?.hero_subtitle, content?.hero_button_text, content?.hero_image_url]);
+
+  const currentSlides =
+    heroSlides.length > 0 ? heroSlides : fallbackHeroSlides;
+
+  const currentSlide =
+    currentSlides[activeSlide] || currentSlides[0] || fallbackHeroSlides[0];
+
+  /*
+   * ==========================================================================
+   * HERO NAVIGATION
+   * ==========================================================================
+   */
 
   const nextSlide = () => {
-    setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+    if (currentSlides.length <= 1) return;
+
+    setActiveSlide((prev) => (prev + 1) % currentSlides.length);
   };
 
   const prevSlide = () => {
+    if (currentSlides.length <= 1) return;
+
     setActiveSlide(
-      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
+      (prev) => (prev - 1 + currentSlides.length) % currentSlides.length
     );
+  };
+
+  /*
+   * ==========================================================================
+   * HERO POINTER SWIPE / MOUSE DRAG
+   * ==========================================================================
+   */
+
+  const handleHeroPointerDown = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (currentSlides.length <= 1) return;
+
+    heroPointerStartX.current = event.clientX;
+    heroPointerStartY.current = event.clientY;
+    heroPointerId.current = event.pointerId;
+    heroSwipeDetected.current = false;
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer-capture errors on unsupported browsers.
+    }
+  };
+
+  const handleHeroPointerMove = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (
+      heroPointerStartX.current === null ||
+      heroPointerStartY.current === null ||
+      heroPointerId.current !== event.pointerId
+    ) {
+      return;
+    }
+
+    const deltaX = event.clientX - heroPointerStartX.current;
+    const deltaY = event.clientY - heroPointerStartY.current;
+
+    /*
+     * Ignore mostly-vertical gestures so normal page scrolling remains natural.
+     */
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      return;
+    }
+
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+      heroSwipeDetected.current = true;
+
+      if (deltaX < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+
+      heroPointerStartX.current = null;
+      heroPointerStartY.current = null;
+    }
+  };
+
+  const handleHeroPointerUp = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (heroPointerId.current === event.pointerId) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore pointer-capture errors.
+      }
+    }
+
+    heroPointerStartX.current = null;
+    heroPointerStartY.current = null;
+    heroPointerId.current = null;
+  };
+
+  const handleHeroClickCapture = (
+    event: React.MouseEvent<HTMLElement>
+  ) => {
+    /*
+     * A drag/swipe must not accidentally activate the CTA or image.
+     */
+    if (heroSwipeDetected.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      heroSwipeDetected.current = false;
+    }
   };
 
   /*
@@ -153,14 +432,26 @@ export const HomePage: React.FC<HomePageProps> = ({
    */
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || currentSlides.length <= 1) return;
 
     const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+      setActiveSlide((prev) => (prev + 1) % currentSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isPaused, heroSlides.length]);
+  }, [isPaused, currentSlides.length]);
+
+  /*
+   * ==========================================================================
+   * KEEP ACTIVE SLIDE VALID
+   * ==========================================================================
+   */
+
+  useEffect(() => {
+    if (activeSlide >= currentSlides.length) {
+      setActiveSlide(0);
+    }
+  }, [activeSlide, currentSlides.length]);
 
   /*
    * ==========================================================================
@@ -396,6 +687,28 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
+  /*
+   * ==========================================================================
+   * HERO DIRECTION
+   * ==========================================================================
+   *
+   * RTL:
+   * Previous = ChevronRight
+   * Next = ChevronLeft
+   *
+   * LTR:
+   * Previous = ChevronLeft
+   * Next = ChevronRight
+   */
+
+  const isRTL =
+    typeof document !== 'undefined'
+      ? document.documentElement.dir === 'rtl'
+      : true;
+
+  const PreviousArrow = isRTL ? ChevronRight : ChevronLeft;
+  const NextArrow = isRTL ? ChevronLeft : ChevronRight;
+
   return (
     <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
       {/* =====================================================================
@@ -412,6 +725,12 @@ export const HomePage: React.FC<HomePageProps> = ({
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
+        onPointerDown={handleHeroPointerDown}
+        onPointerMove={handleHeroPointerMove}
+        onPointerUp={handleHeroPointerUp}
+        onPointerCancel={handleHeroPointerUp}
+        onClickCapture={handleHeroClickCapture}
+        style={{ touchAction: 'pan-y' }}
         aria-roledescription="carousel"
         aria-label="عروض وتشكيلات Outfit Zone"
       >
@@ -429,7 +748,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 <div className="font-mono text-xs opacity-75">
-                  0{activeSlide + 1} / 0{heroSlides.length}
+                  0{activeSlide + 1} / 0{currentSlides.length}
                 </div>
               </div>
 
@@ -489,7 +808,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   role="tablist"
                   aria-label="شرائح السلايدر"
                 >
-                  {heroSlides.map((slide, idx) => {
+                  {currentSlides.map((slide, idx) => {
                     const isActive = activeSlide === idx;
 
                     return (
@@ -527,7 +846,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
                     }`}
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <PreviousArrow className="w-4 h-4" />
                   </button>
 
                   <button
@@ -539,7 +858,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
                     }`}
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <NextArrow className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -569,6 +888,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   alt={currentSlide.alt}
                   className="w-full h-full object-cover object-top sm:object-center transition-all duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
+                  draggable={false}
                 />
 
                 <div
