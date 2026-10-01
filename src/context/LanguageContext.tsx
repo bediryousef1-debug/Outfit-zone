@@ -289,6 +289,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.search': 'Search',
 
     // Home Page
+
+    'hero.oversized.desc': 'Modern street style with relaxed cuts for a unique look.',
+
     'home.trust.cod_title': 'Cash on Delivery',
     'home.trust.cod_subtitle': 'Cash',
     'home.trust.shipping_title': 'Fast Shipping',
