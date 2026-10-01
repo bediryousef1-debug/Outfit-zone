@@ -631,6 +631,10 @@ export const api = {
           .select('*'),
       ]);
 
+      if (varRes.error) {
+        throw new Error(varRes.error.message || 'فشل تحميل مخزون المنتجات');
+      }
+
       if (pRes.error) {
         throw new Error(
           pRes.error.code ===
@@ -1677,52 +1681,31 @@ export const api = {
             }
           }
 
-          if (
-            Array.isArray(
-              productData.variants
-            )
-          ) {
-            await supabase
-              .from(
-                'product_variants'
-              )
+          if (Array.isArray(productData.variants)) {
+            const { error: variantsDeleteError } = await supabase
+              .from('product_variants')
               .delete()
-              .eq(
-                'product_id',
-                id
-              );
+              .eq('product_id', id);
 
-            if (
-              productData
-                .variants
-                .length > 0
-            ) {
-              await supabase
-                .from(
-                  'product_variants'
-                )
+            if (variantsDeleteError) {
+              throw variantsDeleteError;
+            }
+
+            if (productData.variants.length > 0) {
+              const { error: variantsInsertError } = await supabase
+                .from('product_variants')
                 .insert(
-                  productData.variants.map(
-                    (v: any) => ({
-                      product_id:
-                        id,
-                      color:
-                        v.color,
-                      color_hex:
-                        v.color_hex ||
-                        '#333333',
-                      image_url:
-                        v.image_url ||
-                        null,
-                      size:
-                        v.size,
-                      stock_quantity:
-                        Number(
-                          v.stock_quantity
-                        ) || 0,
-                    })
-                  )
+                  productData.variants.map((v: any) => ({
+                    product_id: id,
+                    color: v.color,
+                    size: v.size,
+                    stock_quantity: Number(v.stock_quantity) || 0,
+                  }))
                 );
+
+              if (variantsInsertError) {
+                throw variantsInsertError;
+              }
             }
           }
 
