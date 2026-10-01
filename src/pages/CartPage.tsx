@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Trash2, ShoppingBag, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatPrice } from '../utils/constants';
 import { resolveImageUrl } from '../utils/imageHelper';
@@ -13,6 +14,7 @@ interface CartPageProps {
 export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   const { items, removeItem, updateQuantity, subtotal } = useCart();
   const { settings } = useStore();
+  const { t } = useLanguage();
   const { isDark } = useTheme();
 
   const shippingFee = settings?.shipping_fee || 65;
@@ -35,10 +37,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
             isDark ? 'text-white' : 'text-neutral-900'
           }`}
         >
-          سلة المشتريات فارغة
+          {t('cart.empty_title', 'Your cart is empty')}
         </h1>
         <p className="text-xs sm:text-sm text-neutral-400 max-w-md mx-auto mb-8 leading-relaxed">
-          لم تقم بإضافة أي قطع إلى سلتك بعد. تصفح تشكيلة الستريت وير واختر المقاس المناسب لك بنظام الدفع عند الاستلام.
+          {t('cart.empty_text', 'You have not added any items to your cart yet. Browse our streetwear collection and choose your size with Cash on Delivery.')}
         </p>
         <button
           onClick={() => onNavigate('/products')}
@@ -48,7 +50,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
               : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
-          <span>تصفح تشكيلة الستريت وير</span>
+          <span>{t('cart.browse', 'Browse Streetwear Collection')}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -67,7 +69,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
         }`}
       >
         <ArrowRight className="w-4 h-4" />
-        <span>متابعة التسوق وإضافة موديلات أخرى</span>
+        <span>{t('cart.continue_add', 'Continue Shopping & Add More Items')}</span>
       </button>
 
       <div className="mb-8">
@@ -76,10 +78,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
             isDark ? 'text-white' : 'text-neutral-900'
           }`}
         >
-          سلة المشتريات
+          {t('cart.title', 'Shopping Cart')}
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
-          {items.length} {items.length === 1 ? 'قطعة مختارة' : 'قطع مختارة'} جاهزة للتأكيد والشحن.
+          {items.length} {items.length === 1 ? t('cart.item_selected', 'item selected') : t('cart.items_selected', 'items selected')} {t('cart.ready_shipping', 'ready for confirmation and shipping.')}
         </p>
       </div>
 
@@ -118,12 +120,12 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                       {item.product.name}
                     </button>
                     <div className="flex items-center gap-2 text-xs text-neutral-400">
-                      <span>اللون: <strong className={isDark ? 'text-neutral-200' : 'text-neutral-700'}>{item.color}</strong></span>
+                      <span>{t('cart.color', 'Color:')} <strong className={isDark ? 'text-neutral-200' : 'text-neutral-700'}>{item.color}</strong></span>
                       <span>·</span>
-                      <span>المقاس: <strong className={`font-mono ${isDark ? 'text-neutral-200' : 'text-neutral-700'}`}>{item.size}</strong></span>
+                      <span>{t('cart.size', 'Size:')} <strong className={`font-mono ${isDark ? 'text-neutral-200' : 'text-neutral-700'}`}>{item.size}</strong></span>
                     </div>
                     <div className={`text-xs font-mono-numbers pt-1 ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                      {formatPrice(item.unitPrice)} للقطعة
+                      {formatPrice(item.unitPrice)} {t('cart.per_item', 'per item')}
                     </div>
                   </div>
                 </div>
@@ -140,7 +142,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                       className={`px-2.5 py-1 text-sm transition-colors cursor-pointer ${
                         isDark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
                       }`}
-                      aria-label="تقليل الكمية"
+                    aria-label={t('cart.decrease', 'Decrease quantity')}
                     >
                       -
                     </button>
@@ -154,7 +156,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                       className={`px-2.5 py-1 text-sm transition-colors cursor-pointer ${
                         isDark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
                       }`}
-                      aria-label="زيادة الكمية"
+                    aria-label={t('cart.increase', 'Increase quantity')}
                     >
                       +
                     </button>
@@ -169,7 +171,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   <button
                     onClick={() => removeItem(item.variantId)}
                     className="p-2 text-neutral-400 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors cursor-pointer"
-                    title="حذف من السلة"
+                    title={t('cart.remove', 'Remove from cart')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -184,19 +186,19 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
               isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
             }`}>
               <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span>دفع كاش عند الاستلام</span>
+              <span>{t('cart.cod', 'Cash on Delivery')}</span>
             </div>
             <div className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs ${
               isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
             }`}>
               <ShieldCheck className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span>معاينة قبل الدفع</span>
+              <span>{t('cart.inspection', 'Inspect before payment')}</span>
             </div>
             <div className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs ${
               isDark ? 'bg-neutral-950/60 border-neutral-900 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'
             }`}>
               <RotateCcw className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span>استبدال المقاس 14 يوم</span>
+              <span>{t('cart.exchange', '14-day size exchange')}</span>
             </div>
           </div>
         </div>
@@ -208,30 +210,30 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
           <h2 className={`text-base font-bold pb-3 border-b ${
             isDark ? 'text-white border-neutral-800' : 'text-neutral-900 border-neutral-100'
           }`}>
-            ملخص الطلب
+            {t('cart.summary', 'Order Summary')}
           </h2>
 
           <div className="space-y-3 text-xs text-neutral-400">
             <div className="flex items-center justify-between">
-              <span>إجمالي المنتجات ({items.reduce((s, i) => s + i.quantity, 0)} قطعة):</span>
+              <span>{t('cart.products_total', 'Products Total')} ({items.reduce((s, i) => s + i.quantity, 0)} {t('cart.pieces', 'pieces')}):</span>
               <span className={`font-mono-numbers font-semibold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{formatPrice(subtotal)}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span>مصاريف الشحن والتوصيل:</span>
+              <span>{t('cart.shipping', 'Shipping & Delivery:')}</span>
               <span className={`font-mono-numbers ${isDark ? 'text-neutral-200' : 'text-neutral-700'}`}>{formatPrice(shippingFee)}</span>
             </div>
 
             <div className={`pt-3 border-t flex items-baseline justify-between text-base ${
               isDark ? 'border-neutral-800' : 'border-neutral-100'
             }`}>
-              <span className={`font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>الإجمالي الكلي:</span>
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{t('cart.grand_total', 'Grand Total:')}</span>
               <div className="text-left">
                 <span className={`font-mono-numbers font-black text-xl ${isDark ? 'text-white' : 'text-neutral-900'}`}>
                   {formatPrice(grandTotal)}
                 </span>
                 <span className="block text-[10px] text-neutral-400 font-normal">
-                  شامل الشحن لجميع المحافظات
+                  {t('cart.shipping_included', 'Shipping included for all governorates')}
                 </span>
               </div>
             </div>
@@ -244,7 +246,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                 isDark ? 'bg-white hover:bg-neutral-200 text-black' : 'bg-black hover:bg-neutral-800 text-white'
               }`}
             >
-              <span>المتابعة لإتمام الطلب</span>
+              <span>{t('cart.checkout', 'Continue to Checkout')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -256,14 +258,14 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-black border-neutral-200'
               }`}
             >
-              متابعة التسوق
+              {t('cart.continue_shopping', 'Continue Shopping')}
             </button>
           </div>
 
           <div className={`pt-2 border-t text-[11px] text-neutral-400 text-center ${
             isDark ? 'border-neutral-800/80' : 'border-neutral-100'
           }`}>
-            الدفع نقدًا عند الاستلام فقط لجميع المحافظات داخل مصر
+            {t('cart.cod_all_egypt', 'Cash on Delivery only, available across all governorates in Egypt')}
           </div>
         </div>
       </div>
