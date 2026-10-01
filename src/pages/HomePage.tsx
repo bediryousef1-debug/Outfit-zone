@@ -39,7 +39,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 onNavigate,
 onSelectProduct,
 }) => {
-const { categories, content, heroSlides } = useStore();
+const { categories, content, heroSlides, isLoading: storeLoading } = useStore();
 const { isDark } = useTheme();
 const { isRtl } = useLanguage();
 
@@ -195,8 +195,7 @@ is_active: true,
 },
 ];
 
-const currentSlides =
-heroSlides.length > 0 ? heroSlides : fallbackHeroSlides;
+const currentSlides = storeLoading ? [] : (heroSlides.length > 0 ? heroSlides : fallbackHeroSlides);
 
 const currentSlide =
 currentSlides[activeSlide] || currentSlides[0] || fallbackHeroSlides[0];
