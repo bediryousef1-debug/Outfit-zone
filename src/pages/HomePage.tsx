@@ -41,7 +41,7 @@ onSelectProduct,
 }) => {
 const { categories, content, heroSlides, isLoading: storeLoading } = useStore();
 const { isDark } = useTheme();
-const { isRtl } = useLanguage();
+const { isRtl, t } = useLanguage();
 
 const isRTL = isRtl;
 
@@ -403,7 +403,7 @@ try {
   setProducts(data);
 } catch (err: any) {
   console.error('Error fetching homepage products:', err);
-  setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+  setError(err.message || t('home.error_products', 'Unable to load products right now.'));
   setProducts([]);
 } finally {
   setIsLoading(false);
@@ -489,26 +489,26 @@ const activeCategories = (categories || []).filter(
 const trustFeatures = [
 {
 id: 'cod',
-title: 'دفع عند الاستلام',
-subtitle: 'كاش',
+title: t('home.trust.cod_title', 'Cash on Delivery'),
+subtitle: t('home.trust.cod_subtitle', 'Cash'),
 icon: ShieldCheck,
 },
 {
 id: 'shipping',
-title: 'شحن سريع',
-subtitle: 'لجميع المحافظات',
+title: t('home.trust.shipping_title', 'Fast Shipping'),
+subtitle: t('home.trust.shipping_subtitle', 'Across All Governorates'),
 icon: Truck,
 },
 {
 id: 'discounts',
-title: 'خصومات حصرية',
-subtitle: 'ولمدة محدودة',
+title: t('home.trust.discounts_title', 'Exclusive Discounts'),
+subtitle: t('home.trust.discounts_subtitle', 'Limited Time'),
 icon: Percent,
 },
 {
 id: 'support',
-title: 'دعم العملاء',
-subtitle: 'علي مدار الساعة',
+title: t('home.trust.support_title', 'Customer Support'),
+subtitle: t('home.trust.support_subtitle', 'Around the Clock'),
 icon: Headphones,
 },
 ];
@@ -569,27 +569,27 @@ const cleanName = reviewName.trim();
 const cleanText = reviewText.trim();
 
 if (!cleanName) {
-  setReviewError('من فضلك اكتب اسمك.');
+  setReviewError(t('home.review_name_required', 'Please enter your name.'));
   return;
 }
 
 if (cleanName.length < 2) {
-  setReviewError('الاسم يجب أن يكون حرفين على الأقل.');
+  setReviewError(t('home.review_name_short', 'Name must be at least 2 characters.'));
   return;
 }
 
 if (!cleanText) {
-  setReviewError('من فضلك اكتب رأيك.');
+  setReviewError(t('home.review_text_required', 'Please enter your review.'));
   return;
 }
 
 if (cleanText.length < 5) {
-  setReviewError('اكتب رأيك في 5 أحرف على الأقل.');
+  setReviewError(t('home.review_text_short', 'Your review must be at least 5 characters.'));
   return;
 }
 
 if (reviewRating < 1 || reviewRating > 5) {
-  setReviewError('اختار تقييم من نجمة إلى 5 نجوم.');
+  setReviewError(t('home.review_rating_required', 'Please select a rating from 1 to 5 stars.'));
   return;
 }
 
@@ -604,7 +604,7 @@ try {
   });
 
   if (!result.success) {
-    throw new Error('تعذر إرسال رأيك حاليًا.');
+    throw new Error(t('home.error_review', 'Unable to submit your review right now.'));
   }
 
   setReviewName('');
@@ -613,13 +613,13 @@ try {
   setShowReviewForm(false);
 
   setReviewMessage(
-    'شكرًا لرأيك ❤️ سيتم مراجعته واعتماده قبل ظهوره على الموقع.'
+    t('home.review_success', 'Thank you for your review ❤️ It will be reviewed and approved before appearing on the website.')
   );
 } catch (err: any) {
   console.error('Error submitting homepage review:', err);
 
   setReviewError(
-    err.message || 'تعذر إرسال رأيك حاليًا. حاول مرة أخرى.'
+    err.message || t('home.error_review', 'Unable to submit your review right now.')
   );
 } finally {
   setReviewSubmitting(false);
@@ -928,7 +928,7 @@ return (
         <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
 
         <h2 className={isDark ? 'text-white' : 'text-black'}>
-          تسوق حسب الفئة
+          t('home.categories_title', 'Shop by Category')
         </h2>
 
         <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
@@ -943,7 +943,7 @@ return (
             : 'bg-white border-neutral-200 text-neutral-500'
         }`}
       >
-        لا توجد فئات متاحة حاليًا.
+        {t('home.no_categories', 'No categories available right now.')}
       </div>
     ) : (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -968,7 +968,7 @@ return (
                   handleCategoryNavigate(cat.slug);
                 }
               }}
-              aria-label={`تصفح فئة ${cat.name}`}
+              aria-label={`${t('home.browse_category', 'Browse category')} ${cat.name}`}
             >
               <div className="relative aspect-[4/4.5] sm:aspect-[4/5] w-full overflow-hidden bg-neutral-900/10">
                 {categoryImage ? (
@@ -991,7 +991,7 @@ return (
                     </span>
 
                     <span className="text-xs mt-2">
-                      لا توجد صورة
+                      {t('home.no_image', 'No image')}
                     </span>
                   </div>
                 )}
@@ -1054,17 +1054,16 @@ return (
 
           <div className="space-y-1">
             <p className="text-sm sm:text-base text-neutral-300 font-medium">
-              ...مش مجرد لبس
+              {t('home.editorial_subtitle', '...More Than Just Clothes')}
             </p>
 
             <h3 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-              ده حضور
+              {t('home.editorial_title', 'It is a Presence')}
             </h3>
           </div>
 
           <p className="text-xs sm:text-sm text-neutral-400 max-w-md leading-relaxed">
-            تصاميم تعكس ذوقك العصري مع تفاصيل متقنة وخامات قطنية ممتازة
-            تناسب كل لحظات يومك.
+            {t('home.editorial_desc', 'Designs that reflect your modern taste, with refined details and premium cotton fabrics made for every moment of your day.')}
           </p>
 
           <div className="pt-2">
@@ -1072,7 +1071,7 @@ return (
               onClick={() => onNavigate('/about')}
               className="py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
-              <span>اكتشف المزيد</span>
+              <span>{t('home.discover_more', 'Discover More')}</span>
               <ArrowLeft className="w-4 h-4" />
             </button>
           </div>
@@ -1107,7 +1106,7 @@ return (
     <div className="flex items-end justify-between mb-8">
       <div className="text-right">
         <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
-          أحدث التشكيلات
+          {t('home.latest_collection', 'Latest Collection')}
         </span>
 
         <h2
@@ -1115,7 +1114,7 @@ return (
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          الموديلات الأكثر طلباً
+          {t('home.most_requested', 'Most Requested Styles')}
         </h2>
       </div>
 
@@ -1123,7 +1122,7 @@ return (
         onClick={() => onNavigate('/products')}
         className="text-xs font-bold text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
       >
-        <span>عرض جميع المنتجات</span>
+        <span>{t('home.view_all_products', 'View All Products')}</span>
         <ArrowLeft className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -1149,7 +1148,7 @@ return (
         >
           <RotateCcw className="w-3.5 h-3.5" />
 
-          <span>إعادة المحاولة</span>
+          <span>{t('home.retry', 'Try Again')}</span>
         </button>
       </div>
     ) : featuredProducts.length === 0 ? (
@@ -1160,7 +1159,7 @@ return (
             : 'bg-neutral-50 border-neutral-200 text-neutral-500'
         }`}
       >
-        لا توجد منتجات متاحة حاليًا.
+        {t('home.no_products', 'No products available right now.')}
       </div>
     ) : (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -1183,7 +1182,7 @@ return (
     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
       <div className="text-right">
         <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
-          آراء عملائنا
+          {t('home.reviews_title', 'Customer Reviews')}
         </span>
 
         <h2
@@ -1191,7 +1190,7 @@ return (
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          تجارب حقيقية من عملائنا
+          {t('home.reviews_subtitle', 'Real Experiences from Our Customers')}
         </h2>
       </div>
 
@@ -1206,7 +1205,7 @@ return (
           }`}
         >
           <Star className="w-4 h-4" />
-          <span>شاركنا رأيك</span>
+          <span>{t('home.share_review', 'Share Your Review')}</span>
         </button>
       )}
     </div>
@@ -1238,11 +1237,11 @@ return (
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
-              شاركنا تجربتك
+              {t('home.review_form_title', 'Share Your Experience')}
             </h3>
 
             <p className="text-xs text-neutral-400 mt-1">
-              رأيك يهمنا ويساعد عملاءنا يعرفوا تجربتك.
+              {t('home.review_form_desc', 'Your feedback matters and helps our customers know what to expect.')}
             </p>
           </div>
 
@@ -1250,7 +1249,7 @@ return (
             type="button"
             onClick={closeReviewForm}
             disabled={reviewSubmitting}
-            aria-label="إغلاق نموذج الرأي"
+            aria-label={t('home.close_review', 'Close review form')}
             className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
               isDark
                 ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
@@ -1268,14 +1267,14 @@ return (
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
-              الاسم
+              {t('home.name', 'Name')}
             </label>
 
             <input
               type="text"
               value={reviewName}
               onChange={(e) => setReviewName(e.target.value)}
-              placeholder="اكتب اسمك"
+              placeholder={t('home.name_placeholder', 'Enter your name')}
               maxLength={100}
               disabled={reviewSubmitting}
               className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
@@ -1292,7 +1291,7 @@ return (
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
-              تقييمك
+              {t('home.rating', 'Your Rating')}
             </label>
 
             <div className="flex items-center gap-1" dir="ltr">
@@ -1305,7 +1304,7 @@ return (
                     type="button"
                     onClick={() => setReviewRating(star)}
                     disabled={reviewSubmitting}
-                    aria-label={`تقييم ${star} من 5`}
+                    aria-label={t('home.rating_aria', 'Rating {star} out of 5').replace('{star}', String(star))}
                     className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
                   >
                     <Star
@@ -1329,13 +1328,13 @@ return (
                 isDark ? 'text-white' : 'text-black'
               }`}
             >
-              رأيك
+              {t('home.review', 'Your Review')}
             </label>
 
             <textarea
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="اكتب تجربتك مع Outfit Zone..."
+              placeholder={t('home.review_placeholder', 'Share your experience with Outfit Zone...')}
               maxLength={1000}
               rows={5}
               disabled={reviewSubmitting}
@@ -1374,7 +1373,7 @@ return (
                   : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
               }`}
             >
-              إلغاء
+              {t('home.cancel', 'Cancel')}
             </button>
 
             <button
@@ -1389,7 +1388,7 @@ return (
               <Send className="w-4 h-4" />
 
               <span>
-                {reviewSubmitting ? 'جاري الإرسال...' : 'إرسال رأيي'}
+                {reviewSubmitting ? t('home.submitting', 'Submitting...') : t('home.submit_review', 'Submit Review')}
               </span>
             </button>
           </div>
@@ -1423,12 +1422,11 @@ return (
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          كن أول من يشارك تجربته
+          {t('home.first_review_title', 'Be the First to Share Your Experience')}
         </h3>
 
         <p className="text-xs mt-2 text-neutral-400">
-          جربت Outfit Zone؟ شاركنا رأيك وتقييمك، ويمكن لرأيك يظهر هنا بعد
-          اعتماده.
+          {t('home.first_review_desc', 'Tried Outfit Zone? Share your review and rating. Your review may appear here after approval.')}
         </p>
 
         {!showReviewForm && (
@@ -1442,7 +1440,7 @@ return (
             }`}
           >
             <Star className="w-4 h-4" />
-            <span>شاركنا رأيك</span>
+            <span>{t('home.share_review', 'Share Your Review')}</span>
           </button>
         )}
       </div>
