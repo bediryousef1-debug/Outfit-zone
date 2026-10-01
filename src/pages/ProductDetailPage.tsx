@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   ArrowRight,
   ArrowLeft,
@@ -78,10 +79,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     const loadProduct = async () => {
       setIsLoading(true);
       setError(null);
+      setProduct(null);
+      setSelectedImageIndex(0);
+      setCustomColorImage(null);
+      setSelectedColor('');
+      setSelectedSize('');
+      setQuantity(1);
+      setReviews([]);
+      setComments([]);
+      setReviewsLoading(true);
+      setCommentsLoading(true);
 
       try {
         const data = await api.getProductBySlug(slug);
         if (!isMounted) return;
+
+        if (!data || !data.id) {
+          throw new Error(t('product.not_found_detail', 'This product could not be found.'));
+        }
+
         setProduct(data);
 
         if (data.variants && data.variants.length > 0) {
@@ -89,7 +105,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             data.variants.find((v) => v.stock_quantity > 0) ||
             data.variants[0];
 
-          setSelectedColor(firstInStock.color);
+          setSelectedColor(firstInStock.color || '');
           if (firstInStock.image_url) {
             setCustomColorImage(firstInStock.image_url);
           }
@@ -232,6 +248,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const canAddToCart = Boolean(
     selectedVariant &&
+      selectedVariant.stock_quantity > 0 &&
       selectedVariant.stock_quantity >= quantity &&
       quantity > 0
   );
@@ -303,9 +320,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // 1. Direct Order — Primary Action
   const handleDirectOrder = () => {
-    if (!selectedVariant || !canAddToCart) return;
+    if (!selectedColor || !selectedSize || !selectedVariant || !canAddToCart) {
+      return;
+    }
 
-    addItem(product, selectedVariant, quantity);
+    // Commit the cart update before changing the route so CheckoutPage
+    // always receives the newly added item in the same interaction.
+    flushSync(() => {
+      addItem(product, selectedVariant, quantity);
+    });
     onNavigate('/checkout');
   };
 
