@@ -36,19 +36,34 @@ interface HomepageReview extends ProductReview {
 
 interface HeroSlide {
   id: string;
+
   tag: string;
+  tagEn?: string;
+
   titleLine1: string;
+  titleLine1En?: string;
+
   titleLine2: string;
+  titleLine2En?: string;
+
   subtitleAr: string;
   subtitleEn?: string;
+
   description: string;
   descriptionEn?: string;
+
   ctaText: string;
   ctaTextEn?: string;
+
   ctaLink: string;
   imageUrl: string;
+
   badgeTop: string;
+  badgeTopEn?: string;
+
   badgeBottom: string;
+  badgeBottomEn?: string;
+
   alt: string;
 }
 
@@ -97,74 +112,131 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
+   * LANGUAGE
+   * ==========================================================================
+   */
+
+  const getIsRTL = () => {
+    if (typeof document === 'undefined') return true;
+
+    const dir = document.documentElement.dir?.toLowerCase();
+
+    if (dir === 'ltr') return false;
+    if (dir === 'rtl') return true;
+
+    const lang = document.documentElement.lang?.toLowerCase();
+
+    if (lang.startsWith('en')) return false;
+
+    return true;
+  };
+
+  const isRTL = getIsRTL();
+
+  /*
+   * ==========================================================================
    * FALLBACK HERO SLIDES
    * ==========================================================================
-   *
-   * These remain only as a safe fallback until the API/StoreContext is connected
-   * to the Admin-managed hero_slides table.
    */
 
   const fallbackHeroSlides: HeroSlide[] = [
     {
       id: 'slide-main',
       tag: 'NEW COLLECTION 2026',
+      tagEn: 'NEW COLLECTION 2026',
       titleLine1: 'WEAR IN',
+      titleLine1En: 'WEAR IN',
       titleLine2: 'THE ZONE',
+      titleLine2En: 'THE ZONE',
       subtitleAr: content?.hero_subtitle || 'ستايلك له حضور',
+      subtitleEn: 'Your style has presence',
       description:
         'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
+      descriptionEn:
+        'Carefully selected pieces that reflect your personality, made with premium Egyptian cotton.',
       ctaText: content?.hero_button_text || 'تسوق الآن',
+      ctaTextEn: 'Shop Now',
       ctaLink: '/products',
       imageUrl:
         content?.hero_image_url ||
         '/images/hero_streetwear_editorial_1790342899745.jpg',
       badgeTop: 'Style Your Zone',
+      badgeTopEn: 'Style Your Zone',
       badgeBottom: 'STYLE BUILDS CONFIDENCE',
+      badgeBottomEn: 'STYLE BUILDS CONFIDENCE',
       alt: 'Outfit Zone Editorial Campaign',
     },
     {
       id: 'slide-boxfit',
       tag: 'BOX FIT ESSENTIALS',
+      tagEn: 'BOX FIT ESSENTIALS',
       titleLine1: 'HEAVYWEIGHT',
+      titleLine1En: 'HEAVYWEIGHT',
       titleLine2: 'COTTON 240+',
+      titleLine2En: 'COTTON 240+',
       subtitleAr: 'تيشيرتات Box Fit الفاخرة',
+      subtitleEn: 'Premium Box Fit T-Shirts',
       description:
         'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
+      descriptionEn:
+        'Comfortable cuts and premium finishing designed to last while maintaining the fabric quality.',
       ctaText: 'اكتشف التيشيرتات',
+      ctaTextEn: 'Discover T-Shirts',
       ctaLink: '/products?search=تيشيرت',
       imageUrl: '/images/product_boxfit_tee_black_1790342911897.jpg',
       badgeTop: 'Heavyweight Fit',
+      badgeTopEn: 'Heavyweight Fit',
       badgeBottom: '100% EGYPTIAN COTTON',
+      badgeBottomEn: '100% EGYPTIAN COTTON',
       alt: 'Box Fit T-Shirt Black',
     },
     {
       id: 'slide-oversized',
       tag: 'OVERSIZED STREETWEAR',
+      tagEn: 'OVERSIZED STREETWEAR',
       titleLine1: 'EFFORTLESS',
+      titleLine1En: 'EFFORTLESS',
       titleLine2: 'OVERSIZED',
+      titleLine2En: 'OVERSIZED',
       subtitleAr: 'تشكيلة الأوفرسايز الواسعة',
+      subtitleEn: 'Oversized Streetwear Collection',
       description:
         'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
+      descriptionEn:
+        'Modern streetwear with relaxed oversized cuts for a distinctive look throughout the day.',
       ctaText: 'تسوق الأوفرسايز',
+      ctaTextEn: 'Shop Oversized',
       ctaLink: '/products?search=اوفرسايز',
       imageUrl: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
       badgeTop: 'Streetwear Drop',
+      badgeTopEn: 'Streetwear Drop',
       badgeBottom: 'WEAR IN THE ZONE',
+      badgeBottomEn: 'WEAR IN THE ZONE',
       alt: 'Oversized Tee Offwhite',
     },
     {
       id: 'slide-polos',
       tag: 'URBAN INTERLOCK',
+      tagEn: 'URBAN INTERLOCK',
       titleLine1: 'MODERN',
+      titleLine1En: 'MODERN',
       titleLine2: 'POLOS & SHIRTS',
+      titleLine2En: 'POLOS & SHIRTS',
       subtitleAr: 'بولو وقمصان إنترلوك أنيقة',
+      subtitleEn: 'Modern Interlock Polos & Shirts',
       description:
         'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
+      descriptionEn:
+        'A perfect balance between polished and casual style with soft, cool and comfortable interlock fabric.',
       ctaText: 'عرض التشكيلة',
+      ctaTextEn: 'View Collection',
       ctaLink: '/products?category=streetwear-polos',
-      imageUrl: '/images/product_interlock_polo_charcoal_1790342934447.jpg',
+      imageUrl:
+        '/images/product_interlock_polo_charcoal_1790342934447.jpg',
       badgeTop: 'Urban Interlock',
+      badgeTopEn: 'Urban Interlock',
       badgeBottom: 'CASH ON DELIVERY',
+      badgeBottomEn: 'CASH ON DELIVERY',
       alt: 'Streetwear Polo Charcoal',
     },
   ];
@@ -173,9 +245,6 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * LOAD HERO SLIDES
    * ==========================================================================
-   *
-   * api.getHeroSlides will be added to the API layer in the next step.
-   * Until then, the existing slides remain as a safe fallback.
    */
 
   useEffect(() => {
@@ -183,22 +252,12 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     const loadHeroSlides = async () => {
       try {
-        const apiWithHeroSlides = api as typeof api & {
-          getHeroSlides?: () => Promise<any[]>;
-        };
-
-        if (typeof apiWithHeroSlides.getHeroSlides !== 'function') {
-          if (!cancelled) {
-            setHeroSlides(fallbackHeroSlides);
-          }
-          return;
-        }
-
-        const data = await apiWithHeroSlides.getHeroSlides();
+        const data = await api.getHeroSlides();
 
         if (!Array.isArray(data) || data.length === 0) {
           if (!cancelled) {
             setHeroSlides(fallbackHeroSlides);
+            setActiveSlide(0);
           }
           return;
         }
@@ -213,6 +272,12 @@ export const HomePage: React.FC<HomePageProps> = ({
               slide.tag ??
               '',
 
+            tagEn:
+              slide.tag_en ??
+              slide.tagEn ??
+              slide.tag ??
+              '',
+
             titleLine1:
               slide.title_line1_ar ??
               slide.titleLine1Ar ??
@@ -220,9 +285,23 @@ export const HomePage: React.FC<HomePageProps> = ({
               slide.titleLine1 ??
               '',
 
+            titleLine1En:
+              slide.title_line1_en ??
+              slide.titleLine1En ??
+              slide.title_line1 ??
+              slide.titleLine1 ??
+              '',
+
             titleLine2:
               slide.title_line2_ar ??
               slide.titleLine2Ar ??
+              slide.title_line2 ??
+              slide.titleLine2 ??
+              '',
+
+            titleLine2En:
+              slide.title_line2_en ??
+              slide.titleLine2En ??
               slide.title_line2 ??
               slide.titleLine2 ??
               '',
@@ -236,6 +315,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             subtitleEn:
               slide.subtitle_en ??
               slide.subtitleEn ??
+              slide.subtitle ??
               '',
 
             description:
@@ -247,6 +327,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             descriptionEn:
               slide.description_en ??
               slide.descriptionEn ??
+              slide.description ??
               '',
 
             ctaText:
@@ -259,6 +340,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             ctaTextEn:
               slide.cta_text_en ??
               slide.ctaTextEn ??
+              slide.cta_text ??
+              slide.ctaText ??
               '',
 
             ctaLink:
@@ -276,7 +359,21 @@ export const HomePage: React.FC<HomePageProps> = ({
               slide.badgeTop ??
               '',
 
+            badgeTopEn:
+              slide.badge_top_en ??
+              slide.badgeTopEn ??
+              slide.badge_top ??
+              slide.badgeTop ??
+              '',
+
             badgeBottom:
+              slide.badge_bottom ??
+              slide.badgeBottom ??
+              '',
+
+            badgeBottomEn:
+              slide.badge_bottom_en ??
+              slide.badgeBottomEn ??
               slide.badge_bottom ??
               slide.badgeBottom ??
               '',
@@ -295,12 +392,14 @@ export const HomePage: React.FC<HomePageProps> = ({
               ? normalizedSlides
               : fallbackHeroSlides
           );
+          setActiveSlide(0);
         }
       } catch (err) {
         console.error('Error fetching hero slides:', err);
 
         if (!cancelled) {
           setHeroSlides(fallbackHeroSlides);
+          setActiveSlide(0);
         }
       }
     };
@@ -310,13 +409,63 @@ export const HomePage: React.FC<HomePageProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [content?.hero_subtitle, content?.hero_button_text, content?.hero_image_url]);
+  }, [
+    content?.hero_subtitle,
+    content?.hero_button_text,
+    content?.hero_image_url,
+  ]);
 
   const currentSlides =
     heroSlides.length > 0 ? heroSlides : fallbackHeroSlides;
 
   const currentSlide =
     currentSlides[activeSlide] || currentSlides[0] || fallbackHeroSlides[0];
+
+  /*
+   * ==========================================================================
+   * LOCALIZED HERO CONTENT
+   * ==========================================================================
+   */
+
+  const localizedTag =
+    !isRTL && currentSlide.tagEn
+      ? currentSlide.tagEn
+      : currentSlide.tag;
+
+  const localizedTitleLine1 =
+    !isRTL && currentSlide.titleLine1En
+      ? currentSlide.titleLine1En
+      : currentSlide.titleLine1;
+
+  const localizedTitleLine2 =
+    !isRTL && currentSlide.titleLine2En
+      ? currentSlide.titleLine2En
+      : currentSlide.titleLine2;
+
+  const localizedSubtitle =
+    !isRTL && currentSlide.subtitleEn
+      ? currentSlide.subtitleEn
+      : currentSlide.subtitleAr;
+
+  const localizedDescription =
+    !isRTL && currentSlide.descriptionEn
+      ? currentSlide.descriptionEn
+      : currentSlide.description;
+
+  const localizedCta =
+    !isRTL && currentSlide.ctaTextEn
+      ? currentSlide.ctaTextEn
+      : currentSlide.ctaText;
+
+  const localizedBadgeTop =
+    !isRTL && currentSlide.badgeTopEn
+      ? currentSlide.badgeTopEn
+      : currentSlide.badgeTop;
+
+  const localizedBadgeBottom =
+    !isRTL && currentSlide.badgeBottomEn
+      ? currentSlide.badgeBottomEn
+      : currentSlide.badgeBottom;
 
   /*
    * ==========================================================================
@@ -357,7 +506,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      // Ignore pointer-capture errors on unsupported browsers.
+      // Ignore unsupported pointer-capture errors.
     }
   };
 
@@ -376,7 +525,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     const deltaY = event.clientY - heroPointerStartY.current;
 
     /*
-     * Ignore mostly-vertical gestures so normal page scrolling remains natural.
+     * Vertical movement belongs to normal page scrolling.
      */
     if (Math.abs(deltaY) > Math.abs(deltaX)) {
       return;
@@ -385,6 +534,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
       heroSwipeDetected.current = true;
 
+      /*
+       * Physical drag:
+       * drag left  -> next
+       * drag right -> previous
+       */
       if (deltaX < 0) {
         nextSlide();
       } else {
@@ -416,7 +570,10 @@ export const HomePage: React.FC<HomePageProps> = ({
     event: React.MouseEvent<HTMLElement>
   ) => {
     /*
-     * A drag/swipe must not accidentally activate the CTA or image.
+     * Prevent a drag/swipe from accidentally activating:
+     * - the CTA
+     * - the image card
+     * - any other clickable element inside the hero
      */
     if (heroSwipeDetected.current) {
       event.preventDefault();
@@ -480,11 +637,6 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * LOAD PUBLIC HOMEPAGE REVIEWS
    * ==========================================================================
-   *
-   * Reviews are loaded once through getPublicReviews().
-   * General reviews have product_id = null.
-   * Product-specific reviews are matched locally against the already-loaded
-   * products instead of making one request per product.
    */
 
   const loadReviews = async () => {
@@ -691,20 +843,7 @@ export const HomePage: React.FC<HomePageProps> = ({
    * ==========================================================================
    * HERO DIRECTION
    * ==========================================================================
-   *
-   * RTL:
-   * Previous = ChevronRight
-   * Next = ChevronLeft
-   *
-   * LTR:
-   * Previous = ChevronLeft
-   * Next = ChevronRight
    */
-
-  const isRTL =
-    typeof document !== 'undefined'
-      ? document.documentElement.dir === 'rtl'
-      : true;
 
   const PreviousArrow = isRTL ? ChevronRight : ChevronLeft;
   const NextArrow = isRTL ? ChevronLeft : ChevronRight;
@@ -730,9 +869,21 @@ export const HomePage: React.FC<HomePageProps> = ({
         onPointerUp={handleHeroPointerUp}
         onPointerCancel={handleHeroPointerUp}
         onClickCapture={handleHeroClickCapture}
-        style={{ touchAction: 'pan-y' }}
+        style={{
+          touchAction: 'pan-y',
+          cursor:
+            currentSlides.length > 1
+              ? heroPointerId.current !== null
+                ? 'grabbing'
+                : 'grab'
+              : 'default',
+        }}
         aria-roledescription="carousel"
-        aria-label="عروض وتشكيلات Outfit Zone"
+        aria-label={
+          isRTL
+            ? 'عروض وتشكيلات Outfit Zone'
+            : 'Outfit Zone offers and collections'
+        }
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -743,7 +894,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <span className="w-8 h-[1px] bg-neutral-500" />
 
                   <span className="font-mono tracking-wider">
-                    {currentSlide.tag}
+                    {localizedTag}
                   </span>
                 </div>
 
@@ -759,7 +910,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       isDark ? 'text-white' : 'text-black'
                     }`}
                   >
-                    {currentSlide.titleLine1}
+                    {localizedTitleLine1}
                   </span>
 
                   <span
@@ -767,7 +918,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       isDark ? 'text-white' : 'text-black'
                     }`}
                   >
-                    {currentSlide.titleLine2}
+                    {localizedTitleLine2}
                   </span>
                 </h1>
 
@@ -776,7 +927,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     isDark ? 'text-neutral-100' : 'text-neutral-900'
                   }`}
                 >
-                  {currentSlide.subtitleAr}
+                  {localizedSubtitle}
                 </h2>
               </div>
 
@@ -785,7 +936,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   isDark ? 'text-neutral-300' : 'text-neutral-600'
                 }`}
               >
-                {currentSlide.description}
+                {localizedDescription}
               </p>
 
               <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -797,7 +948,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
                   }`}
                 >
-                  <span>{currentSlide.ctaText}</span>
+                  <span>{localizedCta}</span>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
@@ -806,10 +957,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div
                   className="flex items-center gap-2"
                   role="tablist"
-                  aria-label="شرائح السلايدر"
+                  aria-label={isRTL ? 'شرائح السلايدر' : 'Slider slides'}
                 >
                   {currentSlides.map((slide, idx) => {
                     const isActive = activeSlide === idx;
+
+                    const slideTitle =
+                      !isRTL && slide.titleLine1En
+                        ? slide.titleLine1En
+                        : slide.titleLine1;
 
                     return (
                       <button
@@ -817,7 +973,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                         onClick={() => setActiveSlide(idx)}
                         role="tab"
                         aria-selected={isActive}
-                        aria-label={`الشريحة ${idx + 1}: ${slide.titleLine1}`}
+                        aria-label={
+                          isRTL
+                            ? `الشريحة ${idx + 1}: ${slideTitle}`
+                            : `Slide ${idx + 1}: ${slideTitle}`
+                        }
                         className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                           isActive
                             ? `w-8 ${
@@ -839,7 +999,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={prevSlide}
-                    aria-label="الشريحة السابقة"
+                    aria-label={isRTL ? 'الشريحة السابقة' : 'Previous slide'}
                     className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
                       isDark
                         ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
@@ -851,7 +1011,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                   <button
                     onClick={nextSlide}
-                    aria-label="الشريحة التالية"
+                    aria-label={isRTL ? 'الشريحة التالية' : 'Next slide'}
                     className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
                       isDark
                         ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
@@ -880,7 +1040,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     onNavigate(currentSlide.ctaLink);
                   }
                 }}
-                aria-label={`عرض ${currentSlide.subtitleAr}`}
+                aria-label={
+                  isRTL
+                    ? `عرض ${localizedSubtitle}`
+                    : `View ${localizedSubtitle}`
+                }
               >
                 <img
                   key={currentSlide.imageUrl}
@@ -901,13 +1065,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                 <div className="absolute top-6 left-6 pointer-events-none select-none opacity-85 rotate-[-8deg] transition-all duration-500">
                   <span className="font-serif italic text-lg sm:text-2xl text-white/90 drop-shadow-md">
-                    {currentSlide.badgeTop}
+                    {localizedBadgeTop}
                   </span>
                 </div>
 
                 <div className="absolute bottom-6 right-6 pointer-events-none select-none text-right transition-all duration-500">
                   <span className="text-[10px] sm:text-xs uppercase font-mono tracking-widest text-white/90 block drop-shadow-sm">
-                    {currentSlide.badgeBottom}
+                    {localizedBadgeBottom}
                   </span>
 
                   <div className="w-8 h-0.5 bg-white/80 mt-1 mr-auto" />
@@ -915,7 +1079,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                 <div className="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/20">
-                    استكشف الموديل
+                    {isRTL ? 'استكشف الموديل' : 'Explore'}
                   </span>
                 </div>
               </div>
