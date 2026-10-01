@@ -1,6 +1,5 @@
 import { flushSync } from 'react-dom';
 import React, { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
 import {
   ArrowRight,
   ArrowLeft,
