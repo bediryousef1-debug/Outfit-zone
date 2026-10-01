@@ -28,6 +28,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onOrderSuccess,
   onNavigate,
 }) => {
+  const { t } = useLanguage();
   const { items, subtotal, clearCart } = useCart();
   const { settings } = useStore();
   const { isDark } = useTheme();
