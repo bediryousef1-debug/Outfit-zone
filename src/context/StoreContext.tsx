@@ -120,7 +120,7 @@ const rawNumber = contactSocial?.whatsapp_number || settings?.whatsapp_number ||
 const cleanNumber = rawNumber.replace(/[\s+-]/g, '');
 const defaultMsg = 'مرحبًا Outfit Zone، أريد الاستفسار عن الموديلات والمقاسات المتاحة.';
 const text = contextualMessage || defaultMsg;
-return "https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}";
+return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
 };
 
 const socialLinks = {

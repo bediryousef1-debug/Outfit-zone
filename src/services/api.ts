@@ -779,7 +779,7 @@ export const api = {
           .from('products')
           .select('*')
           .eq('slug', slug)
-          .neq('is_active', false)
+          .or('is_active.eq.true,is_active.is.null')
           .maybeSingle();
 
       if (pErr) {

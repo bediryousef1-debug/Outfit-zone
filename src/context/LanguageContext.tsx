@@ -355,7 +355,8 @@ const translations: Record<Language, Record<string, string>> = {
     'about.explore': 'Explore Products Now',
 
     // Product Detail
-    'product.direct_order': 'اطلب الآن',
+    'product.direct_order': 'اطلب الآن'
+    'product.direct_order_en': 'Order Now',
     'product.direct_order_sub': 'الدفع عند الاستلام • معاينة الطلب قبل الدفع',
     'home.reviews_title': 'آراء عملائنا',
     'home.reviews_subtitle': 'تجارب حقيقية من عملائنا',
