@@ -1454,14 +1454,23 @@ export const api = {
           .insert({
             name:
               productData.name,
+            name_en:
+              productData.name_en ||
+              null,
             slug:
               productData.slug,
             description:
               productData.description ||
               '',
+            description_en:
+              productData.description_en ||
+              null,
             fabric_details:
               productData.fabric_details ||
               '',
+            fabric_details_en:
+              productData.fabric_details_en ||
+              null,
             price:
               productData.price,
             compare_at_price:
@@ -1530,7 +1539,9 @@ export const api = {
               )
               .insert(
                 productData.variants.map(
-                  (v: any) => ({
+                  (
+                    v: any
+                  ) => ({
                     product_id:
                       newProd.id,
                     color:
@@ -1549,6 +1560,7 @@ export const api = {
               );
           }
 
+          invalidateApiCache('product');
           return newProd;
         }
       } catch (err) {
@@ -1610,12 +1622,21 @@ export const api = {
           .update({
             name:
               productData.name,
+            name_en:
+              productData.name_en ||
+              null,
             slug:
               productData.slug,
             description:
               productData.description,
+            description_en:
+              productData.description_en ||
+              null,
             fabric_details:
               productData.fabric_details,
+            fabric_details_en:
+              productData.fabric_details_en ||
+              null,
             price:
               productData.price,
             compare_at_price:
@@ -1779,7 +1800,10 @@ export const api = {
             id
           );
 
-        if (!error) return;
+        if (!error) {
+          invalidateApiCache('product');
+          return;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminArchiveProduct notice:',
@@ -1813,6 +1837,8 @@ export const api = {
           'فشل أرشفة المنتج'
       );
     }
+
+    invalidateApiCache('product');
   },
 
   // 12.1 Admin: Permanent Delete Product
@@ -1840,6 +1866,7 @@ export const api = {
         );
       }
 
+      invalidateApiCache('product');
       return;
     }
 
@@ -1868,6 +1895,8 @@ export const api = {
           'فشل حذف المنتج'
       );
     }
+
+    invalidateApiCache('product');
   },
 
   // 13. Admin: Update Store Settings
@@ -2264,6 +2293,7 @@ export const api = {
   async adminCreateCategory(
     catData: {
       name: string;
+      name_en?: string;
       slug: string;
       image_url?: string;
     }
@@ -2284,6 +2314,9 @@ export const api = {
             .insert({
               name:
                 catData.name,
+              name_en:
+                catData.name_en ||
+                null,
               slug:
                 catData.slug,
               image_url:
@@ -2299,6 +2332,7 @@ export const api = {
           !error &&
           data
         ) {
+          invalidateApiCache('categories');
           return data;
         }
       } catch (err) {
@@ -2338,6 +2372,7 @@ export const api = {
       );
     }
 
+    invalidateApiCache('categories');
     return res.json();
   },
 
@@ -2361,6 +2396,8 @@ export const api = {
             .update({
               name:
                 catData.name,
+              name_en:
+                catData.name_en,
               slug:
                 catData.slug,
               image_url:
@@ -2379,6 +2416,7 @@ export const api = {
           !error &&
           data
         ) {
+          invalidateApiCache('categories');
           return data;
         }
       } catch (err) {
@@ -2418,6 +2456,7 @@ export const api = {
       );
     }
 
+    invalidateApiCache('categories');
     return res.json();
   },
 
@@ -2445,7 +2484,10 @@ export const api = {
               id
             );
 
-        if (!error) return;
+        if (!error) {
+          invalidateApiCache('categories');
+          return;
+        }
       } catch (err) {
         console.warn(
           'Supabase adminArchiveCategory notice:',
@@ -2479,6 +2521,8 @@ export const api = {
           'فشل أرشفة القسم'
       );
     }
+
+    invalidateApiCache('categories');
   },
 
   // 19. Admin: Permanent Delete Category
@@ -2532,6 +2576,8 @@ export const api = {
         );
       }
 
+      invalidateApiCache('categories');
+      invalidateApiCache('products');
       return;
     }
 
@@ -2560,6 +2606,9 @@ export const api = {
           'فشل حذف القسم'
       );
     }
+
+    invalidateApiCache('categories');
+    invalidateApiCache('products');
   },
 
   // 20. Admin: Delete Product Variant

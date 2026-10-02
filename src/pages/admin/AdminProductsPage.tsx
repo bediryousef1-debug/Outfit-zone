@@ -73,12 +73,16 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
 
       if (search) {
         const term = search.toLowerCase();
+
         return (
           p.name.toLowerCase().includes(term) ||
+          p.name_en?.toLowerCase().includes(term) ||
           p.slug.toLowerCase().includes(term) ||
-          p.category?.name.toLowerCase().includes(term)
+          p.category?.name?.toLowerCase().includes(term) ||
+          p.category?.name_en?.toLowerCase().includes(term)
         );
       }
+
       return true;
     });
   }, [products, search, statusFilter]);
@@ -171,14 +175,23 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                   <th className="py-3 px-4 text-center">إجراءات</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-neutral-900">
                 {filteredProducts.map((product) => {
-                  const totalStock = product.variants?.reduce((sum, v) => sum + v.stock_quantity, 0) || 0;
+                  const totalStock =
+                    product.variants?.reduce(
+                      (sum, v) => sum + v.stock_quantity,
+                      0
+                    ) || 0;
+
                   const rawImg = product.images?.[0]?.image_url;
                   const primaryImg = resolveImageUrl(rawImg);
 
                   return (
-                    <tr key={product.id} className="hover:bg-neutral-900/40 transition-colors">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-neutral-900/40 transition-colors"
+                    >
                       <td className="py-3 px-4">
                         <img
                           src={primaryImg}
@@ -186,21 +199,53 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                           className="w-10 h-12 object-cover rounded bg-neutral-950 border border-neutral-800"
                         />
                       </td>
+
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white text-xs">{product.name}</div>
-                        <div className="text-[11px] font-mono text-neutral-500">{product.slug}</div>
+                        <div className="font-bold text-white text-xs">
+                          {product.name}
+                        </div>
+
+                        {product.name_en && (
+                          <div className="text-[11px] text-neutral-400 mt-0.5">
+                            {product.name_en}
+                          </div>
+                        )}
+
+                        <div className="text-[11px] font-mono text-neutral-500 mt-0.5">
+                          {product.slug}
+                        </div>
                       </td>
+
                       <td className="py-3 px-4 text-neutral-300">
-                        {product.category?.name || 'ستريت وير'}
+                        <div>
+                          {product.category?.name || 'ستريت وير'}
+                        </div>
+
+                        {product.category?.name_en && (
+                          <div className="text-[11px] text-neutral-500 mt-0.5">
+                            {product.category.name_en}
+                          </div>
+                        )}
                       </td>
+
                       <td className="py-3 px-4 font-mono-numbers font-bold text-white">
                         {formatPrice(product.price)}
                       </td>
+
                       <td className="py-3 px-4">
-                        <span className={`font-mono-numbers font-bold ${totalStock <= 0 ? 'text-red-400' : totalStock < 5 ? 'text-amber-400' : 'text-neutral-200'}`}>
+                        <span
+                          className={`font-mono-numbers font-bold ${
+                            totalStock <= 0
+                              ? 'text-red-400'
+                              : totalStock < 5
+                              ? 'text-amber-400'
+                              : 'text-neutral-200'
+                          }`}
+                        >
                           {totalStock} قطعة
                         </span>
                       </td>
+
                       <td className="py-3 px-4">
                         {product.is_active ? (
                           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
@@ -214,6 +259,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                           </span>
                         )}
                       </td>
+
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
@@ -223,9 +269,12 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
                           {product.is_active ? (
                             <button
-                              onClick={() => handleArchive(product.id, product.name)}
+                              onClick={() =>
+                                handleArchive(product.id, product.name)
+                              }
                               className="p-1.5 rounded-lg bg-neutral-900 hover:bg-amber-950/40 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer"
                               title="أرشفة المنتج (إخفاء من المتجر)"
                             >
@@ -235,7 +284,10 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                             <button
                               onClick={async () => {
                                 try {
-                                  await api.adminUpdateProduct(product.id, { ...product, is_active: true });
+                                  await api.adminUpdateProduct(product.id, {
+                                    ...product,
+                                    is_active: true,
+                                  });
                                   loadProducts();
                                 } catch (e: any) {
                                   alert(e.message || 'فشل إعادة التفعيل');
@@ -247,8 +299,11 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
                               <CheckCircle className="w-3.5 h-3.5" />
                             </button>
                           )}
+
                           <button
-                            onClick={() => handleDelete(product.id, product.name)}
+                            onClick={() =>
+                              handleDelete(product.id, product.name)
+                            }
                             className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950/60 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
                             title="حذف المنتج نهائيًا"
                           >

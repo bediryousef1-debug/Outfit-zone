@@ -2,7 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Category } from '../../types';
 import { api } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
-import { Plus, Edit2, Archive, Trash2, Check, Layers, AlertCircle, RefreshCw, Image } from 'lucide-react';
+import {
+  Plus,
+  Edit2,
+  Archive,
+  Trash2,
+  Check,
+  Layers,
+  AlertCircle,
+  RefreshCw,
+  Image,
+} from 'lucide-react';
 import { AdminImageUpload } from '../../components/admin/AdminImageUpload';
 
 export const AdminCategoriesPage: React.FC = () => {
@@ -16,6 +26,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formName, setFormName] = useState('');
+  const [formNameEn, setFormNameEn] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
@@ -24,6 +35,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const fetchCategories = async () => {
     setIsLoading(true);
     setError(null);
+
     try {
       const data = await api.adminGetCategories();
       setCategories(data);
@@ -41,6 +53,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const openCreateModal = () => {
     setEditingCategory(null);
     setFormName('');
+    setFormNameEn('');
     setFormSlug('');
     setFormImageUrl('');
     setFormIsActive(true);
@@ -50,6 +63,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const openEditModal = (cat: Category) => {
     setEditingCategory(cat);
     setFormName(cat.name);
+    setFormNameEn(cat.name_en || '');
     setFormSlug(cat.slug);
     setFormImageUrl(cat.image_url || '');
     setFormIsActive(cat.is_active !== false);
@@ -67,6 +81,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formName.trim() || !formSlug.trim()) {
       setError('يرجى إدخال اسم القسم والرابط.');
       return;
@@ -80,23 +95,28 @@ export const AdminCategoriesPage: React.FC = () => {
       if (editingCategory) {
         await api.adminUpdateCategory(editingCategory.id, {
           name: formName.trim(),
+          name_en: formNameEn.trim(),
           slug: formSlug.trim(),
           image_url: formImageUrl.trim() || undefined,
           is_active: formIsActive,
         });
+
         setSuccessMsg('تم تحديث القسم بنجاح.');
       } else {
         await api.adminCreateCategory({
           name: formName.trim(),
+          name_en: formNameEn.trim(),
           slug: formSlug.trim(),
           image_url: formImageUrl.trim() || undefined,
         });
+
         setSuccessMsg('تمت إضافة القسم الجديد بنجاح.');
       }
 
       await fetchCategories();
       await refreshData();
       setIsModalOpen(false);
+
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء حفظ القسم');
@@ -106,7 +126,11 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   const handleArchive = async (cat: Category) => {
-    if (!window.confirm(`هل أنت متأكد من أرشفة القسم "${cat.name}"؟ لن يظهر في المتجر للعملاء.`)) {
+    if (
+      !window.confirm(
+        `هل أنت متأكد من أرشفة القسم "${cat.name}"؟ لن يظهر في المتجر للعملاء.`
+      )
+    ) {
       return;
     }
 
@@ -115,6 +139,7 @@ export const AdminCategoriesPage: React.FC = () => {
       setSuccessMsg(`تمت أرشفة القسم "${cat.name}".`);
       await fetchCategories();
       await refreshData();
+
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.message || 'فشل أرشفة القسم');
@@ -122,7 +147,11 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   const handleDelete = async (cat: Category) => {
-    if (!window.confirm(`هل أنت متأكد من حذف القسم "${cat.name}" نهائيًا من قاعدة البيانات؟\nلن يتم حذف الموديلات والمنتجات التابعة له.`)) {
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف القسم "${cat.name}" نهائيًا من قاعدة البيانات؟\nلن يتم حذف الموديلات والمنتجات التابعة له.`
+      )
+    ) {
       return;
     }
 
@@ -131,6 +160,7 @@ export const AdminCategoriesPage: React.FC = () => {
       setSuccessMsg(`تم حذف القسم "${cat.name}" بنجاح.`);
       await fetchCategories();
       await refreshData();
+
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.message || 'فشل حذف القسم');
@@ -146,6 +176,7 @@ export const AdminCategoriesPage: React.FC = () => {
             <Layers className="w-6 h-6 text-neutral-300" />
             <span>إدارة الأقسام وتصنيفات المتجر</span>
           </h1>
+
           <p className="text-xs text-neutral-400 mt-1">
             إضافة وتعديل وأرشفة الأقسام المعروضة للعملاء على المتجر مباشرة من Supabase.
           </p>
@@ -197,9 +228,11 @@ export const AdminCategoriesPage: React.FC = () => {
                   <th className="p-4 text-center">إجراءات</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-neutral-850">
                 {categories.map((cat) => {
                   const isActive = cat.is_active !== false;
+
                   return (
                     <tr
                       key={cat.id}
@@ -219,16 +252,31 @@ export const AdminCategoriesPage: React.FC = () => {
                             <Image className="w-4 h-4" />
                           </div>
                         )}
+
                         <div>
                           <div>{cat.name}</div>
+
+                          {cat.name_en && (
+                            <div className="text-[11px] text-neutral-400 font-normal mt-0.5">
+                              {cat.name_en}
+                            </div>
+                          )}
+
                           {!isActive && (
-                            <span className="text-[10px] text-amber-400 font-normal">مؤرشف / معطل</span>
+                            <span className="text-[10px] text-amber-400 font-normal">
+                              مؤرشف / معطل
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td className="p-4 font-mono text-neutral-400 text-[11px]" dir="ltr">
+
+                      <td
+                        className="p-4 font-mono text-neutral-400 text-[11px]"
+                        dir="ltr"
+                      >
                         {cat.slug}
                       </td>
+
                       <td className="p-4">
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
@@ -240,6 +288,7 @@ export const AdminCategoriesPage: React.FC = () => {
                           {isActive ? 'نشط على المتجر' : 'مؤرشف'}
                         </span>
                       </td>
+
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
@@ -249,6 +298,7 @@ export const AdminCategoriesPage: React.FC = () => {
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
                           {isActive && (
                             <button
                               onClick={() => handleArchive(cat)}
@@ -258,6 +308,7 @@ export const AdminCategoriesPage: React.FC = () => {
                               <Archive className="w-3.5 h-3.5" />
                             </button>
                           )}
+
                           <button
                             onClick={() => handleDelete(cat)}
                             className="p-1.5 rounded-lg bg-neutral-900 hover:bg-red-950 border border-neutral-800 hover:border-red-900 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
@@ -291,6 +342,7 @@ export const AdminCategoriesPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
                   اسم القسم (بالعربية)
                 </label>
+
                 <input
                   type="text"
                   required
@@ -298,6 +350,7 @@ export const AdminCategoriesPage: React.FC = () => {
                   value={formName}
                   onChange={(e) => {
                     setFormName(e.target.value);
+
                     if (!editingCategory) {
                       setFormSlug(generateSlugFromName(e.target.value));
                     }
@@ -308,8 +361,24 @@ export const AdminCategoriesPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+                  اسم القسم (بالإنجليزية)
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Example: Box Fit T-Shirts"
+                  value={formNameEn}
+                  onChange={(e) => setFormNameEn(e.target.value)}
+                  dir="ltr"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-white transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
                   الرابط المرجعي (Slug بالإنجليزية)
                 </label>
+
                 <input
                   type="text"
                   required
@@ -338,7 +407,11 @@ export const AdminCategoriesPage: React.FC = () => {
                     onChange={(e) => setFormIsActive(e.target.checked)}
                     className="w-4 h-4 rounded bg-neutral-900 border-neutral-800 text-white accent-white cursor-pointer"
                   />
-                  <label htmlFor="formIsActive" className="text-xs text-neutral-300 cursor-pointer font-semibold">
+
+                  <label
+                    htmlFor="formIsActive"
+                    className="text-xs text-neutral-300 cursor-pointer font-semibold"
+                  >
                     القسم نشط ومعروض في المتجر للعملاء
                   </label>
                 </div>
@@ -352,6 +425,7 @@ export const AdminCategoriesPage: React.FC = () => {
                 >
                   إلغاء
                 </button>
+
                 <button
                   type="submit"
                   disabled={isSubmitting}

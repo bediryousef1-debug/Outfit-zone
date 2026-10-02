@@ -52,9 +52,12 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
   // Form fields
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [fabricDetails, setFabricDetails] = useState('');
+  const [fabricDetailsEn, setFabricDetailsEn] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [price, setPrice] = useState('450');
   const [compareAtPrice, setCompareAtPrice] = useState('');
@@ -98,7 +101,9 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
   const [newColorHex, setNewColorHex] = useState(DEFAULT_COLOR_HEX);
 
   // Rename existing color states
-  const [editingColorNameFor, setEditingColorNameFor] = useState<string | null>(null);
+  const [editingColorNameFor, setEditingColorNameFor] = useState<string | null>(
+    null
+  );
   const [renameAr, setRenameAr] = useState('');
   const [renameEn, setRenameEn] = useState('');
 
@@ -120,9 +125,12 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
           if (found) {
             setName(found.name);
+            setNameEn(found.name_en || '');
             setSlug(found.slug);
             setDescription(found.description || '');
+            setDescriptionEn(found.description_en || '');
             setFabricDetails(found.fabric_details || '');
+            setFabricDetailsEn(found.fabric_details_en || '');
             setCategoryId(found.category_id || cats[0]?.id || '');
             setPrice(String(found.price));
             setCompareAtPrice(
@@ -180,7 +188,9 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
               });
 
               if (sizeSet.size > 0) {
-                const combined = Array.from(new Set([...STANDARD_SIZES, ...sizeSet]));
+                const combined = Array.from(
+                  new Set([...STANDARD_SIZES, ...sizeSet])
+                );
                 setAvailableSizes(combined);
               }
 
@@ -351,15 +361,19 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
   const handleSaveRename = (oldColor: string) => {
     const ar = renameAr.trim();
     const en = renameEn.trim();
+
     if (!ar && !en) {
       alert('يرجى كتابة اسم اللون بالعربية أو بالإنجليزية.');
       return;
     }
+
     const newColor = formatColorComposite(ar, en);
+
     if (newColor === oldColor) {
       setEditingColorNameFor(null);
       return;
     }
+
     if (variantGroups.some((g) => g.color === newColor)) {
       alert('يوجد لون آخر مسجل بنفس هذا الاسم.');
       return;
@@ -379,6 +393,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     // Update existing variants map
     setExistingVariantsMap((prev) => {
       const nextMap: Record<string, string> = {};
+
       Object.entries(prev).forEach(([key, varId]) => {
         if (key.startsWith(`${oldColor}___`)) {
           const size = key.split('___')[1];
@@ -387,6 +402,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
           nextMap[key] = varId;
         }
       });
+
       return nextMap;
     });
 
@@ -396,6 +412,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
   const addColorGroup = () => {
     const ar = newColorInputAr.trim();
     const en = newColorInputEn.trim();
+
     if (!ar && !en) {
       alert('يرجى إدخال اسم اللون بالعربية أو بالإنجليزية.');
       return;
@@ -691,9 +708,15 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
       const payload = {
         name: name.trim(),
+        name_en: nameEn.trim(),
         slug: slug.trim(),
+
         description: description.trim(),
+        description_en: descriptionEn.trim(),
+
         fabric_details: fabricDetails.trim(),
+        fabric_details_en: fabricDetailsEn.trim(),
+
         category_id: categoryId,
         price: Number(price),
         compare_at_price: compareAtPrice
@@ -842,6 +865,23 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+                اسم الموديل بالإنجليزية
+              </label>
+
+              <input
+                type="text"
+                dir="ltr"
+                placeholder="e.g. Interlock Box Fit T-Shirt - Black"
+                value={nameEn}
+                onChange={(e) =>
+                  setNameEn(e.target.value)
+                }
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white text-left focus:outline-none focus:border-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
                 الرابط المختصر (Slug){' '}
                 <span className="text-red-400">
                   *
@@ -950,6 +990,23 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              وصف الموديل والقصة بالإنجليزية
+            </label>
+
+            <textarea
+              rows={2}
+              dir="ltr"
+              value={descriptionEn}
+              onChange={(e) =>
+                setDescriptionEn(e.target.value)
+              }
+              placeholder="Detailed description of the fit, style and outfit..."
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white text-left focus:outline-none focus:border-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
               تفاصيل الخامة والنسيج (GSM، نوع القطن، الغسيل)
             </label>
 
@@ -961,6 +1018,23 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
               }
               placeholder="مثال: قطن مصري 100% ثقيل كثافة 240 جرام/م² معالج ضد الانكماش..."
               className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              تفاصيل الخامة والنسيج بالإنجليزية
+            </label>
+
+            <input
+              type="text"
+              dir="ltr"
+              value={fabricDetailsEn}
+              onChange={(e) =>
+                setFabricDetailsEn(e.target.value)
+              }
+              placeholder="e.g. 100% Egyptian cotton, 240 GSM, pre-shrunk..."
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white text-left focus:outline-none focus:border-white"
             />
           </div>
 
@@ -1251,14 +1325,19 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                         <span className="font-bold text-white text-xs">
                           اللون: {group.color}
                         </span>
+
                         <button
                           type="button"
-                          onClick={() => handleStartRename(group.color)}
+                          onClick={() =>
+                            handleStartRename(group.color)
+                          }
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-950/40 border border-blue-800/50 px-2 py-0.5 rounded cursor-pointer transition-colors"
                           title="تعديل اسم اللون بالعربية والإنجليزية"
                         >
                           <Pencil className="w-3 h-3" />
-                          <span>تغيير الاسم (عربي / English)</span>
+                          <span>
+                            تغيير الاسم (عربي / English)
+                          </span>
                         </button>
                       </div>
 
@@ -1266,19 +1345,31 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                       <div className="flex items-center gap-2 mt-1 text-[11px] flex-wrap">
                         {splitColorName(group.color).ar && (
                           <span className="bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded text-neutral-300">
-                            عربي: <strong className="text-white">{splitColorName(group.color).ar}</strong>
+                            عربي:{' '}
+                            <strong className="text-white">
+                              {splitColorName(group.color).ar}
+                            </strong>
                           </span>
                         )}
+
                         {splitColorName(group.color).en && (
-                          <span className="bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded text-neutral-300" dir="ltr">
-                            EN: <strong className="text-white">{splitColorName(group.color).en}</strong>
+                          <span
+                            className="bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded text-neutral-300"
+                            dir="ltr"
+                          >
+                            EN:{' '}
+                            <strong className="text-white">
+                              {splitColorName(group.color).en}
+                            </strong>
                           </span>
                         )}
+
                         <span
                           dir="ltr"
                           className="text-[10px] text-neutral-500 font-mono"
                         >
-                          {group.color_hex || DEFAULT_COLOR_HEX}
+                          {group.color_hex ||
+                            DEFAULT_COLOR_HEX}
                         </span>
                       </div>
                     </div>
@@ -1304,11 +1395,16 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     <div className="text-xs font-bold text-blue-300 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <Pencil className="w-3.5 h-3.5" />
-                        <span>تعديل اسم اللون باللغتين العربية والإنجليزية</span>
+                        <span>
+                          تعديل اسم اللون باللغتين العربية والإنجليزية
+                        </span>
                       </div>
+
                       <button
                         type="button"
-                        onClick={() => setEditingColorNameFor(null)}
+                        onClick={() =>
+                          setEditingColorNameFor(null)
+                        }
                         className="text-neutral-400 hover:text-white"
                       >
                         <X className="w-4 h-4" />
@@ -1317,22 +1413,33 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[11px] text-neutral-400 mb-1">الاسم بالعربية:</label>
+                        <label className="block text-[11px] text-neutral-400 mb-1">
+                          الاسم بالعربية:
+                        </label>
+
                         <input
                           type="text"
                           value={renameAr}
-                          onChange={(e) => setRenameAr(e.target.value)}
+                          onChange={(e) =>
+                            setRenameAr(e.target.value)
+                          }
                           placeholder="مثال: أسود كربوني"
                           className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-[11px] text-neutral-400 mb-1">الاسم بالإنجليزية (English):</label>
+                        <label className="block text-[11px] text-neutral-400 mb-1">
+                          الاسم بالإنجليزية (English):
+                        </label>
+
                         <input
                           type="text"
                           dir="ltr"
                           value={renameEn}
-                          onChange={(e) => setRenameEn(e.target.value)}
+                          onChange={(e) =>
+                            setRenameEn(e.target.value)
+                          }
                           placeholder="e.g. Carbon Black"
                           className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-blue-500 text-left font-sans"
                         />
@@ -1342,14 +1449,19 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     <div className="flex items-center justify-end gap-2 pt-1">
                       <button
                         type="button"
-                        onClick={() => setEditingColorNameFor(null)}
+                        onClick={() =>
+                          setEditingColorNameFor(null)
+                        }
                         className="px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 text-xs rounded-lg transition-colors cursor-pointer"
                       >
                         إلغاء
                       </button>
+
                       <button
                         type="button"
-                        onClick={() => handleSaveRename(group.color)}
+                        onClick={() =>
+                          handleSaveRename(group.color)
+                        }
                         className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm"
                       >
                         حفظ وتحديث اسم اللون
@@ -1374,10 +1486,12 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                         </span>
                       )}
                     </div>
+
                     <div>
                       <span className="text-xs font-bold text-white block">
                         صورة اللون: {group.color}
                       </span>
+
                       <span className="text-[11px] text-neutral-400">
                         تظهر للعميل فور اختياره هذا اللون في صفحة المنتج
                       </span>
@@ -1388,17 +1502,26 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     <select
                       value={group.image_url || ''}
                       onChange={(e) =>
-                        updateColorImage(group.color, e.target.value)
+                        updateColorImage(
+                          group.color,
+                          e.target.value
+                        )
                       }
                       className="bg-neutral-950 border border-neutral-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-white w-full sm:w-auto"
                     >
-                      <option value="">اختر من صور الموديل...</option>
+                      <option value="">
+                        اختر من صور الموديل...
+                      </option>
+
                       {images.map((img, idx) => (
                         <option
                           key={img.image_url || idx}
                           value={img.image_url}
                         >
-                          صورة {idx + 1} {img.is_primary ? '(الرئيسية)' : ''}
+                          صورة {idx + 1}{' '}
+                          {img.is_primary
+                            ? '(الرئيسية)'
+                            : ''}
                         </option>
                       ))}
                     </select>
@@ -1406,7 +1529,12 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     {group.image_url && (
                       <button
                         type="button"
-                        onClick={() => updateColorImage(group.color, '')}
+                        onClick={() =>
+                          updateColorImage(
+                            group.color,
+                            ''
+                          )
+                        }
                         className="px-2.5 py-1.5 text-xs text-neutral-400 hover:text-red-400 border border-neutral-800 rounded-lg hover:bg-neutral-800 transition-colors shrink-0"
                       >
                         إزالة
@@ -1516,13 +1644,21 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
           {/* Add New Color */}
           <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 space-y-3">
             <div>
-              <h3 className="text-xs font-bold text-white mb-0.5">إضافة لون جديد لهذا الموديل</h3>
-              <p className="text-[11px] text-neutral-400">حدد اسم اللون بالعربية وبالإنجليزية مع كود اللون ليتغير تلقائيًا للعملاء بحسب لغة الموقع.</p>
+              <h3 className="text-xs font-bold text-white mb-0.5">
+                إضافة لون جديد لهذا الموديل
+              </h3>
+
+              <p className="text-[11px] text-neutral-400">
+                حدد اسم اللون بالعربية وبالإنجليزية مع كود اللون ليتغير تلقائيًا للعملاء بحسب لغة الموقع.
+              </p>
             </div>
 
             {/* Quick color preset chips */}
             <div className="space-y-1.5">
-              <span className="text-[10px] text-neutral-400 block font-medium">ألوان شائعة جاهزة للاختيار السريع:</span>
+              <span className="text-[10px] text-neutral-400 block font-medium">
+                ألوان شائعة جاهزة للاختيار السريع:
+              </span>
+
               <div className="flex flex-wrap gap-1.5">
                 {POPULAR_COLORS.map((pc) => (
                   <button
@@ -1535,9 +1671,21 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     }}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[11px] text-neutral-300 hover:text-white cursor-pointer transition-colors"
                   >
-                    <span className="w-3 h-3 rounded-full border border-neutral-700 shrink-0" style={{ backgroundColor: pc.hex }} />
+                    <span
+                      className="w-3 h-3 rounded-full border border-neutral-700 shrink-0"
+                      style={{
+                        backgroundColor: pc.hex,
+                      }}
+                    />
+
                     <span>{pc.nameAr}</span>
-                    <span className="text-neutral-500 text-[10px]" dir="ltr">({pc.nameEn})</span>
+
+                    <span
+                      className="text-neutral-500 text-[10px]"
+                      dir="ltr"
+                    >
+                      ({pc.nameEn})
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1546,24 +1694,34 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
             {/* Inputs row */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
               <div className="sm:col-span-5">
-                <label className="block text-[11px] text-neutral-400 mb-1">اسم اللون بالعربية:</label>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  اسم اللون بالعربية:
+                </label>
+
                 <input
                   type="text"
                   placeholder="مثال: زيتي، أسود كربوني، كحلي..."
                   value={newColorInputAr}
-                  onChange={(e) => setNewColorInputAr(e.target.value)}
+                  onChange={(e) =>
+                    setNewColorInputAr(e.target.value)
+                  }
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
                 />
               </div>
 
               <div className="sm:col-span-5">
-                <label className="block text-[11px] text-neutral-400 mb-1">اسم اللون بالإنجليزية (English):</label>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  اسم اللون بالإنجليزية (English):
+                </label>
+
                 <input
                   type="text"
                   dir="ltr"
                   placeholder="e.g. Olive Green, Carbon Black..."
                   value={newColorInputEn}
-                  onChange={(e) => setNewColorInputEn(e.target.value)}
+                  onChange={(e) =>
+                    setNewColorInputEn(e.target.value)
+                  }
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white text-left font-sans"
                 />
               </div>
@@ -1573,10 +1731,13 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                   <input
                     type="color"
                     value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value)}
+                    onChange={(e) =>
+                      setNewColorHex(e.target.value)
+                    }
                     title="اختيار درجة اللون"
                     className="w-10 h-9 rounded-lg bg-transparent border border-neutral-700 cursor-pointer p-0.5"
                   />
+
                   <button
                     type="button"
                     onClick={addColorGroup}

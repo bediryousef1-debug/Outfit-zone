@@ -1,4 +1,9 @@
-export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
 
 export interface AdminUser {
   id: string;
@@ -9,6 +14,7 @@ export interface AdminUser {
 export interface Category {
   id: string;
   name: string;
+  name_en?: string;
   slug: string;
   image_url?: string;
   is_active?: boolean;
@@ -77,9 +83,12 @@ export interface Customer {
 export interface Product {
   id: string;
   name: string;
+  name_en?: string;
   slug: string;
   description: string;
+  description_en?: string;
   fabric_details: string;
+  fabric_details_en?: string;
   price: number;
   compare_at_price: number | null;
   category_id: string;
@@ -191,6 +200,7 @@ export interface StoreSettings {
 
 export interface StoreContent {
   id: string;
+
   // Hero Section
   hero_title: string;
   hero_title_en?: string;
