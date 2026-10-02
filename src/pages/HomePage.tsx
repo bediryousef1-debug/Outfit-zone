@@ -521,7 +521,7 @@ icon: Headphones,
   */
 
 const handleCategoryNavigate = (slug: string) => {
-onNavigate("/products?category=${encodeURIComponent(slug)}");
+  onNavigate(`/products?category=${encodeURIComponent(slug)}`);
 };
 
 /*
