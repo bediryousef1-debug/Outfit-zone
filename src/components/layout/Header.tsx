@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'hover:bg-neutral-900 text-white'
                     : 'hover:bg-neutral-100 text-black'
                 }`}
-                aria-label="القائمة الرئيسية"
+                aria-label={t('nav.menu', 'Main Menu')}
               >
                 {mobileMenuOpen ? (
                   <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -125,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'hover:bg-neutral-900 text-white'
                     : 'hover:bg-neutral-100 text-black'
                 }`}
-                aria-label="البحث عن منتج"
+                aria-label={t('nav.search', 'Search')}
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -199,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'Switch to English'
                     : 'التحويل إلى العربية'
                 }
-                aria-label="تبديل اللغة"
+                aria-label={language === 'ar' ? 'تبديل اللغة' : 'Switch language'}
               >
                 <Globe className="w-3.5 h-3.5 shrink-0" />
 
@@ -217,11 +217,15 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
                 }`}
                 title={
-                  isDark
-                    ? 'التحويل إلى الوضع الفاتح (Light Mode)'
-                    : 'التحويل إلى الوضع الداكن (Dark Mode)'
+                  language === 'ar'
+                    ? isDark
+                      ? 'التحويل إلى الوضع الفاتح'
+                      : 'التحويل إلى الوضع الداكن'
+                    : isDark
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode'
                 }
-                aria-label="تبديل مظهر الموقع"
+                aria-label={language === 'ar' ? 'تبديل مظهر الموقع' : 'Toggle theme'}
               >
                 {isDark ? (
                   <Sun className="w-4 h-4" />
@@ -238,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'hover:bg-neutral-900 text-white'
                     : 'hover:bg-neutral-100 text-black'
                 }`}
-                aria-label={`عربة التسوق (${itemCount} منتجات)`}
+                aria-label={`${t('nav.cart', 'Shopping Bag')} (${itemCount})`}
               >
                 <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.8]" />
 
@@ -274,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
               <input
                 type="text"
                 autoFocus
-                placeholder="ابحث عن تيشيرت، هودي، بنطلون، أو قصة معينة..."
+                placeholder={t('nav.search_placeholder', 'Search t-shirts, polos, shirts...')}
                 value={headerSearchQuery}
                 onChange={(e) => setHeaderSearchQuery(e.target.value)}
                 className={`w-full rounded-xl py-2.5 pr-10 pl-4 text-xs focus:outline-none transition-colors border ${
@@ -361,7 +365,13 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
 
                 <span>
-                  {isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+                  {language === 'ar'
+                    ? isDark
+                      ? 'الوضع الفاتح'
+                      : 'الوضع الداكن'
+                    : isDark
+                    ? 'Light mode'
+                    : 'Dark mode'}
                 </span>
               </button>
             </div>
