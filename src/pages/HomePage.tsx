@@ -1070,7 +1070,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         )}
       </section>
 
-      {/* =====================================================================
+            {/* =====================================================================
           4. EDITORIAL PROMO BANNER
           ===================================================================== */}
 
@@ -1091,22 +1091,28 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <div className="space-y-1">
                 <p className="text-sm sm:text-base text-neutral-300 font-medium">
-                  {t(
-                    'home.editorial_subtitle',
-                    '...More Than Just Clothes'
-                  )}
+                  {language === 'en'
+                    ? content?.editorial_subtitle_en ||
+                      '...More Than Just Clothes'
+                    : content?.editorial_subtitle_ar ||
+                      '...أكثر من مجرد ملابس'}
                 </p>
 
                 <h3 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-                  {t('home.editorial_title', 'It is a Presence')}
+                  {language === 'en'
+                    ? content?.editorial_title_en ||
+                      'It is a Presence'
+                    : content?.editorial_title_ar ||
+                      'إنه حضور'}
                 </h3>
               </div>
 
               <p className="text-xs sm:text-sm text-neutral-400 max-w-md leading-relaxed">
-                {t(
-                  'home.editorial_desc',
-                  'Designs that reflect your modern taste, with refined details and premium cotton fabrics made for every moment of your day.'
-                )}
+                {language === 'en'
+                  ? content?.editorial_description_en ||
+                    'Designs that reflect your modern taste, with refined details and premium cotton fabrics made for every moment of your day.'
+                  : content?.editorial_description_ar ||
+                    'تصاميم تعكس ذوقك العصري، بتفاصيل راقية وخامات قطنية فاخرة تناسب كل لحظة في يومك.'}
               </p>
 
               <div className="pt-2">
@@ -1115,8 +1121,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <span>
-                    {t('home.discover_more', 'Discover More')}
+                    {language === 'en'
+                      ? content?.editorial_button_text_en ||
+                        'Discover More'
+                      : content?.editorial_button_text_ar ||
+                        'اكتشف المزيد'}
                   </span>
+
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
@@ -1126,9 +1137,16 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-800 shadow-xl bg-black">
                 <img
                   src={resolveImageUrl(
-                    '/images/hero_streetwear_editorial_1790342899745.jpg'
+                    content?.editorial_image_url ||
+                      '/images/hero_streetwear_editorial_1790342899745.jpg'
                   )}
-                  alt="Streetwear Detail"
+                  alt={
+                    language === 'en'
+                      ? content?.editorial_title_en ||
+                        'Streetwear Detail'
+                      : content?.editorial_title_ar ||
+                        'تفاصيل ستايل'
+                  }
                   className="w-full h-full object-cover object-bottom opacity-80"
                   loading="lazy"
                 />
@@ -1142,7 +1160,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </section>
-
+      
       {/* =====================================================================
           5. FEATURED PRODUCTS
           ===================================================================== */}

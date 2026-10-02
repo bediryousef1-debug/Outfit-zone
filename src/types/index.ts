@@ -225,6 +225,17 @@ export interface StoreContent {
   announcement_text_ar?: string;
   announcement_text_en?: string;
 
+  // Editorial Promo Section
+  editorial_subtitle_ar?: string;
+  editorial_subtitle_en?: string;
+  editorial_title_ar?: string;
+  editorial_title_en?: string;
+  editorial_description_ar?: string;
+  editorial_description_en?: string;
+  editorial_button_text_ar?: string;
+  editorial_button_text_en?: string;
+  editorial_image_url?: string;
+
   // Visibility Toggles
   show_hero: boolean;
   show_featured: boolean;
