@@ -341,10 +341,11 @@ export const AdminContentPage: React.FC = () => {
           سياسات المتجر، الشحن، والفوتر (Policies & Footer)
         </h3>
 
+        {/* Shipping */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-              نص الشحن والتوصيل (Shipping Text)
+              نص الشحن والتوصيل بالعربية (Shipping Text AR)
             </label>
             <input
               type="text"
@@ -356,7 +357,23 @@ export const AdminContentPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-              نص المعاينة المجانية قبل الدفع (Inspection Text)
+              نص الشحن والتوصيل بالإنجليزية (Shipping Text EN)
+            </label>
+            <input
+              type="text"
+              value={content.shipping_text_en || ''}
+              onChange={(e) => handleChange('shipping_text_en', e.target.value)}
+              dir="ltr"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Inspection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              نص المعاينة المجانية بالعربية (Inspection Text AR)
             </label>
             <input
               type="text"
@@ -365,12 +382,26 @@ export const AdminContentPage: React.FC = () => {
               className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              نص المعاينة المجانية بالإنجليزية (Inspection Text EN)
+            </label>
+            <input
+              type="text"
+              value={content.inspection_text_en || ''}
+              onChange={(e) => handleChange('inspection_text_en', e.target.value)}
+              dir="ltr"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
         </div>
 
+        {/* Exchange Policy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-              سياسة استبدال المقاس (Exchange Policy)
+              سياسة استبدال المقاس بالعربية (Exchange Policy AR)
             </label>
             <input
               type="text"
@@ -382,12 +413,41 @@ export const AdminContentPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-              سياسة الإرجاع (Return Policy)
+              سياسة استبدال المقاس بالإنجليزية (Exchange Policy EN)
+            </label>
+            <input
+              type="text"
+              value={content.exchange_policy_en || ''}
+              onChange={(e) => handleChange('exchange_policy_en', e.target.value)}
+              dir="ltr"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Return Policy */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              سياسة الإرجاع بالعربية (Return Policy AR)
             </label>
             <input
               type="text"
               value={content.return_policy}
               onChange={(e) => handleChange('return_policy', e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              سياسة الإرجاع بالإنجليزية (Return Policy EN)
+            </label>
+            <input
+              type="text"
+              value={content.return_policy_en || ''}
+              onChange={(e) => handleChange('return_policy_en', e.target.value)}
+              dir="ltr"
               className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors"
             />
           </div>
