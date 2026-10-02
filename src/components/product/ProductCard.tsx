@@ -89,7 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
               ? 'bg-black/40 text-neutral-300 hover:text-red-400 hover:bg-black/70'
               : 'bg-white/70 text-neutral-600 hover:text-red-500 hover:bg-white'
           }`}
-          aria-label="{t('product.add_favorite', 'Add to Favorites')}"
+          aria-label={t('product.add_favorite', 'Add to Favorites')}
         >
           <Heart className="w-4 h-4" />
         </button>

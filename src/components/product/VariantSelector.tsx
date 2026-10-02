@@ -212,7 +212,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
 
                 <span className="text-[10px] block opacity-75 font-sans mt-0.5">
                   {!isAvailable
-                    ? t('product.out_of_stock', 'غير متوفر')
+                    ? t('product.sold_out', 'Sold out')
                     : stock <= 3
                     ? `${t('product.remaining', 'باقي')} ${stock}`
                     : t('product.available', 'متوفر')}
@@ -256,7 +256,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
                 ? 'hover:bg-neutral-800 text-neutral-200 hover:text-white'
                 : 'hover:bg-white text-neutral-700 hover:text-black shadow-xs'
             }`}
-            aria-label="تقليل الكمية"
+            aria-label={t('cart.decrease', 'Decrease quantity')}
           >
             <Minus className="w-4 h-4 stroke-[2.5]" />
           </button>
@@ -287,7 +287,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
                 ? 'hover:bg-neutral-800 text-neutral-200 hover:text-white'
                 : 'hover:bg-white text-neutral-700 hover:text-black shadow-xs'
             }`}
-            aria-label="زيادة الكمية"
+            aria-label={t('cart.increase', 'Increase quantity')}
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
           </button>
