@@ -34,6 +34,7 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.all_products': 'جميع المنتجات',
     'footer.about_brand': 'قصة البراند',
     'footer.policies': 'السياسات والشحن',
+
     // Home Page
     'home.trust.cod_title': 'دفع عند الاستلام',
     'home.trust.cod_subtitle': 'كاش',
@@ -82,6 +83,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.review_text_short': 'الرأي لازم يكون 5 حروف على الأقل.',
     'home.review_rating_required': 'من فضلك اختر تقييم من 1 إلى 5 نجوم.',
     'home.review_success': 'شكرًا لرأيك ❤️ سيتم مراجعته واعتماده قبل ظهوره على الموقع.',
+
     'about.title': 'عن البراند',
     'about.story_title': 'قصتنا في Outfit Zone',
     'about.description': 'براند ملابس ستريت وير رجالي مصري يركز على تقديم تصاميم يومية حديثة بقصات Box Fit و Oversized تلائم الشباب العصري.',
@@ -96,6 +98,7 @@ const translations: Record<Language, Record<string, string>> = {
     'about.trust_title': 'ثقة وأمان المعاينة',
     'about.trust_text': 'دفع عند الاستلام مع إمكانية فتح الشحنة والتأكد من المقاس والخامة قبل سداد أي مبلغ.',
     'about.explore': 'استكشف المنتجات الآن',
+
     'product.add_to_cart': 'أضف للسلة',
     'product.added_success': 'تمت الإضافة بنجاح! ✓',
     'product.select_color': 'يرجى اختيار اللون',
@@ -177,6 +180,22 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.search': 'بحث',
     'hero.oversized.desc': 'ستايل شارع عصري بقصات مريحة لإطلالة مميزة.',
 
+    // Filters
+    'filters.title': 'تصفية وترتيب المنتجات',
+    'filters.sort_by': 'ترتيب حسب',
+    'filters.newest': 'الأحدث',
+    'filters.price_low': 'السعر: من الأقل للأعلى',
+    'filters.price_high': 'السعر: من الأعلى للأقل',
+    'filters.category': 'القسم',
+    'filters.all': 'الكل',
+    'filters.size': 'المقاس',
+    'filters.any_size': 'أي مقاس',
+    'filters.color': 'اللون',
+    'filters.all_colors': 'كل الألوان',
+    'filters.in_stock_only': 'عرض المنتجات المتاحة فقط',
+    'filters.apply': 'تطبيق الفلاتر',
+    'filters.reset': 'إعادة تعيين',
+
     // Cart & Drawer
     'cart.title': 'عربة التسوق',
     'cart.empty': 'عربة التسوق فارغة',
@@ -245,7 +264,6 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.total_on_delivery': 'الإجمالي عند الاستلام:',
     'checkout.confirm_cod': 'تأكيد الطلب الآن (دفع عند الاستلام)',
     'checkout.policy_agreement': 'بالضغط على تأكيد الطلب، فإنك توافق على سياسات الاستبدال والإرجاع الخاصة بـ Outfit Zone.',
-
 
     'checkout.page_title': 'إتمام الطلب السريع',
     'checkout.subtitle': 'الدفع عند الاستلام كاش مع إمكانية المعاينة قبل الاستلام',
@@ -317,6 +335,7 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.contact_us': 'تواصل معنا مباشرة',
     'footer.whatsapp_chat': 'محادثة عبر واتساب',
   },
+
   en: {
     // Navigation & Header
     'nav.home': 'Home',
@@ -343,7 +362,6 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.policies': 'Policies & Shipping',
 
     // Home Page
-
     'hero.oversized.desc': 'Modern street style with relaxed cuts for a unique look.',
 
     'home.trust.cod_title': 'Cash on Delivery',
@@ -393,6 +411,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.review_text_short': 'Your review must be at least 5 characters.',
     'home.review_rating_required': 'Please select a rating from 1 to 5 stars.',
     'home.review_success': 'Thank you for your review ❤️ It will be reviewed and approved before appearing on the website.',
+
     'about.title': 'About the Brand',
     'about.story_title': 'Our Story at Outfit Zone',
     'about.description': 'An Egyptian men’s streetwear brand focused on modern everyday designs with Box Fit and Oversized cuts made for today’s youth.',
@@ -513,6 +532,22 @@ const translations: Record<Language, Record<string, string>> = {
     'product.available': 'In Stock',
     'product.remaining': 'Only',
 
+    // Filters
+    'filters.title': 'Filter & Sort Products',
+    'filters.sort_by': 'Sort By',
+    'filters.newest': 'Newest',
+    'filters.price_low': 'Price: Low to High',
+    'filters.price_high': 'Price: High to Low',
+    'filters.category': 'Category',
+    'filters.all': 'All',
+    'filters.size': 'Size',
+    'filters.any_size': 'Any Size',
+    'filters.color': 'Color',
+    'filters.all_colors': 'All Colors',
+    'filters.in_stock_only': 'Show available products only',
+    'filters.apply': 'Apply Filters',
+    'filters.reset': 'Reset',
+
     // Cart & Drawer
     'cart.title': 'Shopping Bag',
     'cart.empty': 'Your bag is empty',
@@ -526,7 +561,6 @@ const translations: Record<Language, Record<string, string>> = {
     'cart.total_items': 'items',
 
     // Checkout
-
     'checkout.name_required': 'Please enter your full name.',
     'checkout.phone_required': 'Phone number is required to confirm delivery.',
     'checkout.phone_invalid': 'Please enter a valid Egyptian mobile number starting with 010, 011, 012, or 015.',
@@ -632,20 +666,29 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const getInitialLanguage = (): Language => {
   if (typeof window === 'undefined') return 'ar';
+
   try {
     const saved = localStorage.getItem('oz_lang');
-    if (saved === 'ar' || saved === 'en') return saved;
+
+    if (saved === 'ar' || saved === 'en') {
+      return saved;
+    }
   } catch {}
+
   return 'ar';
 };
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+export const LanguageProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
+  const [language, setLanguageState] =
+    useState<Language>(getInitialLanguage);
 
   // The application layout geometry is permanently locked to RTL across both Arabic and English.
   // This guarantees that switching language only changes text content and never reverses or
   // mirrors the header, navbar, hero slider, product cards, buttons, drawers, or sidebar.
   const direction: 'rtl' | 'ltr' = 'rtl';
+
   const isRtl = language === 'ar';
 
   useEffect(() => {
@@ -667,6 +710,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const t = (key: string, fallback?: string): string => {
     const langDict = translations[language] || translations.ar;
+
     return langDict[key] || fallback || key;
   };
 
@@ -688,8 +732,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
+
   if (!context) {
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
+
   return context;
 };
