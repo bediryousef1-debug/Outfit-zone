@@ -41,7 +41,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { categories, content, heroSlides, isLoading: storeLoading } = useStore();
   const { isDark } = useTheme();
-  const { isRtl, t } = useLanguage();
+  const { isRtl, t, language } = useLanguage();
 
   const isRTL = isRtl;
 
@@ -981,6 +981,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                 ? resolveImageUrl(cat.image_url)
                 : null;
 
+              const localizedCategoryName =
+                language === 'en'
+                  ? cat.name_en || cat.name
+                  : cat.name;
+
               return (
                 <div
                   key={cat.id}
@@ -1000,13 +1005,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   aria-label={`${t(
                     'home.browse_category',
                     'Browse category'
-                  )} ${cat.name}`}
+                  )} ${localizedCategoryName}`}
                 >
                   <div className="relative aspect-[4/4.5] sm:aspect-[4/5] w-full overflow-hidden bg-neutral-900/10">
                     {categoryImage ? (
                       <img
                         src={categoryImage}
-                        alt={cat.name}
+                        alt={localizedCategoryName}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
                       />
@@ -1040,7 +1045,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                             : 'text-black group-hover:text-neutral-800'
                         }`}
                       >
-                        {cat.name}
+                        {localizedCategoryName}
                       </h3>
 
                       <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest text-neutral-400 uppercase block mt-0.5">
