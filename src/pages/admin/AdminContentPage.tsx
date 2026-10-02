@@ -10,6 +10,8 @@ import {
   RefreshCw,
   ToggleRight,
   Sparkles,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export const AdminContentPage: React.FC = () => {
@@ -17,6 +19,7 @@ export const AdminContentPage: React.FC = () => {
   const [content, setContent] = useState<StoreContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -26,7 +29,37 @@ export const AdminContentPage: React.FC = () => {
 
     try {
       const data = await api.getStoreContent();
-      setContent(data);
+
+      setContent({
+        ...data,
+        editorial_subtitle_ar:
+          data.editorial_subtitle_ar ||
+          '...أكثر من مجرد ملابس',
+        editorial_subtitle_en:
+          data.editorial_subtitle_en ||
+          '...More Than Just Clothes',
+        editorial_title_ar:
+          data.editorial_title_ar ||
+          'إنه حضور',
+        editorial_title_en:
+          data.editorial_title_en ||
+          'It is a Presence',
+        editorial_description_ar:
+          data.editorial_description_ar ||
+          'تصاميم تعكس ذوقك العصري، بتفاصيل راقية وخامات قطنية فاخرة تناسب كل لحظة في يومك.',
+        editorial_description_en:
+          data.editorial_description_en ||
+          'Designs that reflect your modern taste, with refined details and premium cotton fabrics made for every moment of your day.',
+        editorial_button_text_ar:
+          data.editorial_button_text_ar ||
+          'اكتشف المزيد',
+        editorial_button_text_en:
+          data.editorial_button_text_en ||
+          'Discover More',
+        editorial_image_url:
+          data.editorial_image_url ||
+          '/images/hero_streetwear_editorial_1790342899745.jpg',
+      });
     } catch (err: any) {
       setError(err.message || 'فشل جلب محتوى المتجر');
     } finally {
@@ -45,6 +78,36 @@ export const AdminContentPage: React.FC = () => {
       ...content,
       [field]: value,
     });
+  };
+
+  const handleUploadEditorialImage = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const imageUrl = await api.uploadStoreImage(file);
+
+      handleChange('editorial_image_url', imageUrl);
+
+      setSuccessMsg(
+        'تم رفع صورة الـ Editorial بنجاح. اضغط حفظ التعديلات لتثبيت الرابط في Supabase.'
+      );
+
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (err: any) {
+      setError(err.message || 'فشل رفع صورة الـ Editorial');
+    } finally {
+      setIsUploadingImage(false);
+
+      e.target.value = '';
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -598,29 +661,86 @@ export const AdminContentPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Image URL */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-            رابط صورة الـ Editorial (Editorial Image URL)
-          </label>
+        {/* Image Upload + URL */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              صورة الـ Editorial (Editorial Image)
+            </label>
 
-          <input
-            type="text"
-            value={content.editorial_image_url || ''}
-            onChange={(e) =>
-              handleChange(
-                'editorial_image_url',
-                e.target.value
-              )
-            }
-            dir="ltr"
-            placeholder="/images/hero_streetwear_editorial_1790342899745.jpg"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors font-mono"
-          />
+            <div className="flex flex-col sm:flex-row gap-3">
+              <label
+                className={`flex-1 min-h-[46px] px-4 py-3 rounded-xl border border-neutral-800 bg-neutral-900 hover:border-neutral-600 transition-colors flex items-center justify-center gap-2 text-xs font-bold text-neutral-200 cursor-pointer ${
+                  isUploadingImage
+                    ? 'opacity-50 pointer-events-none'
+                    : ''
+                }`}
+              >
+                {isUploadingImage ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>جاري رفع الصورة...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>اختيار صورة من الجهاز</span>
+                  </>
+                )}
 
-          <p className="text-[10px] text-neutral-500 mt-1.5">
-            يمكنك وضع مسار صورة موجودة بالفعل أو رابط صورة مباشر.
-          </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadEditorialImage}
+                  disabled={isUploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              <div className="flex-1 min-h-[46px] px-4 py-3 rounded-xl border border-neutral-800 bg-neutral-900 flex items-center gap-2 text-xs text-neutral-500">
+                <ImageIcon className="w-4 h-4 shrink-0" />
+                <span>
+                  اختر صورة وسيتم رفعها تلقائيًا إلى Storage
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {content.editorial_image_url && (
+            <div className="rounded-xl overflow-hidden border border-neutral-800 bg-black">
+              <div className="aspect-[16/7] sm:aspect-[16/6]">
+                <img
+                  src={content.editorial_image_url}
+                  alt="Editorial Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              رابط صورة الـ Editorial (Editorial Image URL)
+            </label>
+
+            <input
+              type="text"
+              value={content.editorial_image_url || ''}
+              onChange={(e) =>
+                handleChange(
+                  'editorial_image_url',
+                  e.target.value
+                )
+              }
+              dir="ltr"
+              placeholder="/images/hero_streetwear_editorial_1790342899745.jpg"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-xs focus:outline-none focus:border-white transition-colors font-mono"
+            />
+
+            <p className="text-[10px] text-neutral-500 mt-1.5">
+              يمكنك وضع مسار صورة موجودة بالفعل أو رابط صورة مباشر، أو اختيار صورة من جهازك ورفعها إلى Storage.
+            </p>
+          </div>
         </div>
       </div>
 

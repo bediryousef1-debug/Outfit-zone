@@ -24,15 +24,21 @@ const memoryCache = new Map<string, { data: any; timestamp: number; ttl: number 
 function getCached<T>(key: string): T | null {
   const entry = memoryCache.get(key);
   if (!entry) return null;
+
   if (Date.now() - entry.timestamp > entry.ttl) {
     memoryCache.delete(key);
     return null;
   }
+
   return entry.data as T;
 }
 
 function setCached<T>(key: string, data: T, ttlMs = 60_000): void {
-  memoryCache.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
+  memoryCache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl: ttlMs,
+  });
 }
 
 export function invalidateApiCache(prefix?: string): void {
@@ -40,6 +46,7 @@ export function invalidateApiCache(prefix?: string): void {
     memoryCache.clear();
     return;
   }
+
   for (const k of memoryCache.keys()) {
     if (k.startsWith(prefix)) {
       memoryCache.delete(k);
@@ -77,6 +84,7 @@ export const api = {
     if (cached) return cached;
 
     let result: StoreSettings | null = null;
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -94,35 +102,46 @@ export const api = {
     if (!result) {
       try {
         const res = await fetch(`${API_BASE}/settings`);
-        if (res.ok) result = await res.json();
+
+        if (res.ok) {
+          result = await res.json();
+        }
       } catch {}
     }
 
-    const finalSettings = result || {
-      id: 'settings_default',
-      store_name: 'Outfit Zone',
-      shipping_fee: 65,
-      whatsapp_number: '201012345678',
-      phone_number: '01012345678',
-      inspection_available: true,
-      exchange_policy: 'استبدال المقاس متاح خلال 14 يوم من تاريخ الاستلام.',
-      return_policy:
-        'إرجاع المنتج متاح خلال 3 أيام في حالته الأصلية وبطاقة المنتج.',
-      cod_message: 'الدفع عند الاستلام فقط لجميع المحافظات داخل مصر.',
-      updated_at: new Date().toISOString(),
-    };
+    const finalSettings =
+      result || {
+        id: 'settings_default',
+        store_name: 'Outfit Zone',
+        shipping_fee: 65,
+        whatsapp_number: '201012345678',
+        phone_number: '01012345678',
+        inspection_available: true,
+        exchange_policy:
+          'استبدال المقاس متاح خلال 14 يوم من تاريخ الاستلام.',
+        return_policy:
+          'إرجاع المنتج متاح خلال 3 أيام في حالته الأصلية وبطاقة المنتج.',
+        cod_message:
+          'الدفع عند الاستلام فقط لجميع المحافظات داخل مصر.',
+        updated_at: new Date().toISOString(),
+      };
 
     setCached('settings', finalSettings, 120_000);
+
     return finalSettings;
   },
 
   // 1b. Fetch Shipping Rates per Governorate
-  async getShippingRates(includeInactive = false): Promise<ShippingRate[]> {
+  async getShippingRates(
+    includeInactive = false
+  ): Promise<ShippingRate[]> {
     const cacheKey = `shipping_rates_${includeInactive}`;
     const cached = getCached<ShippingRate[]>(cacheKey);
+
     if (cached) return cached;
 
     let result: ShippingRate[] | null = null;
+
     if (isSupabaseConfigured && supabase) {
       try {
         let query = supabase
@@ -147,11 +166,14 @@ export const api = {
     if (!result) {
       try {
         const res = await fetch(
-          `${API_BASE}/shipping-rates${includeInactive ? '?all=true' : ''}`
+          `${API_BASE}/shipping-rates${
+            includeInactive ? '?all=true' : ''
+          }`
         );
 
         if (res.ok) {
           const json = await res.json();
+
           if (Array.isArray(json) && json.length > 0) {
             result = json;
           }
@@ -169,6 +191,7 @@ export const api = {
       }));
 
     setCached(cacheKey, finalRates, 120_000);
+
     return finalRates;
   },
 
@@ -227,9 +250,9 @@ export const api = {
   },
 
   // 1d. Public: Get Hero Slides
-  // Loads only active slides for the storefront.
   async getHeroSlides(): Promise<HeroSlide[]> {
     const cached = getCached<HeroSlide[]>('hero_slides_public');
+
     if (cached) return cached;
 
     let result: HeroSlide[] | null = null;
@@ -554,6 +577,7 @@ export const api = {
   // 2. Fetch Categories
   async getCategories(): Promise<Category[]> {
     const cached = getCached<Category[]>('categories');
+
     if (cached) return cached;
 
     if (isSupabaseConfigured && supabase) {
@@ -573,7 +597,9 @@ export const api = {
       }
 
       const resData = data || [];
+
       setCached('categories', resData, 120_000);
+
       return resData;
     }
 
@@ -582,7 +608,9 @@ export const api = {
 
       if (res.ok) {
         const json = await res.json();
+
         setCached('categories', json, 120_000);
+
         return json;
       }
     } catch {}
@@ -594,8 +622,12 @@ export const api = {
   async getProducts(
     options?: { admin?: boolean }
   ): Promise<Product[]> {
-    const cacheKey = options?.admin ? 'products_admin' : 'products_public';
+    const cacheKey = options?.admin
+      ? 'products_admin'
+      : 'products_public';
+
     const cached = getCached<Product[]>(cacheKey);
+
     if (cached) return cached;
 
     if (isSupabaseConfigured && supabase) {
@@ -632,13 +664,15 @@ export const api = {
       ]);
 
       if (varRes.error) {
-        throw new Error(varRes.error.message || 'فشل تحميل مخزون المنتجات');
+        throw new Error(
+          varRes.error.message ||
+            'فشل تحميل مخزون المنتجات'
+        );
       }
 
       if (pRes.error) {
         throw new Error(
-          pRes.error.code ===
-            'PGRST205' ||
+          pRes.error.code === 'PGRST205' ||
           pRes.error.message.includes(
             'schema cache'
           )
@@ -648,47 +682,33 @@ export const api = {
         );
       }
 
-      const allImages =
-        imgRes.data || [];
-
-      const allVariants =
-        varRes.data || [];
-
-      const allCategories =
-        catRes.data || [];
+      const allImages = imgRes.data || [];
+      const allVariants = varRes.data || [];
+      const allCategories = catRes.data || [];
 
       const result = (
         pRes.data || []
       ).map((p: any) => {
-        const category =
-          allCategories.find(
-            (c: any) =>
-              c.id ===
-              p.category_id
+        const category = allCategories.find(
+          (c: any) =>
+            c.id === p.category_id
+        );
+
+        const images = allImages
+          .filter(
+            (img: any) =>
+              img.product_id === p.id
+          )
+          .sort(
+            (a: any, b: any) =>
+              (a.sort_order ?? 0) -
+              (b.sort_order ?? 0)
           );
 
-        const images =
-          allImages
-            .filter(
-              (img: any) =>
-                img.product_id ===
-                p.id
-            )
-            .sort(
-              (
-                a: any,
-                b: any
-              ) =>
-                (a.sort_order ?? 0) -
-                (b.sort_order ?? 0)
-            );
-
-        const variants =
-          allVariants.filter(
-            (v: any) =>
-              v.product_id ===
-              p.id
-          );
+        const variants = allVariants.filter(
+          (v: any) =>
+            v.product_id === p.id
+        );
 
         return {
           ...p,
@@ -698,14 +718,18 @@ export const api = {
         };
       });
 
-      setCached(cacheKey, result, 60_000);
+      setCached(
+        cacheKey,
+        result,
+        60_000
+      );
+
       return result;
     }
 
     try {
       const headers: HeadersInit = {
-        'Content-Type':
-          'application/json',
+        'Content-Type': 'application/json',
       };
 
       if (options?.admin) {
@@ -714,12 +738,11 @@ export const api = {
             session,
           },
         } =
-          await supabase?.auth.getSession() ||
-          { data: { session: null } };
+          await supabase?.auth.getSession() || {
+            data: { session: null },
+          };
 
-        if (
-          !session?.access_token
-        ) {
+        if (!session?.access_token) {
           throw new Error(
             'جلسة الأدمن غير صالحة.'
           );
@@ -742,7 +765,13 @@ export const api = {
 
       if (res.ok) {
         const json = await res.json();
-        setCached(cacheKey, json, 60_000);
+
+        setCached(
+          cacheKey,
+          json,
+          60_000
+        );
+
         return json;
       }
 
@@ -768,163 +797,331 @@ export const api = {
   },
 
   // 4. Fetch Single Product By Slug
-  async getProductBySlug(slug: string): Promise<Product> {
-    // The slug may arrive percent-encoded (after a browser refresh,
-    // window.location.pathname is always encoded) or raw (in-app navigation).
-    // Normalize once so both paths resolve to the same product.
-    let normalizedSlug = String(slug || '').trim();
+  async getProductBySlug(
+    slug: string
+  ): Promise<Product> {
+    let normalizedSlug =
+      String(slug || '').trim();
+
     try {
-      normalizedSlug = decodeURIComponent(normalizedSlug);
+      normalizedSlug =
+        decodeURIComponent(
+          normalizedSlug
+        );
     } catch {
       // keep the raw value when it is not valid percent-encoding
     }
-    normalizedSlug = normalizedSlug.replace(/\/+$/, '');
+
+    normalizedSlug =
+      normalizedSlug.replace(
+        /\/+$/,
+        ''
+      );
 
     const notFound = () => {
-      const err: Error & { code?: string } = new Error('PRODUCT_NOT_FOUND');
-      err.code = 'PRODUCT_NOT_FOUND';
+      const err: Error & {
+        code?: string;
+      } =
+        new Error(
+          'PRODUCT_NOT_FOUND'
+        );
+
+      err.code =
+        'PRODUCT_NOT_FOUND';
+
       return err;
     };
 
-    if (!normalizedSlug) throw notFound();
+    if (!normalizedSlug) {
+      throw notFound();
+    }
 
-    const cacheKey = `product_slug_${normalizedSlug}`;
-    const cached = getCached<Product>(cacheKey);
-    if (cached) return cached;
+    const cacheKey =
+      `product_slug_${normalizedSlug}`;
 
-    const sortImages = (images: any[] = []) =>
-      [...images].sort(
-        (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    const cached =
+      getCached<Product>(
+        cacheKey
       );
 
-    // 1) Supabase (direct from the browser)
-    if (isSupabaseConfigured && supabase) {
+    if (cached) return cached;
+
+    const sortImages = (
+      images: any[] = []
+    ) =>
+      [...images].sort(
+        (a: any, b: any) =>
+          (a.sort_order ?? 0) -
+          (b.sort_order ?? 0)
+      );
+
+    // 1) Supabase
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data: pData, error: pErr } = await supabase
-          .from('products')
-          .select('*')
-          .eq('slug', normalizedSlug)
-          .neq('is_active', false)
-          .maybeSingle();
+        const {
+          data: pData,
+          error: pErr,
+        } =
+          await supabase
+            .from('products')
+            .select('*')
+            .eq(
+              'slug',
+              normalizedSlug
+            )
+            .neq(
+              'is_active',
+              false
+            )
+            .maybeSingle();
 
         if (!pErr && pData) {
-          const [imgRes, varRes, catRes] = await Promise.all([
-            supabase.from('product_images').select('*').eq('product_id', pData.id),
-            supabase.from('product_variants').select('*').eq('product_id', pData.id),
-            pData.category_id
-              ? supabase.from('categories').select('*').eq('id', pData.category_id).maybeSingle()
-              : Promise.resolve({ data: null }),
-          ]);
+          const [
+            imgRes,
+            varRes,
+            catRes,
+          ] =
+            await Promise.all([
+              supabase
+                .from(
+                  'product_images'
+                )
+                .select('*')
+                .eq(
+                  'product_id',
+                  pData.id
+                ),
+
+              supabase
+                .from(
+                  'product_variants'
+                )
+                .select('*')
+                .eq(
+                  'product_id',
+                  pData.id
+                ),
+
+              pData.category_id
+                ? supabase
+                    .from(
+                      'categories'
+                    )
+                    .select('*')
+                    .eq(
+                      'id',
+                      pData.category_id
+                    )
+                    .maybeSingle()
+                : Promise.resolve({
+                    data: null,
+                  }),
+            ]);
 
           if (varRes.error) {
-            throw new Error(varRes.error.message || 'Failed to load product variants');
+            throw new Error(
+              varRes.error.message ||
+                'Failed to load product variants'
+            );
           }
 
           const result: Product = {
             ...pData,
-            category: catRes.data || undefined,
-            images: sortImages(imgRes.data || []),
-            variants: varRes.data || [],
+            category:
+              catRes.data ||
+              undefined,
+            images: sortImages(
+              imgRes.data || []
+            ),
+            variants:
+              varRes.data || [],
           };
 
-          setCached(cacheKey, result, 60_000);
+          setCached(
+            cacheKey,
+            result,
+            60_000
+          );
+
           return result;
         }
 
         if (pErr) {
-          console.warn('Supabase getProductBySlug notice:', pErr.message);
+          console.warn(
+            'Supabase getProductBySlug notice:',
+            pErr.message
+          );
         }
       } catch (err) {
-        console.warn('Supabase getProductBySlug notice:', err);
+        console.warn(
+          'Supabase getProductBySlug notice:',
+          err
+        );
       }
-      // Fall through to the server API instead of reporting "not available":
-      // the product may exist on the server catalog even when the direct
-      // Supabase lookup failed or returned nothing.
     }
 
-    // 2) Server API
-    const res = await fetch(`${API_BASE}/products/${encodeURIComponent(normalizedSlug)}`);
+    const res = await fetch(
+      `${API_BASE}/products/${encodeURIComponent(
+        normalizedSlug
+      )}`
+    );
 
     if (res.status === 404) {
       throw notFound();
     }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Failed to load product (${res.status})`);
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
+
+      throw new Error(
+        err.error ||
+          `Failed to load product (${res.status})`
+      );
     }
 
-    const json = await res.json();
-    if (!json || !json.id) throw notFound();
+    const json =
+      await res.json();
+
+    if (!json || !json.id) {
+      throw notFound();
+    }
 
     const result: Product = {
       ...json,
-      images: sortImages(json.images || []),
-      variants: json.variants || [],
+      images: sortImages(
+        json.images || []
+      ),
+      variants:
+        json.variants || [],
     };
 
-    setCached(cacheKey, result, 60_000);
+    setCached(
+      cacheKey,
+      result,
+      60_000
+    );
+
     return result;
   },
 
   // 4b. Fetch Single Product By ID
-  async getProductById(id: string): Promise<Product> {
-    const cacheKey = `product_id_${id}`;
-    const cached = getCached<Product>(cacheKey);
+  async getProductById(
+    id: string
+  ): Promise<Product> {
+    const cacheKey =
+      `product_id_${id}`;
+
+    const cached =
+      getCached<Product>(
+        cacheKey
+      );
+
     if (cached) return cached;
 
-    if (isSupabaseConfigured && supabase) {
+    if (
+      isSupabaseConfigured &&
+      supabase
+    ) {
       try {
-        const { data: pData, error: pErr } = await supabase
-          .from('products')
-          .select(
-            '*, category:categories(*), images:product_images(*), variants:product_variants(*)'
-          )
-          .eq('id', id)
-          .maybeSingle();
+        const {
+          data: pData,
+          error: pErr,
+        } =
+          await supabase
+            .from('products')
+            .select(
+              '*, category:categories(*), images:product_images(*), variants:product_variants(*)'
+            )
+            .eq(
+              'id',
+              id
+            )
+            .maybeSingle();
 
         if (!pErr && pData) {
           const result = {
             ...pData,
-            images: (pData.images || []).sort(
-              (a: any, b: any) =>
-                (a.sort_order ?? 0) - (b.sort_order ?? 0)
+            images: (
+              pData.images || []
+            ).sort(
+              (
+                a: any,
+                b: any
+              ) =>
+                (a.sort_order ?? 0) -
+                (b.sort_order ?? 0)
             ),
           };
-          setCached(cacheKey, result, 60_000);
+
+          setCached(
+            cacheKey,
+            result,
+            60_000
+          );
+
           return result;
         }
       } catch (err) {
-        console.warn('Supabase getProductById notice:', err);
+        console.warn(
+          'Supabase getProductById notice:',
+          err
+        );
       }
     }
 
-    const res = await fetch(`${API_BASE}/products/id/${id}`);
+    const res =
+      await fetch(
+        `${API_BASE}/products/id/${id}`
+      );
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'المنتج غير متوفر');
+      const err =
+        await res
+          .json()
+          .catch(() => ({}));
+
+      throw new Error(
+        err.error ||
+          'المنتج غير متوفر'
+      );
     }
-    const json = await res.json();
-    setCached(cacheKey, json, 60_000);
+
+    const json =
+      await res.json();
+
+    setCached(
+      cacheKey,
+      json,
+      60_000
+    );
+
     return json;
   },
 
   // 5. Submit Guest COD Order
-  // Orders MUST go through the server so Telegram notification is triggered.
   async submitGuestOrder(
     orderData: OrderCreateRequest
   ): Promise<OrderCreateResponse> {
-    const res = await fetch(
-      `${API_BASE}/orders`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':
-            'application/json',
-        },
-        body: JSON.stringify(orderData),
-      }
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/orders`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify(
+            orderData
+          ),
+        }
+      );
 
     const data =
       await res
@@ -963,15 +1160,16 @@ export const api = {
       const {
         data,
         error,
-      } = await supabase.rpc(
-        'get_guest_order_receipt',
-        {
-          p_order_number:
-            cleanNum,
-          p_receipt_token:
-            cleanToken,
-        }
-      );
+      } =
+        await supabase.rpc(
+          'get_guest_order_receipt',
+          {
+            p_order_number:
+              cleanNum,
+            p_receipt_token:
+              cleanToken,
+          }
+        );
 
       if (error) {
         throw new Error(
@@ -994,9 +1192,10 @@ export const api = {
           )}`
         : '';
 
-    const res = await fetch(
-      `${API_BASE}/orders/lookup/${cleanNum}${queryParam}`
-    );
+    const res =
+      await fetch(
+        `${API_BASE}/orders/lookup/${cleanNum}${queryParam}`
+      );
 
     if (!res.ok) {
       throw new Error(
@@ -1023,9 +1222,10 @@ export const api = {
         const {
           data,
           error,
-        } = await supabase.rpc(
-          'is_admin'
-        );
+        } =
+          await supabase.rpc(
+            'is_admin'
+          );
 
         if (!error && data) {
           return {
@@ -1054,10 +1254,12 @@ export const api = {
   },
 
   // 8. Admin: Get Orders
-  async adminGetOrders(filters?: {
-    status?: string;
-    search?: string;
-  }): Promise<Order[]> {
+  async adminGetOrders(
+    filters?: {
+      status?: string;
+      search?: string;
+    }
+  ): Promise<Order[]> {
     if (
       isSupabaseConfigured &&
       supabase
@@ -1193,15 +1395,16 @@ export const api = {
         const {
           data,
           error,
-        } = await supabase
-          .from('orders')
-          .select(
-            '*, order_items(*)'
-          )
-          .or(
-            `id.eq.${orderId},order_number.eq.${orderId}`
-          )
-          .maybeSingle();
+        } =
+          await supabase
+            .from('orders')
+            .select(
+              '*, order_items(*)'
+            )
+            .or(
+              `id.eq.${orderId},order_number.eq.${orderId}`
+            )
+            .maybeSingle();
 
         if (
           !error &&
@@ -1265,18 +1468,19 @@ export const api = {
         const {
           data,
           error,
-        } = await supabase
-          .from('orders')
-          .update({
-            status,
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq('id', orderId)
-          .select(
-            '*, order_items(*)'
-          )
-          .single();
+        } =
+          await supabase
+            .from('orders')
+            .update({
+              status,
+              updated_at:
+                new Date().toISOString(),
+            })
+            .eq('id', orderId)
+            .select(
+              '*, order_items(*)'
+            )
+            .single();
 
         if (
           !error &&
@@ -1449,47 +1653,48 @@ export const api = {
         const {
           data: newProd,
           error: prodErr,
-        } = await supabase
-          .from('products')
-          .insert({
-            name:
-              productData.name,
-            name_en:
-              productData.name_en ||
-              null,
-            slug:
-              productData.slug,
-            description:
-              productData.description ||
-              '',
-            description_en:
-              productData.description_en ||
-              null,
-            fabric_details:
-              productData.fabric_details ||
-              '',
-            fabric_details_en:
-              productData.fabric_details_en ||
-              null,
-            price:
-              productData.price,
-            compare_at_price:
-              productData.compare_at_price ||
-              null,
-            category_id:
-              productData.category_id,
-            is_active:
-              productData.is_active ??
-              true,
-            is_featured:
-              productData.is_featured ??
-              false,
-            is_new:
-              productData.is_new ??
-              false,
-          })
-          .select()
-          .single();
+        } =
+          await supabase
+            .from('products')
+            .insert({
+              name:
+                productData.name,
+              name_en:
+                productData.name_en ||
+                null,
+              slug:
+                productData.slug,
+              description:
+                productData.description ||
+                '',
+              description_en:
+                productData.description_en ||
+                null,
+              fabric_details:
+                productData.fabric_details ||
+                '',
+              fabric_details_en:
+                productData.fabric_details_en ||
+                null,
+              price:
+                productData.price,
+              compare_at_price:
+                productData.compare_at_price ||
+                null,
+              category_id:
+                productData.category_id,
+              is_active:
+                productData.is_active ??
+                true,
+              is_featured:
+                productData.is_featured ??
+                false,
+              is_new:
+                productData.is_new ??
+                false,
+            })
+            .select()
+            .single();
 
         if (
           !prodErr &&
@@ -1560,7 +1765,10 @@ export const api = {
               );
           }
 
-          invalidateApiCache('product');
+          invalidateApiCache(
+            'product'
+          );
+
           return newProd;
         }
       } catch (err) {
@@ -1600,7 +1808,10 @@ export const api = {
       );
     }
 
-    invalidateApiCache('product');
+    invalidateApiCache(
+      'product'
+    );
+
     return res.json();
   },
 
@@ -1617,44 +1828,45 @@ export const api = {
         const {
           data: updatedProd,
           error: prodErr,
-        } = await supabase
-          .from('products')
-          .update({
-            name:
-              productData.name,
-            name_en:
-              productData.name_en ||
-              null,
-            slug:
-              productData.slug,
-            description:
-              productData.description,
-            description_en:
-              productData.description_en ||
-              null,
-            fabric_details:
-              productData.fabric_details,
-            fabric_details_en:
-              productData.fabric_details_en ||
-              null,
-            price:
-              productData.price,
-            compare_at_price:
-              productData.compare_at_price,
-            category_id:
-              productData.category_id,
-            is_active:
-              productData.is_active,
-            is_featured:
-              productData.is_featured,
-            is_new:
-              productData.is_new,
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq('id', id)
-          .select()
-          .single();
+        } =
+          await supabase
+            .from('products')
+            .update({
+              name:
+                productData.name,
+              name_en:
+                productData.name_en ||
+                null,
+              slug:
+                productData.slug,
+              description:
+                productData.description,
+              description_en:
+                productData.description_en ||
+                null,
+              fabric_details:
+                productData.fabric_details,
+              fabric_details_en:
+                productData.fabric_details_en ||
+                null,
+              price:
+                productData.price,
+              compare_at_price:
+                productData.compare_at_price,
+              category_id:
+                productData.category_id,
+              is_active:
+                productData.is_active,
+              is_featured:
+                productData.is_featured,
+              is_new:
+                productData.is_new,
+              updated_at:
+                new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select()
+            .single();
 
         if (
           !prodErr &&
@@ -1704,35 +1916,72 @@ export const api = {
             }
           }
 
-          if (Array.isArray(productData.variants)) {
-            const { error: variantsDeleteError } = await supabase
-              .from('product_variants')
-              .delete()
-              .eq('product_id', id);
+          if (
+            Array.isArray(
+              productData.variants
+            )
+          ) {
+            const {
+              error:
+                variantsDeleteError,
+            } =
+              await supabase
+                .from(
+                  'product_variants'
+                )
+                .delete()
+                .eq(
+                  'product_id',
+                  id
+                );
 
-            if (variantsDeleteError) {
+            if (
+              variantsDeleteError
+            ) {
               throw variantsDeleteError;
             }
 
-            if (productData.variants.length > 0) {
-              const { error: variantsInsertError } = await supabase
-                .from('product_variants')
-                .insert(
-                  productData.variants.map((v: any) => ({
-                    product_id: id,
-                    color: v.color,
-                    size: v.size,
-                    stock_quantity: Number(v.stock_quantity) || 0,
-                  }))
-                );
+            if (
+              productData.variants.length >
+              0
+            ) {
+              const {
+                error:
+                  variantsInsertError,
+              } =
+                await supabase
+                  .from(
+                    'product_variants'
+                  )
+                  .insert(
+                    productData.variants.map(
+                      (v: any) => ({
+                        product_id:
+                          id,
+                        color:
+                          v.color,
+                        size:
+                          v.size,
+                        stock_quantity:
+                          Number(
+                            v.stock_quantity
+                          ) || 0,
+                      })
+                    )
+                  );
 
-              if (variantsInsertError) {
+              if (
+                variantsInsertError
+              ) {
                 throw variantsInsertError;
               }
             }
           }
 
-          invalidateApiCache('product');
+          invalidateApiCache(
+            'product'
+          );
+
           return updatedProd;
         }
       } catch (err) {
@@ -1772,7 +2021,10 @@ export const api = {
       );
     }
 
-    invalidateApiCache('product');
+    invalidateApiCache(
+      'product'
+    );
+
     return res.json();
   },
 
@@ -1787,21 +2039,25 @@ export const api = {
       try {
         const {
           error,
-        } = await supabase
-          .from('products')
-          .update({
-            is_active:
-              false,
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq(
-            'id',
-            id
-          );
+        } =
+          await supabase
+            .from('products')
+            .update({
+              is_active:
+                false,
+              updated_at:
+                new Date().toISOString(),
+            })
+            .eq(
+              'id',
+              id
+            );
 
         if (!error) {
-          invalidateApiCache('product');
+          invalidateApiCache(
+            'product'
+          );
+
           return;
         }
       } catch (err) {
@@ -1838,7 +2094,9 @@ export const api = {
       );
     }
 
-    invalidateApiCache('product');
+    invalidateApiCache(
+      'product'
+    );
   },
 
   // 12.1 Admin: Permanent Delete Product
@@ -1851,13 +2109,14 @@ export const api = {
     ) {
       const {
         error,
-      } = await supabase
-        .from('products')
-        .delete()
-        .eq(
-          'id',
-          id
-        );
+      } =
+        await supabase
+          .from('products')
+          .delete()
+          .eq(
+            'id',
+            id
+          );
 
       if (error) {
         throw new Error(
@@ -1866,7 +2125,10 @@ export const api = {
         );
       }
 
-      invalidateApiCache('product');
+      invalidateApiCache(
+        'product'
+      );
+
       return;
     }
 
@@ -1896,7 +2158,9 @@ export const api = {
       );
     }
 
-    invalidateApiCache('product');
+    invalidateApiCache(
+      'product'
+    );
   },
 
   // 13. Admin: Update Store Settings
@@ -2034,6 +2298,99 @@ export const api = {
     }
 
     return res.json();
+  },
+
+  // 14.1 Admin: Upload Store Image
+  async uploadStoreImage(
+    file: File
+  ): Promise<string> {
+    if (
+      !isSupabaseConfigured ||
+      !supabase
+    ) {
+      throw new Error(
+        'قاعدة بيانات Supabase غير متصلة.'
+      );
+    }
+
+    if (
+      !file.type.startsWith(
+        'image/'
+      )
+    ) {
+      throw new Error(
+        'الملف المختار يجب أن يكون صورة.'
+      );
+    }
+
+    const extension =
+      file.name
+        .split('.')
+        .pop()
+        ?.toLowerCase() ||
+      'jpg';
+
+    const safeExtension =
+      extension.replace(
+        /[^a-z0-9]/g,
+        ''
+      ) || 'jpg';
+
+    const fileName =
+      `editorial-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}.${safeExtension}`;
+
+    const path =
+      `editorial/${fileName}`;
+
+    const {
+      error,
+    } =
+      await supabase.storage
+        .from(
+          'site-images'
+        )
+        .upload(
+          path,
+          file,
+          {
+            cacheControl:
+              '3600',
+            upsert:
+              false,
+            contentType:
+              file.type,
+          }
+        );
+
+    if (error) {
+      throw new Error(
+        error.message ||
+          'فشل رفع الصورة'
+      );
+    }
+
+    const {
+      data,
+    } =
+      supabase.storage
+        .from(
+          'site-images'
+        )
+        .getPublicUrl(
+          path
+        );
+
+    if (
+      !data?.publicUrl
+    ) {
+      throw new Error(
+        'تعذر الحصول على رابط الصورة بعد الرفع.'
+      );
+    }
+
+    return data.publicUrl;
   },
 
   async adminUpdateStoreContent(
@@ -2332,7 +2689,10 @@ export const api = {
           !error &&
           data
         ) {
-          invalidateApiCache('categories');
+          invalidateApiCache(
+            'categories'
+          );
+
           return data;
         }
       } catch (err) {
@@ -2372,7 +2732,10 @@ export const api = {
       );
     }
 
-    invalidateApiCache('categories');
+    invalidateApiCache(
+      'categories'
+    );
+
     return res.json();
   },
 
@@ -2416,7 +2779,10 @@ export const api = {
           !error &&
           data
         ) {
-          invalidateApiCache('categories');
+          invalidateApiCache(
+            'categories'
+          );
+
           return data;
         }
       } catch (err) {
@@ -2456,7 +2822,10 @@ export const api = {
       );
     }
 
-    invalidateApiCache('categories');
+    invalidateApiCache(
+      'categories'
+    );
+
     return res.json();
   },
 
@@ -2485,7 +2854,10 @@ export const api = {
             );
 
         if (!error) {
-          invalidateApiCache('categories');
+          invalidateApiCache(
+            'categories'
+          );
+
           return;
         }
       } catch (err) {
@@ -2522,7 +2894,9 @@ export const api = {
       );
     }
 
-    invalidateApiCache('categories');
+    invalidateApiCache(
+      'categories'
+    );
   },
 
   // 19. Admin: Permanent Delete Category
@@ -2576,8 +2950,14 @@ export const api = {
         );
       }
 
-      invalidateApiCache('categories');
-      invalidateApiCache('products');
+      invalidateApiCache(
+        'categories'
+      );
+
+      invalidateApiCache(
+        'products'
+      );
+
       return;
     }
 
@@ -2607,8 +2987,13 @@ export const api = {
       );
     }
 
-    invalidateApiCache('categories');
-    invalidateApiCache('products');
+    invalidateApiCache(
+      'categories'
+    );
+
+    invalidateApiCache(
+      'products'
+    );
   },
 
   // 20. Admin: Delete Product Variant
@@ -2670,7 +3055,6 @@ export const api = {
   },
 
   // 21. Product Reviews
-  // Public: Get approved reviews for a product
   async getProductReviews(
     productId: string
   ): Promise<ProductReview[]> {
@@ -2716,7 +3100,6 @@ export const api = {
     return [];
   },
 
-  // Public: Get all approved reviews for the homepage
   async getPublicReviews(): Promise<ProductReview[]> {
     if (
       isSupabaseConfigured &&
@@ -2757,8 +3140,6 @@ export const api = {
     return [];
   },
 
-  // Public: Submit a customer review
-  // Customer reviews are always pending.
   async createProductReview(
     data: {
       product_id?: string | null;
@@ -3061,7 +3442,6 @@ export const api = {
   },
 
   // 22. Product Comments
-  // Public: Get approved comments for a product
   async getProductComments(
     productId: string
   ): Promise<ProductComment[]> {
@@ -3108,7 +3488,6 @@ export const api = {
   },
 
   // Public: Submit a customer comment
-  // Customer comments are always pending.
   async createProductComment(
     data: {
       product_id: string;
