@@ -22,7 +22,12 @@ import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { formatPrice } from '../utils/constants';
+import {
+  formatPrice,
+  getLocalizedColorName,
+  getLocalizedCategoryName,
+  getLocalizedProductName,
+} from '../utils/constants';
 import { VariantSelector } from '../components/product/VariantSelector';
 import { resolveImageUrl } from '../utils/imageHelper';
 
@@ -40,7 +45,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const { addItem } = useCart();
   const { settings, getWhatsAppUrl } = useStore();
   const { isDark } = useTheme();
-  const { t, isRtl } = useLanguage();
+  const { t, isRtl, language } = useLanguage();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +60,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+
+  // Reviews / Comments Tab
+  const [activeFeedbackTab, setActiveFeedbackTab] = useState<'reviews' | 'comments'>('reviews');
 
   // Reviews / Comments
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -451,10 +459,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   const whatsappInquiryUrl = getWhatsAppUrl(
-    t('product.whatsapp_message', 'Hello Outfit Zone, I have a question about the product: "{productName}". Is it available in "{color}" and size "{size}"?' ).replace('{productName}', product.name).replace('{color}', selectedColor || '...' ).replace('{size}', selectedSize || '...' )
+    t(
+      'product.whatsapp_message',
+      'Hello Outfit Zone, I have a question about the product: "{productName}". Is it available in "{color}" and size "{size}"?'
+    )
+      .replace('{productName}', getLocalizedProductName(product, language))
+      .replace('{color}', (selectedColor ? getLocalizedColorName(selectedColor, language) : '...'))
+      .replace('{size}', selectedSize || '...')
   );
 
-  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+  const BackIcon = ArrowRight;
 
   return (
     <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
@@ -467,7 +481,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             : 'text-neutral-600 hover:text-black'
         }`}
       >
-        <BackIcon className={`w-4 h-4 transition-transform ${isRtl ? 'group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
+        <BackIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         <span>{t('product.back_to_products', 'Back to Products')}</span>
       </button>
 
@@ -485,7 +499,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <img
               key={displayedImageUrl}
               src={resolveImageUrl(displayedImageUrl)}
-              alt={product.name}
+              alt={getLocalizedProductName(product, language)}
               className="w-full h-full object-cover object-center transition-all duration-500 ease-out hover:scale-105 motion-reduce:transition-none"
               fetchPriority="high"
             />
@@ -546,7 +560,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Category & Title */}
           <div>
             <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
-              <span>{product.category?.name || t('product.category_streetwear', 'Streetwear')}</span>
+              <span>{getLocalizedCategoryName(product.category?.name, language) || t('product.category_streetwear', 'Streetwear')}</span>
               <span>·</span>
               <span>Outfit Zone</span>
             </div>
@@ -556,7 +570,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 isDark ? 'text-white' : 'text-neutral-900'
               }`}
             >
-              {product.name}
+              {getLocalizedProductName(product, language)}
             </h1>
           </div>
 
@@ -601,12 +615,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 isDark ? 'text-white' : 'text-neutral-950'
               }`}
             >
-              {formatPrice(product.price)}
+              {formatPrice(product.price, language)}
             </span>
 
             {hasDiscount && (
               <span className="text-base sm:text-lg text-neutral-400 line-through font-mono-numbers">
-                {formatPrice(product.compare_at_price!)}
+                {formatPrice(product.compare_at_price!, language)}
               </span>
             )}
 
@@ -742,8 +756,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="flex items-center gap-2.5">
               <RotateCcw className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>
-                {settings?.exchange_policy ||
-                  t('product.size_exchange_14', 'Size exchange available within 14 days')}
+                {language === 'en'
+                  ? t('product.size_exchange_14', 'Size exchange available within 14 days')
+                  : (settings?.exchange_policy ||
+                      t('product.size_exchange_14', 'استبدال المقاس متاح خلال 14 يوم'))}
               </span>
             </div>
           </div>
@@ -789,227 +805,451 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           isDark ? 'border-neutral-800' : 'border-neutral-200'
         }`}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-          {/* Reviews List */}
-          <div className="lg:col-span-7">
-            <div className="flex items-center gap-2 mb-6">
-              <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-              <div>
-                <h2
-                  className={`text-xl sm:text-2xl font-black ${
-                    isDark ? 'text-white' : 'text-black'
+        {/* Section Tabs Switcher */}
+        <div className="flex items-center gap-3 mb-8 border-b border-neutral-800 pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveFeedbackTab('reviews')}
+            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+              activeFeedbackTab === 'reviews'
+                ? isDark
+                  ? 'bg-white text-black shadow-md'
+                  : 'bg-black text-white shadow-md'
+                : 'text-neutral-400 hover:text-white bg-neutral-900/60'
+            }`}
+          >
+            <Star className="w-4 h-4 fill-current" />
+            <span>{t('product.reviews_tab', 'Customer Reviews')}</span>
+            <span className="text-[11px] font-mono-numbers opacity-80">({reviews.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveFeedbackTab('comments')}
+            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+              activeFeedbackTab === 'comments'
+                ? isDark
+                  ? 'bg-white text-black shadow-md'
+                  : 'bg-black text-white shadow-md'
+                : 'text-neutral-400 hover:text-white bg-neutral-900/60'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>{t('product.comments_title', 'الأسئلة والاستفسارات')}</span>
+            <span className="text-[11px] font-mono-numbers opacity-80">({comments.length})</span>
+          </button>
+        </div>
+
+        {activeFeedbackTab === 'reviews' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Reviews List */}
+            <div className="lg:col-span-7">
+              <div className="flex items-center gap-2 mb-6">
+                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                <div>
+                  <h2
+                    className={`text-xl sm:text-2xl font-black ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {t('product.reviews_tab', 'Customer Reviews')}
+                  </h2>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t('product.review_about', 'Customer experiences and reviews of this product')}
+                  </p>
+                </div>
+              </div>
+
+              {reviewsLoading ? (
+                <div className="space-y-3">
+                  <div
+                    className={`h-28 rounded-2xl animate-pulse ${
+                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                    }`}
+                  />
+                  <div
+                    className={`h-28 rounded-2xl animate-pulse ${
+                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                    }`}
+                  />
+                </div>
+              ) : reviews.length === 0 ? (
+                <div
+                  className={`rounded-2xl border p-6 text-center ${
+                    isDark
+                      ? 'border-neutral-800 bg-neutral-900/40'
+                      : 'border-neutral-200 bg-white shadow-xs'
                   }`}
                 >
-                  {t('product.reviews_tab', 'Customer Reviews')}
-                </h2>
-                <p className="text-xs text-neutral-400 mt-1">
-                  {t('product.review_about', 'Customer experiences and reviews of this product')}
-                </p>
-              </div>
+                  <Star className="w-7 h-7 text-neutral-400 mx-auto mb-2" />
+                  <p
+                    className={`text-sm font-bold ${
+                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    }`}
+                  >
+                    {t('product.no_reviews', 'No reviews yet')}
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t('product.first_review', 'Be the first to review this product.')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map((review) => (
+                    <article
+                      key={review.id}
+                      className={`rounded-2xl border p-4 sm:p-5 ${
+                        isDark
+                          ? 'border-neutral-800 bg-neutral-900/50'
+                          : 'border-neutral-200 bg-white shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <h3
+                            className={`text-sm font-bold mb-1 ${
+                              isDark ? 'text-white' : 'text-black'
+                            }`}
+                          >
+                            {review.customer_name}
+                          </h3>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-3.5 h-3.5 ${
+                                  star <= Number(review.rating)
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-neutral-300 dark:text-neutral-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-neutral-400 shrink-0">
+                          {new Date(review.created_at).toLocaleDateString(
+                            isRtl ? 'ar-EG' : 'en-US'
+                          )}
+                        </span>
+                      </div>
+                      <p
+                        className={`text-sm leading-7 ${
+                          isDark ? 'text-neutral-300' : 'text-neutral-700'
+                        }`}
+                      >
+                        {review.review_text}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {reviewsLoading ? (
-              <div className="space-y-3">
-                <div
-                  className={`h-28 rounded-2xl animate-pulse ${
-                    isDark ? 'bg-neutral-900' : 'bg-neutral-100'
-                  }`}
-                />
-                <div
-                  className={`h-28 rounded-2xl animate-pulse ${
-                    isDark ? 'bg-neutral-900' : 'bg-neutral-100'
-                  }`}
-                />
-              </div>
-            ) : reviews.length === 0 ? (
+            {/* Review Form */}
+            <div className="lg:col-span-5">
               <div
-                className={`rounded-2xl border p-6 text-center ${
+                className={`rounded-2xl border p-5 sm:p-6 ${
                   isDark
                     ? 'border-neutral-800 bg-neutral-900/40'
                     : 'border-neutral-200 bg-white shadow-xs'
                 }`}
               >
-                <Star className="w-7 h-7 text-neutral-400 mx-auto mb-2" />
-                <p
-                  className={`text-sm font-bold ${
-                    isDark ? 'text-neutral-300' : 'text-neutral-700'
-                  }`}
-                >
-                  {t('product.no_reviews', 'No reviews yet')}
-                </p>
-                <p className="text-xs text-neutral-400 mt-1">
-                  {t('product.first_review', 'Be the first to review this product.')}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {reviews.map((review) => (
-                  <article
-                    key={review.id}
-                    className={`rounded-2xl border p-4 sm:p-5 ${
-                      isDark
-                        ? 'border-neutral-800 bg-neutral-900/50'
-                        : 'border-neutral-200 bg-white shadow-xs'
+                <div className="flex items-center gap-2 mb-1">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  <h3
+                    className={`text-lg font-black ${
+                      isDark ? 'text-white' : 'text-black'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
+                    {t('product.write_review', 'Write a Review')}
+                  </h3>
+                </div>
+                <p className="text-xs text-neutral-400 mb-5">
+                  {t('product.share_experience', 'Share your opinion and experience with this product.')}
+                </p>
+
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      {t('product.your_rating', 'Your Rating')}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className="p-1 cursor-pointer transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`w-6 h-6 ${
+                              star <= reviewRating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-neutral-300 dark:text-neutral-700'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      {t('product.name', 'Name')}
+                    </label>
+                    <input
+                      type="text"
+                      value={reviewName}
+                      onChange={(e) => setReviewName(e.target.value)}
+                      maxLength={100}
+                      placeholder={t('product.name_placeholder', 'Enter your name')}
+                      className={`w-full rounded-xl border text-sm px-4 py-3 outline-none transition-colors ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
+                          : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      {t('product.review_text_label', 'Your Review')}
+                    </label>
+                    <textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      maxLength={2000}
+                      rows={4}
+                      placeholder={t('product.review_placeholder', 'Write the details of your experience...')}
+                      className={`w-full rounded-xl border text-sm px-4 py-3 outline-none resize-none transition-colors ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
+                          : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
+                      }`}
+                    />
+                  </div>
+
+                  {reviewMessage && (
+                    <div
+                      className={`rounded-xl border px-3.5 py-2.5 text-xs ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-neutral-300'
+                          : 'bg-neutral-100 border-neutral-300 text-neutral-700'
+                      }`}
+                    >
+                      {reviewMessage}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className={`w-full rounded-xl py-3.5 px-4 text-sm font-black disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      isDark
+                        ? 'bg-white text-black hover:bg-neutral-200'
+                        : 'bg-black text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>
+                      {reviewSubmitting
+                        ? t('product.submitting_review', 'Submitting...')
+                        : t('product.submit_review', 'Submit Review')}
+                    </span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Comments / Inquiries tab */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Comments List */}
+            <div className="lg:col-span-7">
+              <div className="flex items-center gap-2 mb-6">
+                <MessageCircle className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h2
+                    className={`text-xl sm:text-2xl font-black ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {t('product.comments_title', 'الأسئلة والاستفسارات')}
+                  </h2>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t('product.comment_about', 'Customer questions and Outfit Zone team answers')}
+                  </p>
+                </div>
+              </div>
+
+              {commentsLoading ? (
+                <div className="space-y-3">
+                  <div
+                    className={`h-24 rounded-2xl animate-pulse ${
+                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                    }`}
+                  />
+                  <div
+                    className={`h-24 rounded-2xl animate-pulse ${
+                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                    }`}
+                  />
+                </div>
+              ) : comments.length === 0 ? (
+                <div
+                  className={`rounded-2xl border p-6 text-center ${
+                    isDark
+                      ? 'border-neutral-800 bg-neutral-900/40'
+                      : 'border-neutral-200 bg-white shadow-xs'
+                  }`}
+                >
+                  <MessageCircle className="w-7 h-7 text-neutral-400 mx-auto mb-2" />
+                  <p
+                    className={`text-sm font-bold ${
+                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    }`}
+                  >
+                    {t('product.no_comments', 'لا توجد استفسارات حتى الآن')}
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t('product.first_comment', 'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <article
+                      key={comment.id}
+                      className={`rounded-2xl border p-4 sm:p-5 ${
+                        isDark
+                          ? 'border-neutral-800 bg-neutral-900/50'
+                          : 'border-neutral-200 bg-white shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-2">
                         <h3
-                          className={`text-sm font-bold mb-1 ${
+                          className={`text-sm font-bold ${
                             isDark ? 'text-white' : 'text-black'
                           }`}
                         >
-                          {review.customer_name}
+                          {comment.customer_name}
                         </h3>
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-3.5 h-3.5 ${
-                                star <= Number(review.rating)
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-neutral-300 dark:text-neutral-700'
-                              }`}
-                            />
-                          ))}
-                        </div>
+                        <span className="text-[10px] text-neutral-400 shrink-0">
+                          {new Date(comment.created_at).toLocaleDateString(
+                            isRtl ? 'ar-EG' : 'en-US'
+                          )}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-neutral-400 shrink-0">
-                        {new Date(review.created_at).toLocaleDateString(
-                          isRtl ? 'ar-EG' : 'en-US'
-                        )}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-sm leading-7 ${
-                        isDark ? 'text-neutral-300' : 'text-neutral-700'
-                      }`}
-                    >
-                      {review.review_text}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Review Form */}
-          <div className="lg:col-span-5">
-            <div
-              className={`rounded-2xl border p-5 sm:p-6 ${
-                isDark
-                  ? 'border-neutral-800 bg-neutral-900/40'
-                  : 'border-neutral-200 bg-white shadow-xs'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="w-5 h-5 text-yellow-400" />
-                <h3
-                  className={`text-lg font-black ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {t('product.write_review', 'Write a Review')}
-                </h3>
-              </div>
-              <p className="text-xs text-neutral-400 mb-5">
-                {t('product.share_experience', 'Share your opinion and experience with this product.')}
-              </p>
-
-              <form onSubmit={handleSubmitReview} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                    {t('product.your_rating', 'Your Rating')}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        className="p-1 cursor-pointer transition-transform hover:scale-110"
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          isDark ? 'text-neutral-300' : 'text-neutral-700'
+                        }`}
                       >
-                        <Star
-                          className={`w-6 h-6 ${
-                            star <= reviewRating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-neutral-300 dark:text-neutral-700'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
+                        {comment.comment}
+                      </p>
+                    </article>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                    {t('product.name', 'Name')}
-                  </label>
-                  <input
-                    type="text"
-                    value={reviewName}
-                    onChange={(e) => setReviewName(e.target.value)}
-                    maxLength={100}
-                    placeholder={t('product.name_placeholder', 'Enter your name')}
-                    className={`w-full rounded-xl border text-sm px-4 py-3 outline-none transition-colors ${
-                      isDark
-                        ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
-                        : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                    {t('product.review_text_label', 'Your Review')}
-                  </label>
-                  <textarea
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    maxLength={2000}
-                    rows={4}
-                    placeholder={t('product.review_placeholder', 'Write the details of your experience...')}
-                    className={`w-full rounded-xl border text-sm px-4 py-3 outline-none resize-none transition-colors ${
-                      isDark
-                        ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
-                        : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
-                    }`}
-                  />
-                </div>
-
-                {reviewMessage && (
-                  <div
-                    className={`rounded-xl border px-3.5 py-2.5 text-xs ${
-                      isDark
-                        ? 'bg-neutral-950 border-neutral-800 text-neutral-300'
-                        : 'bg-neutral-100 border-neutral-300 text-neutral-700'
+            {/* Comment Form */}
+            <div className="lg:col-span-5">
+              <div
+                className={`rounded-2xl border p-5 sm:p-6 ${
+                  isDark
+                    ? 'border-neutral-800 bg-neutral-900/40'
+                    : 'border-neutral-200 bg-white shadow-xs'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <MessageCircle className="w-5 h-5 text-emerald-400" />
+                  <h3
+                    className={`text-lg font-black ${
+                      isDark ? 'text-white' : 'text-black'
                     }`}
                   >
-                    {reviewMessage}
-                  </div>
-                )}
+                    {t('product.write_comment', 'أضف استفسارك')}
+                  </h3>
+                </div>
+                <p className="text-xs text-neutral-400 mb-5">
+                  {t('product.first_comment', 'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.')}
+                </p>
 
-                <button
-                  type="submit"
-                  disabled={reviewSubmitting}
-                  className={`w-full rounded-xl py-3.5 px-4 text-sm font-black disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    isDark
-                      ? 'bg-white text-black hover:bg-neutral-200'
-                      : 'bg-black text-white hover:bg-neutral-800'
-                  }`}
-                >
-                  <Send className="w-4 h-4" />
-                  <span>
-                    {reviewSubmitting
-                      ? t('product.submitting_review', 'Submitting...')
-                      : t('product.submit_review', 'Submit Review')}
-                  </span>
-                </button>
-              </form>
+                <form onSubmit={handleSubmitComment} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      {t('product.comment_name', 'Name')}
+                    </label>
+                    <input
+                      type="text"
+                      value={commentName}
+                      onChange={(e) => setCommentName(e.target.value)}
+                      maxLength={100}
+                      placeholder={t('product.name_placeholder', 'Enter your name')}
+                      className={`w-full rounded-xl border text-sm px-4 py-3 outline-none transition-colors ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
+                          : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      {t('product.comments_title', 'الاستفسار')}
+                    </label>
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      maxLength={2000}
+                      rows={4}
+                      placeholder={t('product.comment_placeholder', 'اكتب استفسارك بخصوص الموديل...')}
+                      className={`w-full rounded-xl border text-sm px-4 py-3 outline-none resize-none transition-colors ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
+                          : 'bg-neutral-50 border-neutral-300 text-black focus:border-neutral-700'
+                      }`}
+                    />
+                  </div>
+
+                  {commentMessage && (
+                    <div
+                      className={`rounded-xl border px-3.5 py-2.5 text-xs ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-neutral-300'
+                          : 'bg-neutral-100 border-neutral-300 text-neutral-700'
+                      }`}
+                    >
+                      {commentMessage}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={commentSubmitting}
+                    className={`w-full rounded-xl py-3.5 px-4 text-sm font-black disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      isDark
+                        ? 'bg-white text-black hover:bg-neutral-200'
+                        : 'bg-black text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>
+                      {commentSubmitting
+                        ? t('product.submitting_comment', 'Submitting...')
+                        : t('product.submit_comment', 'Submit Question')}
+                    </span>
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
+    </div>
+  );
+};
     </div>
   );
 };

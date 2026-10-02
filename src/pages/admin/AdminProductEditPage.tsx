@@ -9,11 +9,19 @@ import {
   Check,
   ChevronRight,
   ChevronLeft,
+  Pencil,
+  X,
 } from 'lucide-react';
 import { Category, Product, ProductImage } from '../../types';
 import { api } from '../../services/api';
 import { uploadProductImage } from '../../lib/supabase';
-import { STANDARD_SIZES } from '../../utils/constants';
+import {
+  STANDARD_SIZES,
+  POPULAR_COLORS,
+  splitColorName,
+  formatColorComposite,
+  getLocalizedColorName,
+} from '../../utils/constants';
 
 interface AdminProductEditPageProps {
   productId?: string | null;
@@ -85,7 +93,14 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     Record<string, string>
   >({});
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
-  const [newColorInput, setNewColorInput] = useState('');
+  const [newColorInputAr, setNewColorInputAr] = useState('');
+  const [newColorInputEn, setNewColorInputEn] = useState('');
+  const [newColorHex, setNewColorHex] = useState(DEFAULT_COLOR_HEX);
+
+  // Rename existing color states
+  const [editingColorNameFor, setEditingColorNameFor] = useState<string | null>(null);
+  const [renameAr, setRenameAr] = useState('');
+  const [renameEn, setRenameEn] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -326,10 +341,67 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
     );
   };
 
-  const addColorGroup = () => {
-    if (!newColorInput.trim()) return;
+  const handleStartRename = (currentColor: string) => {
+    const parts = splitColorName(currentColor);
+    setRenameAr(parts.ar);
+    setRenameEn(parts.en);
+    setEditingColorNameFor(currentColor);
+  };
 
-    const col = newColorInput.trim();
+  const handleSaveRename = (oldColor: string) => {
+    const ar = renameAr.trim();
+    const en = renameEn.trim();
+    if (!ar && !en) {
+      alert('يرجى كتابة اسم اللون بالعربية أو بالإنجليزية.');
+      return;
+    }
+    const newColor = formatColorComposite(ar, en);
+    if (newColor === oldColor) {
+      setEditingColorNameFor(null);
+      return;
+    }
+    if (variantGroups.some((g) => g.color === newColor)) {
+      alert('يوجد لون آخر مسجل بنفس هذا الاسم.');
+      return;
+    }
+
+    setVariantGroups((prev) =>
+      prev.map((group) =>
+        group.color === oldColor
+          ? {
+              ...group,
+              color: newColor,
+            }
+          : group
+      )
+    );
+
+    // Update existing variants map
+    setExistingVariantsMap((prev) => {
+      const nextMap: Record<string, string> = {};
+      Object.entries(prev).forEach(([key, varId]) => {
+        if (key.startsWith(`${oldColor}___`)) {
+          const size = key.split('___')[1];
+          nextMap[`${newColor}___${size}`] = varId;
+        } else {
+          nextMap[key] = varId;
+        }
+      });
+      return nextMap;
+    });
+
+    setEditingColorNameFor(null);
+  };
+
+  const addColorGroup = () => {
+    const ar = newColorInputAr.trim();
+    const en = newColorInputEn.trim();
+    if (!ar && !en) {
+      alert('يرجى إدخال اسم اللون بالعربية أو بالإنجليزية.');
+      return;
+    }
+
+    const col = formatColorComposite(ar, en);
 
     if (
       variantGroups.some(
@@ -350,13 +422,15 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
       ...prev,
       {
         color: col,
-        color_hex: DEFAULT_COLOR_HEX,
+        color_hex: newColorHex || DEFAULT_COLOR_HEX,
         image_url: images[0]?.image_url || '',
         sizes: defaultSizes,
       },
     ]);
 
-    setNewColorInput('');
+    setNewColorInputAr('');
+    setNewColorInputEn('');
+    setNewColorHex(DEFAULT_COLOR_HEX);
   };
 
   const removeColorGroup = (color: string) => {
@@ -1173,17 +1247,40 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     />
 
                     <div className="flex flex-col">
-                      <span className="font-bold text-white text-xs">
-                        اللون: {group.color}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white text-xs">
+                          اللون: {group.color}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStartRename(group.color)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-950/40 border border-blue-800/50 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                          title="تعديل اسم اللون بالعربية والإنجليزية"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          <span>تغيير الاسم (عربي / English)</span>
+                        </button>
+                      </div>
 
-                      <span
-                        dir="ltr"
-                        className="text-[10px] text-neutral-500 font-mono mt-0.5"
-                      >
-                        {group.color_hex ||
-                          DEFAULT_COLOR_HEX}
-                      </span>
+                      {/* Display parsed Arabic and English badges */}
+                      <div className="flex items-center gap-2 mt-1 text-[11px] flex-wrap">
+                        {splitColorName(group.color).ar && (
+                          <span className="bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded text-neutral-300">
+                            عربي: <strong className="text-white">{splitColorName(group.color).ar}</strong>
+                          </span>
+                        )}
+                        {splitColorName(group.color).en && (
+                          <span className="bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded text-neutral-300" dir="ltr">
+                            EN: <strong className="text-white">{splitColorName(group.color).en}</strong>
+                          </span>
+                        )}
+                        <span
+                          dir="ltr"
+                          className="text-[10px] text-neutral-500 font-mono"
+                        >
+                          {group.color_hex || DEFAULT_COLOR_HEX}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1200,6 +1297,66 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+
+                {/* Inline Rename Box */}
+                {editingColorNameFor === group.color && (
+                  <div className="p-3.5 rounded-xl bg-blue-950/20 border border-blue-800/40 space-y-2.5 animate-in fade-in">
+                    <div className="text-xs font-bold text-blue-300 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>تعديل اسم اللون باللغتين العربية والإنجليزية</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingColorNameFor(null)}
+                        className="text-neutral-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-neutral-400 mb-1">الاسم بالعربية:</label>
+                        <input
+                          type="text"
+                          value={renameAr}
+                          onChange={(e) => setRenameAr(e.target.value)}
+                          placeholder="مثال: أسود كربوني"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-neutral-400 mb-1">الاسم بالإنجليزية (English):</label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={renameEn}
+                          onChange={(e) => setRenameEn(e.target.value)}
+                          placeholder="e.g. Carbon Black"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-blue-500 text-left font-sans"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingColorNameFor(null)}
+                        className="px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 text-xs rounded-lg transition-colors cursor-pointer"
+                      >
+                        إلغاء
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRename(group.color)}
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm"
+                      >
+                        حفظ وتحديث اسم اللون
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Color-specific Image Selector */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-xl bg-neutral-900/90 border border-neutral-800">
@@ -1357,25 +1514,80 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
           </div>
 
           {/* Add New Color */}
-          <div className="pt-2 flex gap-2">
-            <input
-              type="text"
-              placeholder="أضف لون جديد للموديل (مثال: زيتي، رمادي، بيج)..."
-              value={newColorInput}
-              onChange={(e) =>
-                setNewColorInput(e.target.value)
-              }
-              className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
-            />
+          <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 space-y-3">
+            <div>
+              <h3 className="text-xs font-bold text-white mb-0.5">إضافة لون جديد لهذا الموديل</h3>
+              <p className="text-[11px] text-neutral-400">حدد اسم اللون بالعربية وبالإنجليزية مع كود اللون ليتغير تلقائيًا للعملاء بحسب لغة الموقع.</p>
+            </div>
 
-            <button
-              type="button"
-              onClick={addColorGroup}
-              className="py-2 px-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>إضافة اللون</span>
-            </button>
+            {/* Quick color preset chips */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] text-neutral-400 block font-medium">ألوان شائعة جاهزة للاختيار السريع:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {POPULAR_COLORS.map((pc) => (
+                  <button
+                    key={pc.name}
+                    type="button"
+                    onClick={() => {
+                      setNewColorInputAr(pc.nameAr);
+                      setNewColorInputEn(pc.nameEn);
+                      setNewColorHex(pc.hex);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[11px] text-neutral-300 hover:text-white cursor-pointer transition-colors"
+                  >
+                    <span className="w-3 h-3 rounded-full border border-neutral-700 shrink-0" style={{ backgroundColor: pc.hex }} />
+                    <span>{pc.nameAr}</span>
+                    <span className="text-neutral-500 text-[10px]" dir="ltr">({pc.nameEn})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Inputs row */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] text-neutral-400 mb-1">اسم اللون بالعربية:</label>
+                <input
+                  type="text"
+                  placeholder="مثال: زيتي، أسود كربوني، كحلي..."
+                  value={newColorInputAr}
+                  onChange={(e) => setNewColorInputAr(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white"
+                />
+              </div>
+
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] text-neutral-400 mb-1">اسم اللون بالإنجليزية (English):</label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  placeholder="e.g. Olive Green, Carbon Black..."
+                  value={newColorInputEn}
+                  onChange={(e) => setNewColorInputEn(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-white text-left font-sans"
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex flex-col justify-end">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    title="اختيار درجة اللون"
+                    className="w-10 h-9 rounded-lg bg-transparent border border-neutral-700 cursor-pointer p-0.5"
+                  />
+                  <button
+                    type="button"
+                    onClick={addColorGroup}
+                    className="flex-1 py-2 px-3 bg-white hover:bg-neutral-200 text-black rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer h-9 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { resolveImageUrl } from '../../utils/imageHelper';
-import { formatPrice } from '../../utils/constants';
+import { formatPrice, getLocalizedColorName, getLocalizedProductName } from '../../utils/constants';
 
 interface CartDrawerProps {
   onNavigate: (path: string) => void;
@@ -13,8 +13,8 @@ interface CartDrawerProps {
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const { items, removeItem, updateQuantity, isCartOpen, setIsCartOpen, subtotal, itemCount } = useCart();
   const { settings } = useStore();
-  const { t, isRtl } = useLanguage();
-  const CheckoutArrow = isRtl ? ArrowLeft : ArrowRight;
+  const { t, language } = useLanguage();
+  const CheckoutArrow = ArrowLeft;
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
@@ -87,7 +87,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-xs font-bold text-white line-clamp-1">
-                          {item.product?.name}
+                          {getLocalizedProductName(item.product, language) || item.product?.name}
                         </h4>
                         <button
                           onClick={() => removeItem(item.variantId)}
@@ -100,7 +100,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
                       {/* Variant Specs */}
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                        <span>{t('cart.color', 'Color:')} {item.color}</span>
+                        <span>{t('cart.color', 'Color:')} {getLocalizedColorName(item.color, language)}</span>
                         <span aria-hidden="true">·</span>
                         <span className="font-mono">{t('cart.size', 'Size:')} {item.size}</span>
                       </div>
@@ -129,7 +129,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                       </div>
 
                       <div className="text-left font-mono-numbers text-xs font-bold text-white">
-                        {formatPrice(item.unitPrice * item.quantity)}
+                        {formatPrice(item.unitPrice * item.quantity, language)}
                       </div>
                     </div>
                   </div>
@@ -147,19 +147,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               <div className="flex justify-between text-neutral-400">
                 <span>{t('cart.subtotal', 'Subtotal:')}</span>
                 <span className="font-mono-numbers text-white font-medium">
-                  {formatPrice(subtotal)}
+                  {formatPrice(subtotal, language)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>{t('cart.shipping', 'Shipping & Delivery:')}</span>
                 <span className="font-mono-numbers text-white font-medium">
-                  {formatPrice(shippingFee)}
+                  {formatPrice(shippingFee, language)}
                 </span>
               </div>
               <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
                 <span>{t('checkout.total_on_delivery', 'Total on Delivery:')}</span>
                 <span className="font-mono-numbers text-base text-white">
-                  {formatPrice(grandTotal)}
+                  {formatPrice(grandTotal, language)}
                 </span>
               </div>
             </div>

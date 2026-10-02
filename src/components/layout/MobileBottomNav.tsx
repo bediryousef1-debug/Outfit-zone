@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, LayoutGrid, Heart, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MobileBottomNavProps {
   currentPath: string;
@@ -12,32 +13,33 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onNavigate,
 }) => {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
 
   const navItems = [
     {
       id: 'home',
-      label: 'الرئيسية',
+      label: t('nav.home', 'الرئيسية'),
       icon: Home,
       path: '/',
       isActive: currentPath === '/',
     },
     {
       id: 'categories',
-      label: 'الأقسام',
+      label: t('nav.categories', 'الأقسام'),
       icon: LayoutGrid,
       path: '/products',
       isActive: currentPath.startsWith('/products') && !currentPath.includes('filter=favorites'),
     },
     {
       id: 'favorites',
-      label: 'المفضلة',
+      label: t('nav.favorites', 'المفضلة'),
       icon: Heart,
       path: '/products?filter=favorites',
       isActive: currentPath.includes('filter=favorites'),
     },
     {
       id: 'account',
-      label: 'حسابي',
+      label: t('nav.account', 'حسابي'),
       icon: User,
       path: '/about',
       isActive: currentPath === '/about' || currentPath === '/admin',

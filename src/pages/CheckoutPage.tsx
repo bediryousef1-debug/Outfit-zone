@@ -19,6 +19,8 @@ import {
   EGYPTIAN_GOVERNORATES,
   formatPrice,
   validateEgyptianPhone,
+  getLocalizedColorName,
+  getLocalizedProductName,
 } from '../utils/constants';
 
 interface CheckoutPageProps {
@@ -30,8 +32,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onOrderSuccess,
   onNavigate,
 }) => {
-  const { t, isRtl } = useLanguage();
-  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+  const { t, isRtl, language } = useLanguage();
+  const BackIcon = ArrowRight;
   const { items, subtotal, clearCart } = useCart();
   const { settings } = useStore();
   const { isDark } = useTheme();
@@ -584,10 +586,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           isDark ? 'text-white' : 'text-black'
                         }`}
                       >
-                        {item.product?.name}
+                        {getLocalizedProductName(item.product, language) || item.product?.name}
                       </h4>
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
-                        <span>{item.color}</span>
+                        <span>{getLocalizedColorName(item.color, language)}</span>
                         <span>·</span>
                         <span className="font-mono">{item.size}</span>
                         <span>·</span>
@@ -595,7 +597,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       </div>
                     </div>
                     <div className="font-mono-numbers font-bold">
-                      {formatPrice(item.unitPrice * item.quantity)}
+                      {formatPrice(item.unitPrice * item.quantity, language)}
                     </div>
                   </div>
                 </div>
@@ -617,7 +619,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
-                  {formatPrice(subtotal)}
+                  {formatPrice(subtotal, language)}
                 </span>
               </div>
 
@@ -628,7 +630,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     isDark ? 'text-white' : 'text-black'
                   }`}
                 >
-                  {ratesLoading ? t("checkout.calculating", "Calculating...") : formatPrice(shippingFee)}
+                  {ratesLoading ? t("checkout.calculating", "Calculating...") : formatPrice(shippingFee, language)}
                 </span>
               </div>
 
@@ -641,7 +643,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               >
                 <span>{t("checkout.total_on_delivery", "Total on Delivery:")}</span>
                 <span className="font-mono-numbers text-lg">
-                  {formatPrice(grandTotal)}
+                  {formatPrice(grandTotal, language)}
                 </span>
               </div>
             </div>

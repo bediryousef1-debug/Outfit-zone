@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { OutfitZoneLogo } from '../common/OutfitZoneLogo';
 
 interface FooterProps {
@@ -9,8 +10,10 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const { settings, content, socialLinks, contactSocial } = useStore();
+  const { settings, content, socialLinks } = useStore();
   const { isDark } = useTheme();
+  const { t, language } = useLanguage();
+  const isAr = language === 'ar';
 
   const showTrust = content ? content.show_trust : true;
 
@@ -29,9 +32,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
               <Truck className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
               <div>
-                <h4 className="text-white text-sm font-semibold mb-1">الدفع عند الاستلام</h4>
+                <h4 className="text-white text-sm font-semibold mb-1">
+                  {t('footer.cod_title', 'الدفع عند الاستلام')}
+                </h4>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  {content?.cod_text || 'ادفع كاش فقط عندما تستلم طلبك عند باب بيتك في أي محافظة داخل مصر.'}
+                  {isAr ? (content?.cod_text || 'ادفع كاش فقط عندما تستلم طلبك عند باب بيتك في أي محافظة داخل مصر.') : 'Pay cash on delivery when you receive your order at your doorstep across Egypt.'}
                 </p>
               </div>
             </div>
@@ -40,9 +45,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
                 <ShieldCheck className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
                 <div>
-                  <h4 className="text-white text-sm font-semibold mb-1">معاينة مجانية عند الاستلام</h4>
+                  <h4 className="text-white text-sm font-semibold mb-1">
+                    {t('footer.inspection_title', 'معاينة مجانية عند الاستلام')}
+                  </h4>
                   <p className="text-xs text-neutral-400 leading-relaxed">
-                    {content?.inspection_text || 'يمكنك فتح الشحنة ومعاينة الخامة والمقاس بحضور مندوب الشحن قبل سداد المبلغ.'}
+                    {isAr ? (content?.inspection_text || 'يمكنك فتح الشحنة ومعاينة الخامة والمقاس بحضور مندوب الشحن قبل سداد المبلغ.') : 'Open and inspect your order with the courier before paying.'}
                   </p>
                 </div>
               </div>
@@ -51,9 +58,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
               <RotateCcw className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
               <div>
-                <h4 className="text-white text-sm font-semibold mb-1">استبدال المقاس</h4>
+                <h4 className="text-white text-sm font-semibold mb-1">
+                  {t('footer.exchange_title', 'استبدال المقاس')}
+                </h4>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  {content?.exchange_policy || settings?.exchange_policy || 'استبدال المقاس متاح خلال 14 يوم من الاستلام بكل سهولة.'}
+                  {isAr ? (content?.exchange_policy || settings?.exchange_policy || 'استبدال المقاس متاح خلال 14 يوم من الاستلام بكل سهولة.') : 'Easy size replacement within 14 days of delivery.'}
                 </p>
               </div>
             </div>
@@ -69,7 +78,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="md:col-span-2 space-y-3">
             <OutfitZoneLogo variant="horizontal" className="text-white" />
             <p className="text-xs text-neutral-400 max-w-md leading-relaxed mt-2">
-              {content?.footer_text || 'براند مصري متخصص في ملابس الستريت وير الرجالي بقصات Box Fit و Oversized، مصممة بخامات قطنية ثقيلة لتمنحك الراحة والثقة يوميًا بروح الشارع.'}
+              {isAr ? (content?.footer_text || 'براند مصري متخصص في ملابس الستريت وير الرجالي بقصات Box Fit و Oversized، مصممة بخامات قطنية ثقيلة لتمنحك الراحة والثقة يوميًا بروح الشارع.') : t('footer.brand_desc', 'Egyptian streetwear clothing brand delivering modern Box Fit and Oversized silhouettes crafted with high-grade Egyptian cotton.')}
             </p>
             
             {/* Social Links (only display if enabled) */}
@@ -129,7 +138,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Quick Links */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              التنقل السريع
+              {t('footer.quick_nav', 'التنقل السريع')}
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
@@ -137,7 +146,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/')}
                   className="hover:text-white transition-colors text-right cursor-pointer"
                 >
-                  الصفحة الرئيسية
+                  {t('nav.home', 'الصفحة الرئيسية')}
                 </button>
               </li>
               <li>
@@ -145,7 +154,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/products')}
                   className="hover:text-white transition-colors text-right cursor-pointer"
                 >
-                  جميع المنتجات
+                  {t('footer.all_products', 'جميع المنتجات')}
                 </button>
               </li>
               <li>
@@ -153,7 +162,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/about')}
                   className="hover:text-white transition-colors text-right cursor-pointer"
                 >
-                  قصة البراند
+                  {t('footer.about_brand', 'قصة البراند')}
                 </button>
               </li>
               <li>
@@ -161,7 +170,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/contact')}
                   className="hover:text-white transition-colors text-right cursor-pointer"
                 >
-                  تواصل معنا
+                  {t('nav.contact', 'تواصل معنا')}
                 </button>
               </li>
             </ul>
@@ -170,20 +179,20 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Policies */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              السياسات والشحن
+              {t('footer.policies', 'السياسات والشحن')}
             </h4>
             <ul className="space-y-2 text-xs">
               <li className="text-neutral-400">
-                {content?.return_policy || settings?.return_policy || 'الإرجاع متاح خلال 3 أيام من الاستلام.'}
+                {isAr ? (content?.return_policy || settings?.return_policy || 'الإرجاع متاح خلال 3 أيام من الاستلام.') : 'Returns available within 3 days of delivery.'}
               </li>
               <li className="text-neutral-400">
-                {content?.shipping_text || `رسوم التوصيل: ${settings?.shipping_fee || 65} جنيه لجميع المحافظات`}
+                {isAr ? (content?.shipping_text || `رسوم التوصيل: ${settings?.shipping_fee || 65} جنيه لجميع المحافظات`) : `Shipping fee: ${settings?.shipping_fee || 65} EGP across all governorates.`}
               </li>
               <li className="text-neutral-400">
-                {content?.exchange_policy || settings?.exchange_policy || 'استبدال المقاس متاح خلال 14 يوم من الاستلام.'}
+                {isAr ? (content?.exchange_policy || settings?.exchange_policy || 'استبدال المقاس متاح خلال 14 يوم من الاستلام.') : 'Size exchange available within 14 days of delivery.'}
               </li>
               <li className="text-neutral-400">
-                {content?.inspection_text || 'معاينة مجانية للمنتج قبل الدفع والاستلام.'}
+                {isAr ? (content?.inspection_text || 'معاينة مجانية للمنتج قبل الدفع والاستلام.') : 'Free inspection before paying and receiving.'}
               </li>
             </ul>
           </div>
@@ -192,7 +201,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
         {/* Quiet copyright */}
         <div className="mt-12 pt-6 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-500 gap-3">
-          <p>© {new Date().getFullYear()} {settings?.store_name || 'Outfit Zone'}. جميع الحقوق محفوظة.</p>
+          <p>© {new Date().getFullYear()} {settings?.store_name || 'Outfit Zone'}. {t('footer.rights', 'جميع الحقوق محفوظة.')}</p>
           <p className="font-mono text-[10px]">EGYPTIAN STREETWEAR BRAND</p>
         </div>
       </div>

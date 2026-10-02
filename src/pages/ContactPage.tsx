@@ -40,11 +40,11 @@ export const ContactPage: React.FC = () => {
           </div>
 
           <p className={`text-xs leading-relaxed ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
-            اضغط على الزر أدناه لمراسلتنا مباشرة على واتساب. يمكنك الاستفسار عن تفاصيل أي موديل أو إرسال رقم طلبك لمتابعته فورًا.
+            {isRtl ? 'اضغط على الزر أدناه لمراسلتنا مباشرة على واتساب. يمكنك الاستفسار عن تفاصيل أي موديل أو إرسال رقم طلبك لمتابعته فورًا.' : 'Click below to message us directly on WhatsApp for sizing help or order tracking.'}
           </p>
 
           <a
-            href={getWhatsAppUrl('مرحبًا Outfit Zone، أريد الاستفسار عن منتجاتكم وخدمة التوصيل.')}
+            href={getWhatsAppUrl(isRtl ? 'مرحبًا Outfit Zone، أريد الاستفسار عن منتجاتكم وخدمة التوصيل.' : 'Hello Outfit Zone, I have an inquiry about your products and delivery.')}
             target="_blank"
             rel="noreferrer noopener"
             className="w-full py-3.5 px-6 bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg cursor-pointer"
@@ -58,7 +58,7 @@ export const ContactPage: React.FC = () => {
             <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
               isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'
             }`}>
-              <span className="text-neutral-400">الاتصال المباشر / هاتف:</span>
+              <span className="text-neutral-400">{isRtl ? 'الاتصال المباشر / هاتف:' : 'Direct Phone Call:'}</span>
               <a
                 href={`tel:${contactSocial.phone_number}`}
                 className={`font-mono font-bold hover:underline ${isDark ? 'text-white' : 'text-neutral-900'}`}
@@ -73,7 +73,7 @@ export const ContactPage: React.FC = () => {
             isDark ? 'border-neutral-800/80' : 'border-neutral-100'
           }`}>
             <Clock className="w-4 h-4 text-neutral-500" />
-            <span>ساعات الرد: يوميًا من 10 صباحًا حتى 11 مساءً</span>
+            <span>{isRtl ? 'ساعات الرد: يوميًا من 10 صباحًا حتى 11 مساءً' : 'Support hours: Daily 10 AM - 11 PM'}</span>
           </div>
         </div>
 
@@ -82,9 +82,9 @@ export const ContactPage: React.FC = () => {
           <div className={`p-5 sm:p-6 rounded-2xl border space-y-4 ${
             isDark ? 'bg-[#121216] border-neutral-800' : 'bg-white border-neutral-200 shadow-sm'
           }`}>
-            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>حساباتنا على منصات التواصل</h3>
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{isRtl ? 'حساباتنا على منصات التواصل' : 'Our Social Media Channels'}</h3>
             <p className="text-xs text-neutral-400">
-              تابع أحدث دروبات الستريت وير وكواليس التصوير والموديلات الجديدة أولاً بأول.
+              {isRtl ? 'تابع أحدث دروبات الستريت وير وكواليس التصوير والموديلات الجديدة أولاً بأول.' : 'Follow the latest streetwear drops, behind the scenes, and new releases.'}
             </p>
 
             <div className="space-y-2.5 pt-2 text-xs">
@@ -98,7 +98,7 @@ export const ContactPage: React.FC = () => {
                   }`}
                 >
                   <span className="font-semibold">Instagram</span>
-                  <span className="text-neutral-400 text-[11px]">متابعة ↗</span>
+                  <span className="text-neutral-400 text-[11px]">{isRtl ? 'متابعة ↗' : 'Follow ↗'}</span>
                 </a>
               )}
 
@@ -112,7 +112,7 @@ export const ContactPage: React.FC = () => {
                   }`}
                 >
                   <span className="font-semibold">Facebook</span>
-                  <span className="text-neutral-400 text-[11px]">متابعة ↗</span>
+                  <span className="text-neutral-400 text-[11px]">{isRtl ? 'متابعة ↗' : 'Follow ↗'}</span>
                 </a>
               )}
 
@@ -126,7 +126,7 @@ export const ContactPage: React.FC = () => {
                   }`}
                 >
                   <span className="font-semibold">TikTok</span>
-                  <span className="text-neutral-400 text-[11px]">متابعة ↗</span>
+                  <span className="text-neutral-400 text-[11px]">{isRtl ? 'متابعة ↗' : 'Follow ↗'}</span>
                 </a>
               )}
 
@@ -140,7 +140,7 @@ export const ContactPage: React.FC = () => {
                   }`}
                 >
                   <span className="font-semibold">Messenger</span>
-                  <span className="text-neutral-400 text-[11px]">مراسلة ↗</span>
+                  <span className="text-neutral-400 text-[11px]">{isRtl ? 'مراسلة ↗' : 'Message ↗'}</span>
                 </a>
               )}
             </div>
@@ -154,7 +154,7 @@ export const ContactPage: React.FC = () => {
               <span>{isRtl ? 'سياسة التوصيل والمعاينة' : 'Delivery & Inspection Policy'}</span>
             </div>
             <p className="text-neutral-400 leading-relaxed">
-              {content?.shipping_text || 'جميع الطلبات يتم شحنها لجميع المحافظات بنظام الدفع عند الاستلام كاش. يمكنك معاينة الطلب والتأكد من مطابقة المقاس قبل الدفع.'}
+              {isRtl ? (content?.shipping_text || 'جميع الطلبات يتم شحنها لجميع المحافظات بنظام الدفع عند الاستلام كاش. يمكنك معاينة الطلب والتأكد من مطابقة المقاس قبل الدفع.') : 'All orders are shipped across all Egyptian governorates with Cash on Delivery. You can inspect the pieces and check sizes before payment.'}
             </p>
           </div>
         </div>

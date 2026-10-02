@@ -2,7 +2,11 @@ import React from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Heart } from 'lucide-react';
 import { Product } from '../../types';
-import { formatPrice } from '../../utils/constants';
+import {
+  formatPrice,
+  getLocalizedProductName,
+  getLocalizedCategoryName,
+} from '../../utils/constants';
 import { resolveImageUrl } from '../../utils/imageHelper';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -12,7 +16,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const { isDark } = useTheme();
 
@@ -34,6 +38,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   const totalStock = product.variants?.reduce((sum, v) => sum + v.stock_quantity, 0) ?? 0;
   const isOutOfStock = totalStock <= 0;
 
+  const localizedName = getLocalizedProductName(product, language);
+  const localizedCategory = getLocalizedCategoryName(product.category?.name, language);
+
   return (
     <div
       onClick={() => onSelect(product.slug)}
@@ -54,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-900/10">
         <img
           src={primaryImage}
-          alt={product.name}
+          alt={localizedName}
           loading="lazy"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
@@ -68,7 +75,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
             </span>
           ) : product.is_new ? (
             <span className="text-[10px] font-bold bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider">
-              NEW
+              {t('product.badge_new', 'جديد')}
             </span>
           ) : null}
 
@@ -100,7 +107,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
         <div>
           {/* Category / Style */}
           <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-1 flex items-center gap-1.5 font-medium">
-            <span>{product.category?.name || t('product.streetwear', 'Streetwear')}</span>
+            <span>{localizedCategory || t('product.streetwear', 'Streetwear')}</span>
             <span aria-hidden="true">·</span>
             <span>{t('product.egyptian_cotton', 'Egyptian Cotton')}</span>
           </div>
@@ -110,7 +117,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
               isDark ? 'text-white group-hover:text-neutral-200' : 'text-neutral-900 group-hover:text-black'
             }`}
           >
-            {product.name}
+            {localizedName}
           </h3>
         </div>
 
@@ -122,11 +129,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
             <span className={`text-sm sm:text-base font-extrabold font-mono-numbers ${
               isDark ? 'text-white' : 'text-black'
             }`}>
-              {formatPrice(product.price)}
+              {formatPrice(product.price, language)}
             </span>
             {hasDiscount && (
               <span className="text-xs text-neutral-400 line-through font-mono-numbers">
-                {formatPrice(product.compare_at_price!)}
+                {formatPrice(product.compare_at_price!, language)}
               </span>
             )}
           </div>

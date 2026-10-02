@@ -21,6 +21,19 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.cart': 'عربة التسوق',
     'nav.track': 'تتبع طلبك',
     'nav.search_placeholder': 'ابحث عن تيشيرت، بولو، أو قميص...',
+    'nav.categories': 'الأقسام',
+    'nav.favorites': 'المفضلة',
+    'nav.account': 'حسابي',
+    'footer.cod_title': 'الدفع عند الاستلام',
+    'footer.cod_desc': 'ادفع كاش فقط عندما تستلم طلبك عند باب بيتك في أي محافظة داخل مصر.',
+    'footer.inspection_title': 'معاينة مجانية عند الاستلام',
+    'footer.inspection_desc': 'يمكنك فتح الشحنة ومعاينة الخامة والمقاس بحضور مندوب الشحن قبل سداد المبلغ.',
+    'footer.exchange_title': 'استبدال المقاس',
+    'footer.exchange_desc': 'استبدال المقاس متاح خلال 14 يوم من الاستلام بكل سهولة.',
+    'footer.quick_nav': 'التنقل السريع',
+    'footer.all_products': 'جميع المنتجات',
+    'footer.about_brand': 'قصة البراند',
+    'footer.policies': 'السياسات والشحن',
     // Home Page
     'home.trust.cod_title': 'دفع عند الاستلام',
     'home.trust.cod_subtitle': 'كاش',
@@ -149,6 +162,16 @@ const translations: Record<Language, Record<string, string>> = {
     'product.unavailable': 'غير متوفر',
     'product.review_text_required': 'اكتب رأيك في المنتج أولًا.',
     'product.stock_unavailable': 'عفوًا، المقاس أو اللون المختار غير متوفر حاليًا. اختر خيارًا آخر.',
+    'product.stock_remaining': 'متبقي في المخزون:',
+    'product.badge_new': 'جديد',
+    'product.comments_title': 'الأسئلة والاستفسارات',
+    'product.no_comments': 'لا توجد استفسارات حتى الآن',
+    'product.first_comment': 'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.',
+    'product.comment_name': 'الاسم',
+    'product.comment_placeholder': 'اكتب استفسارك بخصوص الموديل...',
+    'product.submitting_comment': 'جاري إرسال الاستفسار...',
+    'product.submit_comment': 'إرسال السؤال',
+    'product.comment_about': 'استفسارات العملاء وإجابات فريق Outfit Zone',
     'cart.added_notification': 'تمت إضافة "{name}" ({size}) إلى السلة',
     'nav.menu': 'القائمة الرئيسية',
     'nav.search': 'بحث',
@@ -305,6 +328,19 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.search_placeholder': 'Search t-shirts, polos, shirts...',
     'nav.menu': 'Main Menu',
     'nav.search': 'Search',
+    'nav.categories': 'Categories',
+    'nav.favorites': 'Wishlist',
+    'nav.account': 'Account',
+    'footer.cod_title': 'Cash on Delivery',
+    'footer.cod_desc': 'Pay cash only when receiving your order at your doorstep across Egypt.',
+    'footer.inspection_title': 'Free Inspection Upon Delivery',
+    'footer.inspection_desc': 'Open your package and inspect fabric and size with the courier before paying.',
+    'footer.exchange_title': 'Size Exchange',
+    'footer.exchange_desc': 'Hassle-free size replacement available within 14 days of delivery.',
+    'footer.quick_nav': 'Quick Navigation',
+    'footer.all_products': 'All Products',
+    'footer.about_brand': 'About the Brand',
+    'footer.policies': 'Policies & Shipping',
 
     // Home Page
 
@@ -415,6 +451,16 @@ const translations: Record<Language, Record<string, string>> = {
     'product.unavailable': 'Unavailable',
     'product.review_text_required': 'Please write your review first.',
     'product.stock_unavailable': 'Sorry, the selected size or color is currently unavailable. Please choose another option.',
+    'product.stock_remaining': 'Left in stock:',
+    'product.badge_new': 'NEW',
+    'product.comments_title': 'Questions & Inquiries',
+    'product.no_comments': 'No questions yet',
+    'product.first_comment': 'Have a question about size or fabric? Ask here.',
+    'product.comment_name': 'Name',
+    'product.comment_placeholder': 'Write your question about this product...',
+    'product.submitting_comment': 'Submitting inquiry...',
+    'product.submit_comment': 'Submit Question',
+    'product.comment_about': 'Customer questions and Outfit Zone team answers',
     'cart.added_notification': '"{name}" ({size}) was added to your bag',
     'checkout.submit_order': 'Confirm Order Now',
     'checkout.order_summary': 'Your Order Summary',
@@ -596,16 +642,20 @@ const getInitialLanguage = (): Language => {
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
-  const direction: 'rtl' | 'ltr' = language === 'ar' ? 'rtl' : 'ltr';
+  // The application layout geometry is permanently locked to RTL across both Arabic and English.
+  // This guarantees that switching language only changes text content and never reverses or
+  // mirrors the header, navbar, hero slider, product cards, buttons, drawers, or sidebar.
+  const direction: 'rtl' | 'ltr' = 'rtl';
   const isRtl = language === 'ar';
 
   useEffect(() => {
     try {
-      document.documentElement.dir = direction;
+      // Keep document direction permanently locked to 'rtl' so that layout architecture is fixed
+      document.documentElement.dir = 'rtl';
       document.documentElement.lang = language;
       localStorage.setItem('oz_lang', language);
     } catch {}
-  }, [language, direction]);
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

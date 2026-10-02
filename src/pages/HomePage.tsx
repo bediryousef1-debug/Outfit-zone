@@ -634,8 +634,8 @@ try {
 * ==========================================================================
   */
 
-const PreviousArrow = isRTL ? ChevronRight : ChevronLeft;
-const NextArrow = isRTL ? ChevronLeft : ChevronRight;
+const PreviousArrow = ChevronRight;
+const NextArrow = ChevronLeft;
 
 return (
 <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">

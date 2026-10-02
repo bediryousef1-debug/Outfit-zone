@@ -30,6 +30,7 @@ interface AdminDashboardPageProps {
       | 'orders'
       | 'content'
       | 'contact'
+      | 'hero-slider'
       | 'settings'
   ) => void;
   onSelectOrder: (orderId: string) => void;

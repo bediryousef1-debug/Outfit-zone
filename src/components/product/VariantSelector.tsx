@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ProductVariant } from '../../types';
-import { STANDARD_SIZES } from '../../utils/constants';
+import { STANDARD_SIZES, getLocalizedColorName } from '../../utils/constants';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Minus, Plus } from 'lucide-react';
@@ -25,7 +25,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
   onChangeQuantity,
 }) => {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Extract unique colors available for this product
   const availableColors = useMemo(() => {
@@ -119,7 +119,9 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
               isDark ? 'text-neutral-200' : 'text-neutral-800'
             }`}
           >
-            {selectedColor || t('product.select_color', 'اختر اللون')}
+            {selectedColor
+              ? getLocalizedColorName(selectedColor, language)
+              : t('product.select_color', 'اختر اللون')}
           </span>
         </div>
 
@@ -159,7 +161,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
                   }}
                 />
 
-                <span className="font-semibold">{color}</span>
+                <span className="font-semibold">{getLocalizedColorName(color, language)}</span>
               </button>
             );
           })}
@@ -212,7 +214,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
 
                 <span className="text-[10px] block opacity-75 font-sans mt-0.5">
                   {!isAvailable
-                    ? t('product.sold_out', 'Sold out')
+                    ? t('product.sold_out', 'غير متوفر')
                     : stock <= 3
                     ? `${t('product.remaining', 'باقي')} ${stock}`
                     : t('product.available', 'متوفر')}
@@ -235,7 +237,7 @@ export const VariantSelector: React.FC<VariantSelectorProps> = ({
           </span>
           {currentVariant && currentVariant.stock_quantity > 0 && currentVariant.stock_quantity <= 4 && (
             <span className="text-[10px] text-amber-500 font-medium">
-              {t('product.remaining', 'متبقي في المخزون:')} {currentVariant.stock_quantity}
+              {t('product.stock_remaining', 'متبقي في المخزون:')} {currentVariant.stock_quantity}
             </span>
           )}
         </div>

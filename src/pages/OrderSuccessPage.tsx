@@ -3,7 +3,7 @@ import { CheckCircle2, MessageCircle, Truck, Package, ShieldCheck, ArrowRight, L
 import { OrderReceipt } from '../types';
 import { api } from '../services/api';
 import { useStore } from '../context/StoreContext';
-import { formatPrice } from '../utils/constants';
+import { formatPrice, getLocalizedColorName } from '../utils/constants';
 import { useLanguage } from '../context/LanguageContext';
 
 interface OrderSuccessPageProps {
@@ -13,7 +13,7 @@ interface OrderSuccessPageProps {
 
 export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber, onNavigate }) => {
   const { settings, getWhatsAppUrl } = useStore();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [order, setOrder] = useState<OrderReceipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -143,11 +143,14 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
                       <div>
                         <h4 className="font-bold text-white">{item.product_name_snapshot}</h4>
                         <p className="text-[11px] text-neutral-400">
-                          {t("order.item_details", "Color: {color} · Size: {size} · Quantity: {quantity}").replace("{color}", item.color).replace("{size}", item.size).replace("{quantity}", String(item.quantity))}
+                          {t("order.item_details", "Color: {color} · Size: {size} · Quantity: {quantity}")
+                            .replace("{color}", getLocalizedColorName(item.color, language))
+                            .replace("{size}", item.size)
+                            .replace("{quantity}", String(item.quantity))}
                         </p>
                       </div>
                       <span className="font-mono-numbers font-bold text-white">
-                        {formatPrice(item.line_total)}
+                        {formatPrice(item.line_total, language)}
                       </span>
                     </div>
                   ))}
@@ -157,16 +160,16 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
                 <div className="pt-3 border-t border-neutral-800 space-y-1.5 text-xs">
                   <div className="flex justify-between text-neutral-400">
                     <span>{t("order.products_value", "Products value:")}</span>
-                    <span className="font-mono-numbers text-white">{formatPrice(order.subtotal || 0)}</span>
+                    <span className="font-mono-numbers text-white">{formatPrice(order.subtotal || 0, language)}</span>
                   </div>
                   <div className="flex justify-between text-neutral-400">
                     <span>{t("order.shipping_all", "Shipping across Egypt:")}</span>
-                    <span className="font-mono-numbers text-white">{formatPrice(order.shipping_fee || 0)}</span>
+                    <span className="font-mono-numbers text-white">{formatPrice(order.shipping_fee || 0, language)}</span>
                   </div>
                   <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
                     <span>{t("order.cash_total", "Total to be paid in cash on delivery:")}</span>
                     <span className="font-mono-numbers text-base text-emerald-400">
-                      {formatPrice(order.total || 0)}
+                      {formatPrice(order.total || 0, language)}
                     </span>
                   </div>
                 </div>
