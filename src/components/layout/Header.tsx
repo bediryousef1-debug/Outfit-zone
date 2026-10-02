@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   itemCount,
   setIsCartOpen,
-  announcementText = 'الدفع عند الاستلام فقط داخل جميع محافظات مصر · معاينة مجانية للطلب قبل الدفع والاستلام',
+  announcementText,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -71,6 +71,15 @@ export const Header: React.FC<HeaderProps> = ({
     onNavigate(`/products?search=${encodeURIComponent(normalized)}`);
   };
 
+  const localizedAnnouncement =
+    announcementText ||
+    t(
+      'announcement.cod_inspection',
+      language === 'en'
+        ? 'Cash on Delivery only across all governorates in Egypt · Free inspection before payment and receiving'
+        : 'الدفع عند الاستلام فقط داخل جميع محافظات مصر · معاينة مجانية للطلب قبل الدفع والاستلام'
+    );
+
   return (
     <>
       {/* Announcement Bar */}
@@ -79,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
           <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
 
           <span className="truncate tracking-tight min-w-0">
-            {announcementText}
+            {localizedAnnouncement}
           </span>
 
           <ChevronLeft className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
