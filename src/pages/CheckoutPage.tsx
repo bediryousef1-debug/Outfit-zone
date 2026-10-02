@@ -56,6 +56,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   // Load dynamic shipping rates from Supabase / API
   useEffect(() => {
     let isMounted = true;
+
     api
       .getShippingRates(false)
       .then((rates) => {
@@ -67,6 +68,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       .catch(() => {
         if (isMounted) setRatesLoading(false);
       });
+
     return () => {
       isMounted = false;
     };
@@ -76,6 +78,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const selectedGovObj = EGYPTIAN_GOVERNORATES.find(
     (g) => g.id === formData.governorate
   );
+
   const selectedGovNameAr = selectedGovObj
     ? selectedGovObj.nameAr
     : formData.governorate;
@@ -85,6 +88,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   );
 
   const isGovAvailable = matchedRate ? matchedRate.is_active : true;
+
   const shippingFee = matchedRate
     ? Number(matchedRate.shipping_fee)
     : Number(settings?.shipping_fee) || 65;
@@ -98,30 +102,48 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       !formData.customer_name.trim() ||
       formData.customer_name.trim().length < 3
     ) {
-      errs.customer_name = t("checkout.name_required", "Please enter your full name.");
+      errs.customer_name = t(
+        'checkout.name_required',
+        'Please enter your full name.'
+      );
     }
 
     if (!formData.phone.trim()) {
-      errs.phone = t("checkout.phone_required", "Phone number is required to confirm delivery.");
+      errs.phone = t(
+        'checkout.phone_required',
+        'Phone number is required to confirm delivery.'
+      );
     } else if (!validateEgyptianPhone(formData.phone)) {
-      errs.phone =
-        t("checkout.phone_invalid", "Please enter a valid Egyptian mobile number starting with 010, 011, 012, or 015.");
+      errs.phone = t(
+        'checkout.phone_invalid',
+        'Please enter a valid Egyptian mobile number starting with 010, 011, 012, or 015.'
+      );
     }
 
     if (!formData.governorate) {
-      errs.governorate = t("checkout.governorate_required", "Please select your governorate.");
+      errs.governorate = t(
+        'checkout.governorate_required',
+        'Please select your governorate.'
+      );
     } else if (!isGovAvailable) {
-      errs.governorate =
-        t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.");
+      errs.governorate = t(
+        'checkout.shipping_error',
+        'We could not calculate shipping for this governorate right now. Please try again.'
+      );
     }
 
     if (!formData.city.trim() || formData.city.trim().length < 2) {
-      errs.city = t("checkout.city_required", "Please enter the city, district, or area.");
+      errs.city = t(
+        'checkout.city_required',
+        'Please enter the city, district, or area.'
+      );
     }
 
     if (!formData.address.trim() || formData.address.trim().length < 5) {
-      errs.address =
-        t("checkout.address_required", "Please enter the detailed address (street, building, and apartment).");
+      errs.address = t(
+        'checkout.address_required',
+        'Please enter the detailed address (street, building, and apartment).'
+      );
     }
 
     setErrors(errs);
@@ -134,10 +156,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       audio.volume = 1;
 
       audio.play().catch((audioError) => {
-        console.warn('Order success sound could not be played:', audioError);
+        console.warn(
+          'Order success sound could not be played:',
+          audioError
+        );
       });
     } catch (audioError) {
-      console.warn('Order success sound could not be initialized:', audioError);
+      console.warn(
+        'Order success sound could not be initialized:',
+        audioError
+      );
     }
   };
 
@@ -146,7 +174,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setSubmitError(null);
 
     if (items.length === 0) {
-      setSubmitError(t("checkout.empty_cart", "Your shopping cart is empty."));
+      setSubmitError(
+        t('checkout.empty_cart', 'Your shopping cart is empty.')
+      );
       return;
     }
 
@@ -156,7 +186,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     if (!isGovAvailable) {
       setSubmitError(
-        t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.")
+        t(
+          'checkout.shipping_error',
+          'We could not calculate shipping for this governorate right now. Please try again.'
+        )
       );
       return;
     }
@@ -168,18 +201,36 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         customer: {
           customer_name: formData.customer_name.trim(),
           phone: formData.phone.trim(),
+
+          // Keep governorate in Arabic because the shipping system
+          // matches against the Arabic governorate name in Supabase.
           governorate: selectedGovNameAr,
+
           city: formData.city.trim(),
           address: formData.address.trim(),
           notes: formData.notes.trim() || undefined,
         },
+
         items: items.map((i) => ({
           variant_id: i.variantId,
           product_id: i.productId,
           quantity: i.quantity,
-          product_name: i.product?.name,
-          category_name: i.product?.category?.name,
-          color: i.color,
+
+          // Store the product name according to the customer's language.
+          product_name:
+            getLocalizedProductName(i.product, language) ||
+            i.product?.name,
+
+          // Store the category name according to the customer's language.
+          category_name:
+            language === 'en'
+              ? i.product?.category?.name_en ||
+                i.product?.category?.name
+              : i.product?.category?.name,
+
+          // Store the selected color according to the customer's language.
+          color: getLocalizedColorName(i.color, language),
+
           size: i.size,
           unit_price: i.unitPrice,
           line_total: i.unitPrice * i.quantity,
@@ -196,23 +247,43 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         onOrderSuccess(res.order_number, res.receipt_token);
       } else {
         throw new Error(
-          res.error || t("checkout.order_error", "An error occurred while submitting your order. Please try again.")
+          res.error ||
+            t(
+              'checkout.order_error',
+              'An error occurred while submitting your order. Please try again.'
+            )
         );
       }
     } catch (err: any) {
       console.error('Order submission error:', err);
+
       const rawMsg = err.message || '';
+
       if (
         rawMsg.includes('OZ_SHIPPING_GOVERNORATE_UNAVAILABLE') ||
         rawMsg.includes('OZ_SHIPPING_SETTINGS_MISSING')
       ) {
         setSubmitError(
-          t("checkout.shipping_error", "We could not calculate shipping for this governorate right now. Please try again.")
+          t(
+            'checkout.shipping_error',
+            'We could not calculate shipping for this governorate right now. Please try again.'
+          )
         );
       } else if (rawMsg.includes('OZ_INSUFFICIENT_STOCK')) {
-        setSubmitError(t("checkout.out_of_stock", "Some products in your cart do not have enough stock."));
+        setSubmitError(
+          t(
+            'checkout.out_of_stock',
+            'Some products in your cart do not have enough stock.'
+          )
+        );
       } else {
-        setSubmitError(rawMsg || t("checkout.order_error", "An error occurred while submitting your order. Please try again."));
+        setSubmitError(
+          rawMsg ||
+            t(
+              'checkout.order_error',
+              'An error occurred while submitting your order. Please try again.'
+            )
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -227,11 +298,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          {t("checkout.empty_title", "Your cart is currently empty")}
+          {t(
+            'checkout.empty_title',
+            'Your cart is currently empty'
+          )}
         </h2>
+
         <p className="text-xs text-neutral-400 mb-6">
-          {t("checkout.empty_text", "Add some streetwear pieces to your cart to continue checkout.")}
+          {t(
+            'checkout.empty_text',
+            'Add some streetwear pieces to your cart to continue checkout.'
+          )}
         </p>
+
         <button
           onClick={() => onNavigate('/products')}
           className={`py-3 px-6 rounded-full font-bold text-xs transition-all shadow-md cursor-pointer ${
@@ -240,7 +319,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
-              {t("checkout.browse_products", "Browse Products Now")}
+          {t(
+            'checkout.browse_products',
+            'Browse Products Now'
+          )}
         </button>
       </div>
     );
@@ -255,17 +337,25 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           className="text-xs text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1.5 mb-3 transition-colors cursor-pointer"
         >
           <BackIcon className="w-4 h-4" />
-          <span>{t("checkout.back_to_cart", "Back to Cart")}</span>
+
+          <span>
+            {t('checkout.back_to_cart', 'Back to Cart')}
+          </span>
         </button>
+
         <h1
           className={`text-2xl sm:text-3xl font-black ${
             isDark ? 'text-white' : 'text-black'
           }`}
         >
-          {t("checkout.page_title", "Checkout")}
+          {t('checkout.page_title', 'Checkout')}
         </h1>
+
         <p className="text-xs text-neutral-400 mt-1">
-          {t("checkout.cod_description", "Cash on Delivery · Free order inspection before receiving and paying")}
+          {t(
+            'checkout.cod_description',
+            'Cash on Delivery · Free order inspection before receiving and paying'
+          )}
         </p>
       </div>
 
@@ -296,7 +386,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   : 'text-black border-neutral-100'
               }`}
             >
-              {t("checkout.shipping_info", "Recipient and Delivery Information")}
+              {t(
+                'checkout.shipping_info',
+                'Recipient and Delivery Information'
+              )}
             </h2>
 
             <div className="space-y-4">
@@ -304,15 +397,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div>
                 <label
                   className={`block text-xs font-bold mb-1.5 ${
-                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    isDark
+                      ? 'text-neutral-300'
+                      : 'text-neutral-700'
                   }`}
                 >
-                  {t("checkout.full_name", "Full Name")} <span className="text-red-400">*</span>
+                  {t('checkout.full_name', 'Full Name')}{' '}
+                  <span className="text-red-400">*</span>
                 </label>
+
                 <input
                   type="text"
                   required
-                  placeholder={t("checkout.customer_name_placeholder", "Enter your full name")}
+                  placeholder={t(
+                    'checkout.customer_name_placeholder',
+                    'Enter your full name'
+                  )}
                   value={formData.customer_name}
                   onChange={(e) =>
                     setFormData({
@@ -328,6 +428,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                   }`}
                 />
+
                 {errors.customer_name && (
                   <p className="text-[11px] text-red-400 mt-1">
                     {errors.customer_name}
@@ -339,11 +440,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div>
                 <label
                   className={`block text-xs font-bold mb-1.5 ${
-                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    isDark
+                      ? 'text-neutral-300'
+                      : 'text-neutral-700'
                   }`}
                 >
-                  {t("checkout.phone_label", "Mobile Phone Number")} <span className="text-red-400">*</span>
+                  {t(
+                    'checkout.phone_label',
+                    'Mobile Phone Number'
+                  )}{' '}
+                  <span className="text-red-400">*</span>
                 </label>
+
                 <input
                   type="tel"
                   required
@@ -351,7 +459,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   dir="ltr"
                   value={formData.phone}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({
+                      ...formData,
+                      phone: e.target.value,
+                    })
                   }
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start font-mono focus:outline-none transition-colors border ${
                     errors.phone
@@ -361,26 +472,38 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                   }`}
                 />
+
                 {errors.phone && (
                   <p className="text-[11px] text-red-400 mt-1">
                     {errors.phone}
                   </p>
                 )}
+
                 <p className="text-[10px] text-neutral-400 mt-1">
-                  {t("checkout.phone_help", "The courier will call this number to arrange your delivery time.")}
+                  {t(
+                    'checkout.phone_help',
+                    'The courier will call this number to arrange your delivery time.'
+                  )}
                 </p>
               </div>
 
-              {/* Governorate (Dynamic shipping rate) & City */}
+              {/* Governorate & City */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
                     className={`block text-xs font-bold mb-1.5 ${
-                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                      isDark
+                        ? 'text-neutral-300'
+                        : 'text-neutral-700'
                     }`}
                   >
-                    {t("checkout.governorate", "Governorate")} <span className="text-red-400">*</span>
+                    {t(
+                      'checkout.governorate',
+                      'Governorate'
+                    )}{' '}
+                    <span className="text-red-400">*</span>
                   </label>
+
                   <select
                     value={formData.governorate}
                     onChange={(e) =>
@@ -401,11 +524,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       const rate = shippingRates.find(
                         (r) => r.governorate === gov.nameAr
                       );
+
                       const feeText = rate
-                        ? ` · ${rate.shipping_fee} ${isRtl ? 'جنيه' : 'EGP'}`
+                        ? ` · ${rate.shipping_fee} ${
+                            isRtl ? 'جنيه' : 'EGP'
+                          }`
                         : '';
+
                       const inactiveText =
-                        rate && !rate.is_active ? ` (${t("checkout.shipping_unavailable", "Unavailable")})` : "";
+                        rate && !rate.is_active
+                          ? ` (${t(
+                              'checkout.shipping_unavailable',
+                              'Unavailable'
+                            )})`
+                          : '';
+
                       return (
                         <option
                           key={gov.id}
@@ -417,19 +550,27 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               : 'bg-white text-black'
                           }
                         >
-                          {isRtl ? gov.nameAr : gov.nameEn} {feeText} {inactiveText}
+                          {isRtl
+                            ? gov.nameAr
+                            : gov.nameEn}{' '}
+                          {feeText} {inactiveText}
                         </option>
                       );
                     })}
                   </select>
+
                   {errors.governorate && (
                     <p className="text-[11px] text-red-400 mt-1">
                       {errors.governorate}
                     </p>
                   )}
+
                   {!isGovAvailable && (
                     <p className="text-[11px] text-red-400 mt-1">
-                      {t("checkout.shipping_unavailable", "Shipping to this governorate is currently unavailable.")}
+                      {t(
+                        'checkout.shipping_unavailable',
+                        'Shipping to this governorate is currently unavailable.'
+                      )}
                     </p>
                   )}
                 </div>
@@ -437,19 +578,31 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div>
                   <label
                     className={`block text-xs font-bold mb-1.5 ${
-                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                      isDark
+                        ? 'text-neutral-300'
+                        : 'text-neutral-700'
                     }`}
                   >
-                    {t("checkout.city", "City / District / Area")} {" "}
+                    {t(
+                      'checkout.city',
+                      'City / District / Area'
+                    )}{' '}
                     <span className="text-red-400">*</span>
                   </label>
+
                   <input
                     type="text"
                     required
-                    placeholder={t("checkout.city_placeholder", "e.g. Nasr City / Mansoura / Smouha")}
+                    placeholder={t(
+                      'checkout.city_placeholder',
+                      'e.g. Nasr City / Mansoura / Smouha'
+                    )}
                     value={formData.city}
                     onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
+                      setFormData({
+                        ...formData,
+                        city: e.target.value,
+                      })
                     }
                     className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                       errors.city
@@ -459,6 +612,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                     }`}
                   />
+
                   {errors.city && (
                     <p className="text-[11px] text-red-400 mt-1">
                       {errors.city}
@@ -471,18 +625,31 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div>
                 <label
                   className={`block text-xs font-bold mb-1.5 ${
-                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    isDark
+                      ? 'text-neutral-300'
+                      : 'text-neutral-700'
                   }`}
                 >
-                  {t("checkout.address", "Detailed Address")} <span className="text-red-400">*</span>
+                  {t(
+                    'checkout.address',
+                    'Detailed Address'
+                  )}{' '}
+                  <span className="text-red-400">*</span>
                 </label>
+
                 <input
                   type="text"
                   required
-                  placeholder={t("checkout.address_placeholder", "Street, building, floor, apartment, landmark")}
+                  placeholder={t(
+                    'checkout.address_placeholder',
+                    'Street, building, floor, apartment, landmark'
+                  )}
                   value={formData.address}
                   onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
+                    setFormData({
+                      ...formData,
+                      address: e.target.value,
+                    })
                   }
                   className={`w-full rounded-xl py-2.5 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                     errors.address
@@ -492,6 +659,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       : 'bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-black'
                   }`}
                 />
+
                 {errors.address && (
                   <p className="text-[11px] text-red-400 mt-1">
                     {errors.address}
@@ -503,17 +671,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div>
                 <label
                   className={`block text-xs font-bold mb-1.5 ${
-                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                    isDark
+                      ? 'text-neutral-300'
+                      : 'text-neutral-700'
                   }`}
                 >
-                  {t("checkout.additional_notes", "Additional Delivery Notes (Optional)")}
+                  {t(
+                    'checkout.additional_notes',
+                    'Additional Delivery Notes (Optional)'
+                  )}
                 </label>
+
                 <textarea
                   rows={2}
-                  placeholder={t("checkout.notes_placeholder", "Any instructions for the courier, such as call times or a nearby landmark")}
+                  placeholder={t(
+                    'checkout.notes_placeholder',
+                    'Any instructions for the courier, such as call times or a nearby landmark'
+                  )}
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData({
+                      ...formData,
+                      notes: e.target.value,
+                    })
                   }
                   className={`w-full rounded-xl py-2 px-3.5 text-xs text-start focus:outline-none transition-colors border ${
                     isDark
@@ -535,20 +715,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           >
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
+
               <div>
                 <span className="text-xs font-bold block">
-                  {t("checkout.cod_title", "Cash on Delivery (COD)")}
+                  {t(
+                    'checkout.cod_title',
+                    'Cash on Delivery (COD)'
+                  )}
                 </span>
+
                 <span className="text-[11px] text-neutral-400">
-                  {t("checkout.cod_description_full", "Pay the courier after inspecting the package and confirming it matches your order.")}
+                  {t(
+                    'checkout.cod_description_full',
+                    'Pay the courier after inspecting the package and confirming it matches your order.'
+                  )}
                 </span>
               </div>
             </div>
+
             <Lock className="w-4 h-4 text-neutral-400" />
           </div>
         </div>
 
-        {/* Right: Order Summary with Dynamic Shipping */}
+        {/* Right: Order Summary */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 min-w-0">
           <div
             className={`p-5 sm:p-6 rounded-2xl border space-y-4 transition-colors ${
@@ -564,44 +753,89 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   : 'text-black border-neutral-100'
               }`}
             >
-              {t("checkout.order_summary", "Your Order Summary")} ({items.length} {t("checkout.items_count", "items")})
+              {t(
+                'checkout.order_summary',
+                'Your Order Summary'
+              )}{' '}
+              ({items.length}{' '}
+              {t('checkout.items_count', 'items')})
             </h2>
 
             {/* Items list */}
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {items.map((item) => (
-                <div key={item.variantId} className="flex gap-3 text-xs">
-                  <img
-                    src={resolveImageUrl(
-                      item.product?.images?.find((img) => img.is_primary)?.image_url ||
-                        item.product?.images?.[0]?.image_url
-                    )}
-                    alt={item.product?.name || ''}
-                    className="w-12 h-14 object-cover rounded-lg bg-neutral-900 border border-neutral-800 shrink-0"
-                  />
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4
-                        className={`font-bold line-clamp-1 ${
-                          isDark ? 'text-white' : 'text-black'
-                        }`}
-                      >
-                        {getLocalizedProductName(item.product, language) || item.product?.name}
-                      </h4>
-                      <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
-                        <span>{getLocalizedColorName(item.color, language)}</span>
-                        <span>·</span>
-                        <span className="font-mono">{item.size}</span>
-                        <span>·</span>
-                        <span>{t("checkout.quantity", "Quantity:")} {item.quantity}</span>
+              {items.map((item) => {
+                const localizedProductName =
+                  getLocalizedProductName(
+                    item.product,
+                    language
+                  ) || item.product?.name;
+
+                const localizedColor =
+                  getLocalizedColorName(
+                    item.color,
+                    language
+                  );
+
+                return (
+                  <div
+                    key={item.variantId}
+                    className="flex gap-3 text-xs"
+                  >
+                    <img
+                      src={resolveImageUrl(
+                        item.product?.images?.find(
+                          (img) => img.is_primary
+                        )?.image_url ||
+                          item.product?.images?.[0]
+                            ?.image_url
+                      )}
+                      alt={localizedProductName || ''}
+                      className="w-12 h-14 object-cover rounded-lg bg-neutral-900 border border-neutral-800 shrink-0"
+                    />
+
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4
+                          className={`font-bold line-clamp-1 ${
+                            isDark
+                              ? 'text-white'
+                              : 'text-black'
+                          }`}
+                        >
+                          {localizedProductName}
+                        </h4>
+
+                        <div className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
+                          <span>{localizedColor}</span>
+
+                          <span>·</span>
+
+                          <span className="font-mono">
+                            {item.size}
+                          </span>
+
+                          <span>·</span>
+
+                          <span>
+                            {t(
+                              'checkout.quantity',
+                              'Quantity:'
+                            )}{' '}
+                            {item.quantity}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="font-mono-numbers font-bold">
+                        {formatPrice(
+                          item.unitPrice * item.quantity,
+                          language
+                        )}
                       </div>
                     </div>
-                    <div className="font-mono-numbers font-bold">
-                      {formatPrice(item.unitPrice * item.quantity, language)}
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Dynamic Cost breakdown */}
@@ -613,10 +847,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               }`}
             >
               <div className="flex justify-between">
-                <span>{t("checkout.products_value", "Products Value:")}</span>
+                <span>
+                  {t(
+                    'checkout.products_value',
+                    'Products Value:'
+                  )}
+                </span>
+
                 <span
                   className={`font-mono-numbers font-medium ${
-                    isDark ? 'text-white' : 'text-black'
+                    isDark
+                      ? 'text-white'
+                      : 'text-black'
                   }`}
                 >
                   {formatPrice(subtotal, language)}
@@ -624,13 +866,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="flex justify-between">
-                <span>{t("checkout.shipping_by_governorate", "Shipping Fee")} ({isRtl ? selectedGovNameAr : (selectedGovObj?.nameEn || selectedGovNameAr)}):</span>
+                <span>
+                  {t(
+                    'checkout.shipping_by_governorate',
+                    'Shipping Fee'
+                  )}{' '}
+                  (
+                  {isRtl
+                    ? selectedGovNameAr
+                    : selectedGovObj?.nameEn ||
+                      selectedGovNameAr}
+                  ):
+                </span>
+
                 <span
                   className={`font-mono-numbers font-medium ${
-                    isDark ? 'text-white' : 'text-black'
+                    isDark
+                      ? 'text-white'
+                      : 'text-black'
                   }`}
                 >
-                  {ratesLoading ? t("checkout.calculating", "Calculating...") : formatPrice(shippingFee, language)}
+                  {ratesLoading
+                    ? t(
+                        'checkout.calculating',
+                        'Calculating...'
+                      )
+                    : formatPrice(
+                        shippingFee,
+                        language
+                      )}
                 </span>
               </div>
 
@@ -641,9 +905,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     : 'border-neutral-100 text-black'
                 }`}
               >
-                <span>{t("checkout.total_on_delivery", "Total on Delivery:")}</span>
+                <span>
+                  {t(
+                    'checkout.total_on_delivery',
+                    'Total on Delivery:'
+                  )}
+                </span>
+
                 <span className="font-mono-numbers text-lg">
-                  {formatPrice(grandTotal, language)}
+                  {formatPrice(
+                    grandTotal,
+                    language
+                  )}
                 </span>
               </div>
             </div>
@@ -651,7 +924,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             {/* Submit button */}
             <button
               type="submit"
-              disabled={isSubmitting || !isGovAvailable}
+              disabled={
+                isSubmitting || !isGovAvailable
+              }
               className={`w-full py-4 px-3 sm:px-6 font-extrabold text-xs sm:text-base rounded-full transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50 ${
                 isDark
                   ? 'bg-white text-black hover:bg-neutral-200'
@@ -662,14 +937,23 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{t("checkout.confirm_cod", "Confirm Order Now (Cash on Delivery)")}</span>
+                  <span>
+                    {t(
+                      'checkout.confirm_cod',
+                      'Confirm Order Now (Cash on Delivery)'
+                    )}
+                  </span>
+
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                 </>
               )}
             </button>
 
             <p className="text-[10px] text-center text-neutral-400">
-              {t("checkout.policy_agreement", "By confirming your order, you agree to Outfit Zone exchange and return policies.")}
+              {t(
+                'checkout.policy_agreement',
+                'By confirming your order, you agree to Outfit Zone exchange and return policies.'
+              )}
             </p>
           </div>
         </div>

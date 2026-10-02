@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { api } from '../services/api';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { ProductCard } from '../components/product/ProductCard';
 import {
   FilterState,
@@ -23,6 +24,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 }) => {
   const { categories } = useStore();
   const { isDark } = useTheme();
+  const { language } = useLanguage();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +99,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       setProducts(data);
     } catch (err: any) {
       console.error('Failed to load products:', err);
-      setError(err.message || 'تعذر تحميل المنتجات حاليًا');
+      setError(
+        err.message ||
+          (language === 'en'
+            ? 'Unable to load products right now'
+            : 'تعذر تحميل المنتجات حاليًا')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -121,11 +128,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         if (searchQuery.trim()) {
           const q = searchQuery.trim().toLowerCase();
 
-          const matchName = (p.name || '').toLowerCase().includes(q);
-          const matchDesc = (p.description || '').toLowerCase().includes(q);
-          const matchFabric = (p.fabric_details || '')
-            .toLowerCase()
-            .includes(q);
+          const matchName =
+            (p.name || '').toLowerCase().includes(q) ||
+            (p.name_en || '').toLowerCase().includes(q);
+
+          const matchDesc =
+            (p.description || '').toLowerCase().includes(q) ||
+            (p.description_en || '').toLowerCase().includes(q);
+
+          const matchFabric =
+            (p.fabric_details || '').toLowerCase().includes(q) ||
+            (p.fabric_details_en || '').toLowerCase().includes(q);
 
           if (!matchName && !matchDesc && !matchFabric) {
             return false;
@@ -253,6 +266,15 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     }));
   };
 
+  const getCategoryName = (category: (typeof activeCategories)[number]) =>
+    language === 'en'
+      ? category.name_en || category.name
+      : category.name;
+
+  const selectedCategoryName = selectedCategory
+    ? getCategoryName(selectedCategory)
+    : '';
+
   return (
     <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
 
@@ -265,16 +287,24 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             }`}
           >
             {selectedCategory
-              ? selectedCategory.name
+              ? selectedCategoryName
               : initialFilter === 'new'
-                ? 'وصل حديثًا'
-                : 'تشكيلة الستريت وير'}
+                ? language === 'en'
+                  ? 'New Arrivals'
+                  : 'وصل حديثًا'
+                : language === 'en'
+                  ? 'Streetwear Collection'
+                  : 'تشكيلة الستريت وير'}
           </h1>
 
           <p className="text-xs sm:text-sm text-neutral-400 mt-1">
             {selectedCategory
-              ? `تصفح جميع منتجات قسم ${selectedCategory.name}`
-              : 'جميع الموديلات مصممة بخامات قطنية ثقيلة ومتاحة للدفع عند الاستلام.'}
+              ? language === 'en'
+                ? `Browse all products in ${selectedCategoryName}`
+                : `تصفح جميع منتجات قسم ${selectedCategoryName}`
+              : language === 'en'
+                ? 'All styles are made with heavyweight cotton fabrics and available for cash on delivery.'
+                : 'جميع الموديلات مصممة بخامات قطنية ثقيلة ومتاحة للدفع عند الاستلام.'}
           </p>
         </div>
 
@@ -285,7 +315,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           <div className="relative flex-1 max-w-md">
             <input
               type="text"
-              placeholder="ابحث عن موديل، خامة، أو قصة..."
+              placeholder={
+                language === 'en'
+                  ? 'Search by model, fabric, or fit...'
+                  : 'ابحث عن موديل، خامة، أو قصة...'
+              }
               value={searchQuery}
               onChange={(e) =>
                 setSearchQuery(e.target.value)
@@ -342,7 +376,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             >
               <SlidersHorizontal className="w-4 h-4" />
 
-              <span>تصفية وترتيب</span>
+              <span>
+                {language === 'en'
+                  ? 'Filter & Sort'
+                  : 'تصفية وترتيب'}
+              </span>
 
               {activeFiltersCount > 0 && (
                 <span
@@ -363,7 +401,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                     ? 'border-neutral-800 bg-[#121216] text-neutral-400 hover:text-white'
                     : 'border-neutral-200 bg-white text-neutral-600 hover:text-black shadow-xs'
                 }`}
-                title="إعادة تعيين الفلاتر"
+                title={
+                  language === 'en'
+                    ? 'Reset filters'
+                    : 'إعادة تعيين الفلاتر'
+                }
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -386,7 +428,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                 : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400 shadow-xs'
             }`}
           >
-            جميع الموديلات ({products.length})
+            {language === 'en'
+              ? `All Models (${products.length})`
+              : `جميع الموديلات (${products.length})`}
           </button>
 
           {activeCategories.map((cat) => (
@@ -405,7 +449,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400 shadow-xs'
               }`}
             >
-              {cat.name}
+              {getCategoryName(cat)}
             </button>
           ))}
         </div>
@@ -423,7 +467,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             className="inline-flex items-center gap-2 py-2.5 px-6 bg-white text-black font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>إعادة المحاولة</span>
+            <span>
+              {language === 'en'
+                ? 'Try Again'
+                : 'إعادة المحاولة'}
+            </span>
           </button>
         </div>
       ) : isLoading ? (
@@ -439,18 +487,24 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         <div className="py-16 text-center border border-neutral-800/80 rounded-2xl bg-[#101014] p-8">
 
           <p className="text-base font-bold text-neutral-300 mb-2">
-            لا توجد منتجات مطابقة لخيارات البحث أو الفلترة
+            {language === 'en'
+              ? 'No products match your search or filters'
+              : 'لا توجد منتجات مطابقة لخيارات البحث أو الفلترة'}
           </p>
 
           <p className="text-xs text-neutral-500 mb-6">
-            جرب إلغاء بعض الفلاتر المحددة أو إعادة التعيين لرؤية باقي الموديلات
+            {language === 'en'
+              ? 'Try removing some filters or resetting them to see more styles'
+              : 'جرب إلغاء بعض الفلاتر المحددة أو إعادة التعيين لرؤية باقي الموديلات'}
           </p>
 
           <button
             onClick={resetAllFilters}
             className="py-2.5 px-6 bg-white text-black font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors"
           >
-            إعادة تعيين الفلاتر
+            {language === 'en'
+              ? 'Reset Filters'
+              : 'إعادة تعيين الفلاتر'}
           </button>
         </div>
       ) : (

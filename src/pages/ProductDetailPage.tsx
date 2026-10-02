@@ -86,6 +86,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // Load product
   useEffect(() => {
     let isMounted = true;
+
     const loadProduct = async () => {
       setIsLoading(true);
       setLoadError(null);
@@ -103,6 +104,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
       try {
         const data = await api.getProductBySlug(slug);
+
         if (!isMounted) return;
 
         if (!data || !data.id) {
@@ -119,20 +121,30 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             data.variants[0];
 
           setSelectedColor(firstInStock.color || '');
+
           if (firstInStock.image_url) {
             setCustomColorImage(firstInStock.image_url);
           }
         }
       } catch (err: any) {
         if (!isMounted) return;
+
         console.error('Failed to load product detail:', err);
-        setLoadError(err?.code === 'PRODUCT_NOT_FOUND' ? 'not_found' : 'load_failed');
+
+        setLoadError(
+          err?.code === 'PRODUCT_NOT_FOUND'
+            ? 'not_found'
+            : 'load_failed'
+        );
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadProduct();
+
     return () => {
       isMounted = false;
     };
@@ -141,6 +153,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // Load approved reviews/comments
   useEffect(() => {
     if (!product?.id) return;
+
     let isMounted = true;
 
     const loadReviewsAndComments = async () => {
@@ -151,11 +164,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         ]);
 
         if (!isMounted) return;
+
         setReviews(reviewsData || []);
         setComments(commentsData || []);
       } catch (err) {
         if (!isMounted) return;
+
         console.error('Failed to load reviews/comments:', err);
+
         setReviews([]);
         setComments([]);
       } finally {
@@ -167,6 +183,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     };
 
     loadReviewsAndComments();
+
     return () => {
       isMounted = false;
     };
@@ -181,22 +198,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               isDark ? 'bg-neutral-900' : 'bg-neutral-200'
             }`}
           />
+
           <div className="lg:col-span-5 space-y-4">
             <div
               className={`h-6 w-32 rounded ${
                 isDark ? 'bg-neutral-900' : 'bg-neutral-200'
               }`}
             />
+
             <div
               className={`h-10 w-full rounded ${
                 isDark ? 'bg-neutral-900' : 'bg-neutral-200'
               }`}
             />
+
             <div
               className={`h-8 w-48 rounded ${
                 isDark ? 'bg-neutral-900' : 'bg-neutral-200'
               }`}
             />
+
             <div
               className={`h-32 w-full rounded ${
                 isDark ? 'bg-neutral-900' : 'bg-neutral-200'
@@ -221,8 +242,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
         <p className="text-xs text-neutral-400 mb-6">
           {loadError === 'load_failed'
-            ? t('product.load_error', 'Failed to load product data')
-            : t('product.not_found_detail', 'This product could not be found.')}
+            ? t(
+                'product.load_error',
+                'Failed to load product data'
+              )
+            : t(
+                'product.not_found_detail',
+                'This product could not be found.'
+              )}
         </p>
 
         <button
@@ -233,7 +260,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
-          {t('product.back_to_products', 'Back to Products')}
+          {t(
+            'product.back_to_products',
+            'Back to Products'
+          )}
         </button>
       </div>
     );
@@ -252,14 +282,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           },
         ];
 
-  const currentGalleryImage = images[selectedImageIndex] || images[0];
-  const displayedImageUrl = customColorImage || currentGalleryImage.image_url;
+  const currentGalleryImage =
+    images[selectedImageIndex] || images[0];
+
+  const displayedImageUrl =
+    customColorImage || currentGalleryImage.image_url;
 
   const variants = product.variants || [];
 
-  const selectedVariant: ProductVariant | undefined = variants.find(
-    (v) => v.color === selectedColor && v.size === selectedSize
-  );
+  const selectedVariant: ProductVariant | undefined =
+    variants.find(
+      (v) =>
+        v.color === selectedColor &&
+        v.size === selectedSize
+    );
 
   const canAddToCart = Boolean(
     selectedVariant &&
@@ -276,7 +312,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const averageRating =
     reviews.length > 0
       ? reviews.reduce(
-          (sum, review) => sum + Number(review.rating || 0),
+          (sum, review) =>
+            sum + Number(review.rating || 0),
           0
         ) / reviews.length
       : 0;
@@ -287,14 +324,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
     // Look for color-specific image among variants of this color
     const colorVariantWithImg = variants.find(
-      (v) => v.color === col && Boolean(v.image_url)
+      (v) =>
+        v.color === col &&
+        Boolean(v.image_url)
     );
 
     if (colorVariantWithImg?.image_url) {
-      setCustomColorImage(colorVariantWithImg.image_url);
-      const imgIdx = images.findIndex(
-        (img) => img.image_url === colorVariantWithImg.image_url
+      setCustomColorImage(
+        colorVariantWithImg.image_url
       );
+
+      const imgIdx = images.findIndex(
+        (img) =>
+          img.image_url ===
+          colorVariantWithImg.image_url
+      );
+
       if (imgIdx > -1) {
         setSelectedImageIndex(imgIdx);
       }
@@ -307,10 +352,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     // Clamp or adjust quantity if size was already selected
     if (selectedSize) {
       const newVar = variants.find(
-        (v) => v.color === col && v.size === selectedSize
+        (v) =>
+          v.color === col &&
+          v.size === selectedSize
       );
-      if (newVar && newVar.stock_quantity > 0) {
-        setQuantity((prev) => Math.max(1, Math.min(prev, newVar.stock_quantity)));
+
+      if (
+        newVar &&
+        newVar.stock_quantity > 0
+      ) {
+        setQuantity((prev) =>
+          Math.max(
+            1,
+            Math.min(
+              prev,
+              newVar.stock_quantity
+            )
+          )
+        );
       } else {
         setSelectedSize('');
         setQuantity(1);
@@ -323,11 +382,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // Handle size selection + clamp quantity
   const handleSelectSize = (sz: string) => {
     setSelectedSize(sz);
+
     const newVar = variants.find(
-      (v) => v.color === selectedColor && v.size === sz
+      (v) =>
+        v.color === selectedColor &&
+        v.size === sz
     );
-    if (newVar && newVar.stock_quantity > 0) {
-      setQuantity((prev) => Math.max(1, Math.min(prev, newVar.stock_quantity)));
+
+    if (
+      newVar &&
+      newVar.stock_quantity > 0
+    ) {
+      setQuantity((prev) =>
+        Math.max(
+          1,
+          Math.min(
+            prev,
+            newVar.stock_quantity
+          )
+        )
+      );
     } else {
       setQuantity(1);
     }
@@ -339,20 +413,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     setOrderError(null);
 
     const variant = variants.find(
-      (v) => v.color === selectedColor && v.size === selectedSize
+      (v) =>
+        v.color === selectedColor &&
+        v.size === selectedSize
     );
 
-    if (!variant || !(variant.stock_quantity > 0) || quantity < 1) {
+    if (
+      !variant ||
+      !(variant.stock_quantity > 0) ||
+      quantity < 1
+    ) {
       setOrderError(
         t(
           'product.stock_unavailable',
           'Sorry, the selected size or color is currently unavailable. Please choose another option.'
         )
       );
+
       return false;
     }
 
-    const result = addItem(product, variant, Math.min(quantity, variant.stock_quantity));
+    const result = addItem(
+      product,
+      variant,
+      Math.min(
+        quantity,
+        variant.stock_quantity
+      )
+    );
+
     if (!result.ok) {
       setOrderError(
         t(
@@ -360,8 +449,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           'Sorry, the selected size or color is currently unavailable. Please choose another option.'
         )
       );
+
       return false;
     }
+
     return true;
   };
 
@@ -370,6 +461,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // navigate the variant is guaranteed to be in the cart that CheckoutPage reads.
   const handleDirectOrder = () => {
     if (!canAddToCart) return;
+
     if (addSelectionToCart()) {
       onNavigate('/checkout');
     }
@@ -378,30 +470,58 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // 2. Add to Cart — Secondary Action
   const handleAddToCart = () => {
     if (!canAddToCart) return;
+
     if (addSelectionToCart()) {
       setJustAdded(true);
-      setTimeout(() => setJustAdded(false), 2000);
+
+      setTimeout(
+        () => setJustAdded(false),
+        2000
+      );
     }
   };
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
+  const handleSubmitReview = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
     setReviewMessage(null);
 
     if (!reviewName.trim()) {
-      setReviewMessage(t('product.review_name_required', 'Please enter your name first.'));
+      setReviewMessage(
+        t(
+          'product.review_name_required',
+          'Please enter your name first.'
+        )
+      );
       return;
     }
+
     if (!reviewText.trim()) {
-      setReviewMessage(t('product.review_text_required', 'Please write your review first.'));
+      setReviewMessage(
+        t(
+          'product.review_text_required',
+          'Please write your review first.'
+        )
+      );
       return;
     }
-    if (reviewRating < 1 || reviewRating > 5) {
-      setReviewMessage(t('product.review_rating_invalid', 'Choose a rating from one to 5 stars.'));
+
+    if (
+      reviewRating < 1 ||
+      reviewRating > 5
+    ) {
+      setReviewMessage(
+        t(
+          'product.review_rating_invalid',
+          'Choose a rating from one to 5 stars.'
+        )
+      );
       return;
     }
 
     setReviewSubmitting(true);
+
     try {
       await api.createProductReview({
         product_id: product.id,
@@ -413,31 +533,59 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       setReviewName('');
       setReviewText('');
       setReviewRating(5);
+
       setReviewMessage(
-        t('product.review_success', 'Your review was submitted successfully and will appear after review by the Outfit Zone team.')
+        t(
+          'product.review_success',
+          'Your review was submitted successfully and will appear after review by the Outfit Zone team.'
+        )
       );
     } catch (err: any) {
-      console.error('Failed to submit review:', err);
-      setReviewMessage(err.message || t('product.review_error', 'Could not submit the review. Please try again.'));
+      console.error(
+        'Failed to submit review:',
+        err
+      );
+
+      setReviewMessage(
+        err.message ||
+          t(
+            'product.review_error',
+            'Could not submit the review. Please try again.'
+          )
+      );
     } finally {
       setReviewSubmitting(false);
     }
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
+  const handleSubmitComment = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
     setCommentMessage(null);
 
     if (!commentName.trim()) {
-      setCommentMessage(t('product.comment_name_required', 'Please enter your name first.'));
+      setCommentMessage(
+        t(
+          'product.comment_name_required',
+          'Please enter your name first.'
+        )
+      );
       return;
     }
+
     if (!commentText.trim()) {
-      setCommentMessage(t('product.comment_required', 'Please enter your comment first.'));
+      setCommentMessage(
+        t(
+          'product.comment_required',
+          'Please enter your comment first.'
+        )
+      );
       return;
     }
 
     setCommentSubmitting(true);
+
     try {
       await api.createProductComment({
         product_id: product.id,
@@ -447,12 +595,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
       setCommentName('');
       setCommentText('');
+
       setCommentMessage(
-        t('product.comment_success', 'Your comment was submitted successfully and will appear after admin review.')
+        t(
+          'product.comment_success',
+          'Your comment was submitted successfully and will appear after admin review.'
+        )
       );
     } catch (err: any) {
-      console.error('Failed to submit comment:', err);
-      setCommentMessage(err.message || t('product.comment_error', 'Could not submit the comment. Please try again.'));
+      console.error(
+        'Failed to submit comment:',
+        err
+      );
+
+      setCommentMessage(
+        err.message ||
+          t(
+            'product.comment_error',
+            'Could not submit the comment. Please try again.'
+          )
+      );
     } finally {
       setCommentSubmitting(false);
     }
@@ -463,9 +625,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       'product.whatsapp_message',
       'Hello Outfit Zone, I have a question about the product: "{productName}". Is it available in "{color}" and size "{size}"?'
     )
-      .replace('{productName}', getLocalizedProductName(product, language))
-      .replace('{color}', (selectedColor ? getLocalizedColorName(selectedColor, language) : '...'))
-      .replace('{size}', selectedSize || '...')
+      .replace(
+        '{productName}',
+        getLocalizedProductName(
+          product,
+          language
+        )
+      )
+      .replace(
+        '{color}',
+        selectedColor
+          ? getLocalizedColorName(
+              selectedColor,
+              language
+            )
+          : '...'
+      )
+      .replace(
+        '{size}',
+        selectedSize || '...'
+      )
   );
 
   const BackIcon = ArrowRight;
@@ -482,7 +661,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         }`}
       >
         <BackIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        <span>{t('product.back_to_products', 'Back to Products')}</span>
+
+        <span>
+          {t(
+            'product.back_to_products',
+            'Back to Products'
+          )}
+        </span>
       </button>
 
       {/* Main PDP Grid */}
@@ -498,17 +683,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           >
             <img
               key={displayedImageUrl}
-              src={resolveImageUrl(displayedImageUrl)}
-              alt={getLocalizedProductName(product, language)}
+              src={resolveImageUrl(
+                displayedImageUrl
+              )}
+              alt={getLocalizedProductName(
+                product,
+                language
+              )}
               className="w-full h-full object-cover object-center transition-all duration-500 ease-out hover:scale-105 motion-reduce:transition-none"
               fetchPriority="high"
             />
 
             {hasDiscount && (
               <span className="absolute top-4 end-4 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg font-mono-numbers">
-                {t('product.discount', 'Discount')}{' '}
+                {t(
+                  'product.discount',
+                  'Discount'
+                )}{' '}
                 {Math.round(
-                  ((product.compare_at_price! - product.price) /
+                  ((product.compare_at_price! -
+                    product.price) /
                     product.compare_at_price!) *
                     100
                 )}
@@ -522,15 +716,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-none w-full max-w-full min-w-0">
               {images.map((img, idx) => {
                 const isCurrent =
-                  displayedImageUrl === img.image_url ||
-                  (!customColorImage && selectedImageIndex === idx);
+                  displayedImageUrl ===
+                    img.image_url ||
+                  (!customColorImage &&
+                    selectedImageIndex ===
+                      idx);
 
                 return (
                   <button
                     key={img.id || idx}
                     type="button"
                     onClick={() => {
-                      setSelectedImageIndex(idx);
+                      setSelectedImageIndex(
+                        idx
+                      );
                       setCustomColorImage(null);
                     }}
                     className={`relative w-20 h-24 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer active:scale-95 motion-reduce:transition-none ${
@@ -544,7 +743,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     }`}
                   >
                     <img
-                      src={resolveImageUrl(img.image_url)}
+                      src={resolveImageUrl(
+                        img.image_url
+                      )}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -560,17 +761,33 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Category & Title */}
           <div>
             <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
-              <span>{getLocalizedCategoryName(product.category?.name, language) || t('product.category_streetwear', 'Streetwear')}</span>
+              <span>
+                {getLocalizedCategoryName(
+                  product.category?.name,
+                  language
+                ) ||
+                  t(
+                    'product.category_streetwear',
+                    'Streetwear'
+                  )}
+              </span>
+
               <span>·</span>
+
               <span>Outfit Zone</span>
             </div>
 
             <h1
               className={`text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight ${
-                isDark ? 'text-white' : 'text-neutral-900'
+                isDark
+                  ? 'text-white'
+                  : 'text-neutral-900'
               }`}
             >
-              {getLocalizedProductName(product, language)}
+              {getLocalizedProductName(
+                product,
+                language
+              )}
             </h1>
           </div>
 
@@ -578,28 +795,40 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {reviews.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`w-4 h-4 ${
-                      star <= Math.round(averageRating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-neutral-700'
-                    }`}
-                  />
-                ))}
+                {[1, 2, 3, 4, 5].map(
+                  (star) => (
+                    <Star
+                      key={star}
+                      className={`w-4 h-4 ${
+                        star <=
+                        Math.round(
+                          averageRating
+                        )
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-neutral-700'
+                      }`}
+                    />
+                  )
+                )}
               </div>
 
               <span
                 className={`text-sm font-bold ${
-                  isDark ? 'text-white' : 'text-neutral-900'
+                  isDark
+                    ? 'text-white'
+                    : 'text-neutral-900'
                 }`}
               >
                 {averageRating.toFixed(1)}
               </span>
 
               <span className="text-xs text-neutral-400">
-                ({reviews.length} {t('product.reviews_count', 'reviews')})
+                ({reviews.length}{' '}
+                {t(
+                  'product.reviews_count',
+                  'reviews'
+                )}
+                )
               </span>
             </div>
           )}
@@ -607,25 +836,38 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Pricing */}
           <div
             className={`flex items-baseline gap-3 pb-4 border-b ${
-              isDark ? 'border-neutral-800' : 'border-neutral-200'
+              isDark
+                ? 'border-neutral-800'
+                : 'border-neutral-200'
             }`}
           >
             <span
               className={`text-3xl sm:text-4xl font-black font-mono-numbers ${
-                isDark ? 'text-white' : 'text-neutral-950'
+                isDark
+                  ? 'text-white'
+                  : 'text-neutral-950'
               }`}
             >
-              {formatPrice(product.price, language)}
+              {formatPrice(
+                product.price,
+                language
+              )}
             </span>
 
             {hasDiscount && (
               <span className="text-base sm:text-lg text-neutral-400 line-through font-mono-numbers">
-                {formatPrice(product.compare_at_price!, language)}
+                {formatPrice(
+                  product.compare_at_price!,
+                  language
+                )}
               </span>
             )}
 
             <span className="text-xs text-neutral-400 ms-auto">
-              {t('product.cash_on_delivery', '(Cash on Delivery)')}
+              {t(
+                'product.cash_on_delivery',
+                '(Cash on Delivery)'
+              )}
             </span>
           </div>
 
@@ -642,7 +884,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             quantity={quantity}
             onSelectColor={handleSelectColor}
             onSelectSize={handleSelectSize}
-            onChangeQuantity={(qty) => setQuantity(qty)}
+            onChangeQuantity={(qty) =>
+              setQuantity(qty)
+            }
           />
 
           {/* =================================================================
@@ -668,14 +912,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             >
               <span className="flex items-center gap-2">
                 <Zap className="w-5 h-5 fill-current" />
+
                 <span>
                   {!selectedColor
-                    ? t('product.select_color', 'Please select a color')
+                    ? t(
+                        'product.select_color',
+                        'Please select a color'
+                      )
                     : !selectedSize
-                    ? t('product.select_size', 'Please select a size')
-                    : selectedVariant && selectedVariant.stock_quantity <= 0
-                    ? t('product.out_of_stock', 'Selected size is out of stock')
-                    : t('product.direct_order', 'Order Now')}
+                    ? t(
+                        'product.select_size',
+                        'Please select a size'
+                      )
+                    : selectedVariant &&
+                      selectedVariant.stock_quantity <= 0
+                    ? t(
+                        'product.out_of_stock',
+                        'Selected size is out of stock'
+                      )
+                    : t(
+                        'product.direct_order',
+                        'Order Now'
+                      )}
                 </span>
               </span>
 
@@ -683,14 +941,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <span className="text-[11px] opacity-80 font-normal">
                   {t(
                     'product.direct_order_sub',
-                    t('product.cod_full_notice', 'Cash on Delivery • Full order inspection')
+                    t(
+                      'product.cod_full_notice',
+                      'Cash on Delivery • Full order inspection'
+                    )
                   )}
                 </span>
               )}
             </button>
 
             {orderError && (
-              <p role="alert" className="text-[11px] text-red-400 text-center">
+              <p
+                role="alert"
+                className="text-[11px] text-red-400 text-center"
+              >
                 {orderError}
               </p>
             )}
@@ -712,10 +976,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               }`}
             >
               <ShoppingBag className="w-4 h-4 stroke-[2]" />
+
               <span>
                 {justAdded
-                  ? t('product.added_success', 'Added to Bag! ✓')
-                  : t('product.add_to_cart', 'Add to Bag')}
+                  ? t(
+                      'product.added_success',
+                      'Added to Bag! ✓'
+                    )
+                  : t(
+                      'product.add_to_cart',
+                      'Add to Bag'
+                    )}
               </span>
             </button>
 
@@ -727,7 +998,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               className="w-full py-2.5 text-center text-xs text-neutral-400 hover:text-emerald-500 flex items-center justify-center gap-1.5 transition-colors"
             >
               <MessageCircle className="w-4 h-4 text-[#25D366]" />
-              <span>{t('product.whatsapp_help', 'Need size help via WhatsApp?')}</span>
+
+              <span>
+                {t(
+                  'product.whatsapp_help',
+                  'Need size help via WhatsApp?'
+                )}
+              </span>
             </a>
           </div>
 
@@ -741,25 +1018,42 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           >
             <div className="flex items-center gap-2.5">
               <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span>{t('product.delivery_notice', 'Delivery to all governorates within 2 - 4 business days')}</span>
+
+              <span>
+                {t(
+                  'product.delivery_notice',
+                  'Delivery to all governorates within 2 - 4 business days'
+                )}
+              </span>
             </div>
 
             {settings?.inspection_available && (
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+
                 <span className="font-semibold">
-                  {t('product.free_inspection', 'Free inspection on delivery before paying anything')}
+                  {t(
+                    'product.free_inspection',
+                    'Free inspection on delivery before paying anything'
+                  )}
                 </span>
               </div>
             )}
 
             <div className="flex items-center gap-2.5">
               <RotateCcw className="w-4 h-4 text-neutral-400 shrink-0" />
+
               <span>
                 {language === 'en'
-                  ? t('product.size_exchange_14', 'Size exchange available within 14 days')
-                  : (settings?.exchange_policy ||
-                      t('product.size_exchange_14', 'استبدال المقاس متاح خلال 14 يوم'))}
+                  ? t(
+                      'product.size_exchange_14',
+                      'Size exchange available within 14 days'
+                    )
+                  : settings?.exchange_policy ||
+                    t(
+                      'product.size_exchange_14',
+                      'استبدال المقاس متاح خلال 14 يوم'
+                    )}
               </span>
             </div>
           </div>
@@ -767,32 +1061,62 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Description & Fabric Specifications */}
           <div
             className={`space-y-4 pt-4 border-t text-xs leading-relaxed ${
-              isDark ? 'border-neutral-800' : 'border-neutral-200'
+              isDark
+                ? 'border-neutral-800'
+                : 'border-neutral-200'
             }`}
           >
-            {product.description && (
+            {(language === 'en'
+              ? product.description_en ||
+                product.description
+              : product.description) && (
               <div>
                 <h4
                   className={`font-bold mb-1.5 text-sm ${
-                    isDark ? 'text-white' : 'text-neutral-900'
+                    isDark
+                      ? 'text-white'
+                      : 'text-neutral-900'
                   }`}
                 >
-                  {t('product.description', 'Product Description')}
+                  {t(
+                    'product.description',
+                    'Product Description'
+                  )}
                 </h4>
-                <p className="text-neutral-400">{product.description}</p>
+
+                <p className="text-neutral-400">
+                  {language === 'en'
+                    ? product.description_en ||
+                      product.description
+                    : product.description}
+                </p>
               </div>
             )}
 
-            {product.fabric_details && (
+            {(language === 'en'
+              ? product.fabric_details_en ||
+                product.fabric_details
+              : product.fabric_details) && (
               <div>
                 <h4
                   className={`font-bold mb-1.5 text-sm ${
-                    isDark ? 'text-white' : 'text-neutral-900'
+                    isDark
+                      ? 'text-white'
+                      : 'text-neutral-900'
                   }`}
                 >
-                  {t('product.fabric_details', 'Fabric Details')}
+                  {t(
+                    'product.fabric_details',
+                    'Fabric Details'
+                  )}
                 </h4>
-                <p className="text-neutral-400">{product.fabric_details}</p>
+
+                <p className="text-neutral-400">
+                  {language === 'en'
+                    ? product.fabric_details_en ||
+                      product.fabric_details
+                    : product.fabric_details}
+                </p>
               </div>
             )}
           </div>
@@ -802,14 +1126,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       {/* Reviews & Comments Section */}
       <section
         className={`mt-12 sm:mt-16 border-t pt-10 ${
-          isDark ? 'border-neutral-800' : 'border-neutral-200'
+          isDark
+            ? 'border-neutral-800'
+            : 'border-neutral-200'
         }`}
       >
         {/* Section Tabs Switcher */}
         <div className="flex items-center gap-3 mb-8 border-b border-neutral-800 pb-3">
           <button
             type="button"
-            onClick={() => setActiveFeedbackTab('reviews')}
+            onClick={() =>
+              setActiveFeedbackTab('reviews')
+            }
             className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               activeFeedbackTab === 'reviews'
                 ? isDark
@@ -819,13 +1147,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             }`}
           >
             <Star className="w-4 h-4 fill-current" />
-            <span>{t('product.reviews_tab', 'Customer Reviews')}</span>
-            <span className="text-[11px] font-mono-numbers opacity-80">({reviews.length})</span>
+
+            <span>
+              {t(
+                'product.reviews_tab',
+                'Customer Reviews'
+              )}
+            </span>
+
+            <span className="text-[11px] font-mono-numbers opacity-80">
+              ({reviews.length})
+            </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveFeedbackTab('comments')}
+            onClick={() =>
+              setActiveFeedbackTab('comments')
+            }
             className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
               activeFeedbackTab === 'comments'
                 ? isDark
@@ -835,8 +1174,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             }`}
           >
             <MessageCircle className="w-4 h-4" />
-            <span>{t('product.comments_title', 'الأسئلة والاستفسارات')}</span>
-            <span className="text-[11px] font-mono-numbers opacity-80">({comments.length})</span>
+
+            <span>
+              {t(
+                'product.comments_title',
+                'الأسئلة والاستفسارات'
+              )}
+            </span>
+
+            <span className="text-[11px] font-mono-numbers opacity-80">
+              ({comments.length})
+            </span>
           </button>
         </div>
 
@@ -846,16 +1194,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="lg:col-span-7">
               <div className="flex items-center gap-2 mb-6">
                 <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+
                 <div>
                   <h2
                     className={`text-xl sm:text-2xl font-black ${
-                      isDark ? 'text-white' : 'text-black'
+                      isDark
+                        ? 'text-white'
+                        : 'text-black'
                     }`}
                   >
-                    {t('product.reviews_tab', 'Customer Reviews')}
+                    {t(
+                      'product.reviews_tab',
+                      'Customer Reviews'
+                    )}
                   </h2>
+
                   <p className="text-xs text-neutral-400 mt-1">
-                    {t('product.review_about', 'Customer experiences and reviews of this product')}
+                    {t(
+                      'product.review_about',
+                      'Customer experiences and reviews of this product'
+                    )}
                   </p>
                 </div>
               </div>
@@ -864,12 +1222,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <div className="space-y-3">
                   <div
                     className={`h-28 rounded-2xl animate-pulse ${
-                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                      isDark
+                        ? 'bg-neutral-900'
+                        : 'bg-neutral-100'
                     }`}
                   />
+
                   <div
                     className={`h-28 rounded-2xl animate-pulse ${
-                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                      isDark
+                        ? 'bg-neutral-900'
+                        : 'bg-neutral-100'
                     }`}
                   />
                 </div>
@@ -882,15 +1245,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   }`}
                 >
                   <Star className="w-7 h-7 text-neutral-400 mx-auto mb-2" />
+
                   <p
                     className={`text-sm font-bold ${
-                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                      isDark
+                        ? 'text-neutral-300'
+                        : 'text-neutral-700'
                     }`}
                   >
-                    {t('product.no_reviews', 'No reviews yet')}
+                    {t(
+                      'product.no_reviews',
+                      'No reviews yet'
+                    )}
                   </p>
+
                   <p className="text-xs text-neutral-400 mt-1">
-                    {t('product.first_review', 'Be the first to review this product.')}
+                    {t(
+                      'product.first_review',
+                      'Be the first to review this product.'
+                    )}
                   </p>
                 </div>
               ) : (
@@ -908,33 +1281,49 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         <div>
                           <h3
                             className={`text-sm font-bold mb-1 ${
-                              isDark ? 'text-white' : 'text-black'
+                              isDark
+                                ? 'text-white'
+                                : 'text-black'
                             }`}
                           >
                             {review.customer_name}
                           </h3>
+
                           <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`w-3.5 h-3.5 ${
-                                  star <= Number(review.rating)
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-neutral-300 dark:text-neutral-700'
-                                }`}
-                              />
-                            ))}
+                            {[1, 2, 3, 4, 5].map(
+                              (star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3.5 h-3.5 ${
+                                    star <=
+                                    Number(
+                                      review.rating
+                                    )
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-neutral-300 dark:text-neutral-700'
+                                  }`}
+                                />
+                              )
+                            )}
                           </div>
                         </div>
+
                         <span className="text-[10px] text-neutral-400 shrink-0">
-                          {new Date(review.created_at).toLocaleDateString(
-                            isRtl ? 'ar-EG' : 'en-US'
+                          {new Date(
+                            review.created_at
+                          ).toLocaleDateString(
+                            isRtl
+                              ? 'ar-EG'
+                              : 'en-US'
                           )}
                         </span>
                       </div>
+
                       <p
                         className={`text-sm leading-7 ${
-                          isDark ? 'text-neutral-300' : 'text-neutral-700'
+                          isDark
+                            ? 'text-neutral-300'
+                            : 'text-neutral-700'
                         }`}
                       >
                         {review.review_text}
@@ -956,53 +1345,88 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Star className="w-5 h-5 text-yellow-400" />
+
                   <h3
                     className={`text-lg font-black ${
-                      isDark ? 'text-white' : 'text-black'
+                      isDark
+                        ? 'text-white'
+                        : 'text-black'
                     }`}
                   >
-                    {t('product.write_review', 'Write a Review')}
+                    {t(
+                      'product.write_review',
+                      'Write a Review'
+                    )}
                   </h3>
                 </div>
+
                 <p className="text-xs text-neutral-400 mb-5">
-                  {t('product.share_experience', 'Share your opinion and experience with this product.')}
+                  {t(
+                    'product.share_experience',
+                    'Share your opinion and experience with this product.'
+                  )}
                 </p>
 
-                <form onSubmit={handleSubmitReview} className="space-y-4">
+                <form
+                  onSubmit={handleSubmitReview}
+                  className="space-y-4"
+                >
                   <div>
                     <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                      {t('product.your_rating', 'Your Rating')}
+                      {t(
+                        'product.your_rating',
+                        'Your Rating'
+                      )}
                     </label>
+
                     <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setReviewRating(star)}
-                          className="p-1 cursor-pointer transition-transform hover:scale-110"
-                        >
-                          <Star
-                            className={`w-6 h-6 ${
-                              star <= reviewRating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-neutral-300 dark:text-neutral-700'
-                            }`}
-                          />
-                        </button>
-                      ))}
+                      {[1, 2, 3, 4, 5].map(
+                        (star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() =>
+                              setReviewRating(
+                                star
+                              )
+                            }
+                            className="p-1 cursor-pointer transition-transform hover:scale-110"
+                          >
+                            <Star
+                              className={`w-6 h-6 ${
+                                star <=
+                                reviewRating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-neutral-300 dark:text-neutral-700'
+                              }`}
+                            />
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                      {t('product.name', 'Name')}
+                      {t(
+                        'product.name',
+                        'Name'
+                      )}
                     </label>
+
                     <input
                       type="text"
                       value={reviewName}
-                      onChange={(e) => setReviewName(e.target.value)}
+                      onChange={(e) =>
+                        setReviewName(
+                          e.target.value
+                        )
+                      }
                       maxLength={100}
-                      placeholder={t('product.name_placeholder', 'Enter your name')}
+                      placeholder={t(
+                        'product.name_placeholder',
+                        'Enter your name'
+                      )}
                       className={`w-full rounded-xl border text-sm px-4 py-3 outline-none transition-colors ${
                         isDark
                           ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
@@ -1013,14 +1437,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                      {t('product.review_text_label', 'Your Review')}
+                      {t(
+                        'product.review_text_label',
+                        'Your Review'
+                      )}
                     </label>
+
                     <textarea
                       value={reviewText}
-                      onChange={(e) => setReviewText(e.target.value)}
+                      onChange={(e) =>
+                        setReviewText(
+                          e.target.value
+                        )
+                      }
                       maxLength={2000}
                       rows={4}
-                      placeholder={t('product.review_placeholder', 'Write the details of your experience...')}
+                      placeholder={t(
+                        'product.review_placeholder',
+                        'Write the details of your experience...'
+                      )}
                       className={`w-full rounded-xl border text-sm px-4 py-3 outline-none resize-none transition-colors ${
                         isDark
                           ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
@@ -1051,10 +1486,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     }`}
                   >
                     <Send className="w-4 h-4" />
+
                     <span>
                       {reviewSubmitting
-                        ? t('product.submitting_review', 'Submitting...')
-                        : t('product.submit_review', 'Submit Review')}
+                        ? t(
+                            'product.submitting_review',
+                            'Submitting...'
+                          )
+                        : t(
+                            'product.submit_review',
+                            'Submit Review'
+                          )}
                     </span>
                   </button>
                 </form>
@@ -1068,16 +1510,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="lg:col-span-7">
               <div className="flex items-center gap-2 mb-6">
                 <MessageCircle className="w-5 h-5 text-emerald-400" />
+
                 <div>
                   <h2
                     className={`text-xl sm:text-2xl font-black ${
-                      isDark ? 'text-white' : 'text-black'
+                      isDark
+                        ? 'text-white'
+                        : 'text-black'
                     }`}
                   >
-                    {t('product.comments_title', 'الأسئلة والاستفسارات')}
+                    {t(
+                      'product.comments_title',
+                      'الأسئلة والاستفسارات'
+                    )}
                   </h2>
+
                   <p className="text-xs text-neutral-400 mt-1">
-                    {t('product.comment_about', 'Customer questions and Outfit Zone team answers')}
+                    {t(
+                      'product.comment_about',
+                      'Customer questions and Outfit Zone team answers'
+                    )}
                   </p>
                 </div>
               </div>
@@ -1086,12 +1538,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <div className="space-y-3">
                   <div
                     className={`h-24 rounded-2xl animate-pulse ${
-                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                      isDark
+                        ? 'bg-neutral-900'
+                        : 'bg-neutral-100'
                     }`}
                   />
+
                   <div
                     className={`h-24 rounded-2xl animate-pulse ${
-                      isDark ? 'bg-neutral-900' : 'bg-neutral-100'
+                      isDark
+                        ? 'bg-neutral-900'
+                        : 'bg-neutral-100'
                     }`}
                   />
                 </div>
@@ -1104,15 +1561,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   }`}
                 >
                   <MessageCircle className="w-7 h-7 text-neutral-400 mx-auto mb-2" />
+
                   <p
                     className={`text-sm font-bold ${
-                      isDark ? 'text-neutral-300' : 'text-neutral-700'
+                      isDark
+                        ? 'text-neutral-300'
+                        : 'text-neutral-700'
                     }`}
                   >
-                    {t('product.no_comments', 'لا توجد استفسارات حتى الآن')}
+                    {t(
+                      'product.no_comments',
+                      'لا توجد استفسارات حتى الآن'
+                    )}
                   </p>
+
                   <p className="text-xs text-neutral-400 mt-1">
-                    {t('product.first_comment', 'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.')}
+                    {t(
+                      'product.first_comment',
+                      'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.'
+                    )}
                   </p>
                 </div>
               ) : (
@@ -1129,20 +1596,30 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <h3
                           className={`text-sm font-bold ${
-                            isDark ? 'text-white' : 'text-black'
+                            isDark
+                              ? 'text-white'
+                              : 'text-black'
                           }`}
                         >
                           {comment.customer_name}
                         </h3>
+
                         <span className="text-[10px] text-neutral-400 shrink-0">
-                          {new Date(comment.created_at).toLocaleDateString(
-                            isRtl ? 'ar-EG' : 'en-US'
+                          {new Date(
+                            comment.created_at
+                          ).toLocaleDateString(
+                            isRtl
+                              ? 'ar-EG'
+                              : 'en-US'
                           )}
                         </span>
                       </div>
+
                       <p
                         className={`text-sm leading-relaxed ${
-                          isDark ? 'text-neutral-300' : 'text-neutral-700'
+                          isDark
+                            ? 'text-neutral-300'
+                            : 'text-neutral-700'
                         }`}
                       >
                         {comment.comment}
@@ -1164,29 +1641,53 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               >
                 <div className="flex items-center gap-2 mb-1">
                   <MessageCircle className="w-5 h-5 text-emerald-400" />
+
                   <h3
                     className={`text-lg font-black ${
-                      isDark ? 'text-white' : 'text-black'
+                      isDark
+                        ? 'text-white'
+                        : 'text-black'
                     }`}
                   >
-                    {t('product.write_comment', 'أضف استفسارك')}
+                    {t(
+                      'product.write_comment',
+                      'أضف استفسارك'
+                    )}
                   </h3>
                 </div>
+
                 <p className="text-xs text-neutral-400 mb-5">
-                  {t('product.first_comment', 'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.')}
+                  {t(
+                    'product.first_comment',
+                    'لديك سؤال حول المقاس أو الخامة؟ اسألنا هنا.'
+                  )}
                 </p>
 
-                <form onSubmit={handleSubmitComment} className="space-y-4">
+                <form
+                  onSubmit={handleSubmitComment}
+                  className="space-y-4"
+                >
                   <div>
                     <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                      {t('product.comment_name', 'Name')}
+                      {t(
+                        'product.comment_name',
+                        'Name'
+                      )}
                     </label>
+
                     <input
                       type="text"
                       value={commentName}
-                      onChange={(e) => setCommentName(e.target.value)}
+                      onChange={(e) =>
+                        setCommentName(
+                          e.target.value
+                        )
+                      }
                       maxLength={100}
-                      placeholder={t('product.name_placeholder', 'Enter your name')}
+                      placeholder={t(
+                        'product.name_placeholder',
+                        'Enter your name'
+                      )}
                       className={`w-full rounded-xl border text-sm px-4 py-3 outline-none transition-colors ${
                         isDark
                           ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
@@ -1197,14 +1698,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-neutral-400 mb-1.5">
-                      {t('product.comments_title', 'الاستفسار')}
+                      {t(
+                        'product.comments_title',
+                        'الاستفسار'
+                      )}
                     </label>
+
                     <textarea
                       value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
+                      onChange={(e) =>
+                        setCommentText(
+                          e.target.value
+                        )
+                      }
                       maxLength={2000}
                       rows={4}
-                      placeholder={t('product.comment_placeholder', 'اكتب استفسارك بخصوص الموديل...')}
+                      placeholder={t(
+                        'product.comment_placeholder',
+                        'اكتب استفسارك بخصوص الموديل...'
+                      )}
                       className={`w-full rounded-xl border text-sm px-4 py-3 outline-none resize-none transition-colors ${
                         isDark
                           ? 'bg-neutral-950 border-neutral-800 text-white focus:border-neutral-500'
@@ -1235,10 +1747,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     }`}
                   >
                     <Send className="w-4 h-4" />
+
                     <span>
                       {commentSubmitting
-                        ? t('product.submitting_comment', 'Submitting...')
-                        : t('product.submit_comment', 'Submit Question')}
+                        ? t(
+                            'product.submitting_comment',
+                            'Submitting...'
+                          )
+                        : t(
+                            'product.submit_comment',
+                            'Submit Question'
+                          )}
                     </span>
                   </button>
                 </form>
