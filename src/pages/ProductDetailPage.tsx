@@ -1250,6 +1250,3 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     </div>
   );
 };
-    </div>
-  );
-};
