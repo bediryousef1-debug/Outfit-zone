@@ -927,10 +927,9 @@ return (
       <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
         <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
 
-        <h2 className={isDark ? 'text-white' : 'text-black'}>
-          t('home.categories_title', 'Shop by Category')
-        </h2>
-
+       <h2 className={isDark ? 'text-white' : 'text-black'}>
+  {t('home.categories_title', 'Shop by Category')}
+</h2>
         <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
       </div>
     </div>
