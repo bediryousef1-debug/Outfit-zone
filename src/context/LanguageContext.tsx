@@ -276,7 +276,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.city': 'المدينة / المركز / الحي',
     'checkout.city_placeholder': 'مثال: المعادي أو مدينة نصر',
     'checkout.address': 'العنوان بالتفصيل',
-    'checkout.address_placeholder': 'اسم الشارع، رقم العمارة، رقم الشقة أو علامة مميزة',
+    'checkout.address_placeholder': 'اسم الشارع، رقم العمارة، رقم الشقة و علامة مميزة',
     'checkout.notes': 'ملاحظات إضافية لشركة الشحن (اختياري)',
     'checkout.notes_placeholder': 'أي تعليمات بخصوص الموعد أو مكان التسليم...',
     'checkout.summary_title': 'ملخص الطلب',
