@@ -1,7 +1,9 @@
 import React from 'react';
-import { X, Trash2, ShoppingBag, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { resolveImageUrl } from '../../utils/imageHelper';
 import { formatPrice } from '../../utils/constants';
 
 interface CartDrawerProps {
@@ -11,6 +13,8 @@ interface CartDrawerProps {
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const { items, removeItem, updateQuantity, isCartOpen, setIsCartOpen, subtotal, itemCount } = useCart();
   const { settings } = useStore();
+  const { t, isRtl } = useLanguage();
+  const CheckoutArrow = isRtl ? ArrowLeft : ArrowRight;
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
@@ -19,20 +23,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#101014] border-l border-neutral-800 w-full max-w-md h-full flex flex-col shadow-2xl text-right">
+      <div className="bg-[#101014] border-l border-neutral-800 w-full max-w-md h-full flex flex-col shadow-2xl text-start">
         
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-neutral-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-white" />
             <h3 className="text-base font-bold text-white">
-              سلة الطلبات ({itemCount})
+              {t('cart.title', 'Shopping Bag')} ({itemCount})
             </h3>
           </div>
           <button
             onClick={() => setIsCartOpen(false)}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-            aria-label="إغلاق السلة"
+            aria-label={t('cart.close', 'Close cart')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -44,10 +48,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-neutral-500">
               <ShoppingBag className="w-12 h-12 stroke-[1] mb-3 text-neutral-600" />
               <p className="text-sm font-semibold text-neutral-300 mb-1">
-                سلة مشترياتك فارغة
+                {t('cart.empty', 'Your bag is empty')}
               </p>
               <p className="text-xs text-neutral-500 mb-5">
-                تصفح تشكيلة الستريت وير واختر المقاس واللون المناسب لك
+                {t('cart.empty_desc', 'You have not added any streetwear pieces to your bag yet.')}
               </p>
               <button
                 onClick={() => {
@@ -56,15 +60,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                 }}
                 className="py-2.5 px-6 bg-white text-black text-xs font-bold rounded-lg hover:bg-neutral-200 transition-colors"
               >
-                تصفح المنتجات الآن
+                {t('checkout.browse_products', 'Browse Products Now')}
               </button>
             </div>
           ) : (
             items.map((item) => {
-              const primaryImg =
-                item.product.images?.find((img) => img.is_primary)?.image_url ||
-                item.product.images?.[0]?.image_url ||
-                '/src/assets/images/product_boxfit_tee_black_1790342911897.jpg';
+              const primaryImg = resolveImageUrl(
+                item.product?.images?.find((img) => img.is_primary)?.image_url ||
+                  item.product?.images?.[0]?.image_url
+              );
 
               return (
                 <div
@@ -74,7 +78,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   {/* Item Image */}
                   <img
                     src={primaryImg}
-                    alt={item.product.name}
+                    alt={item.product?.name || ''}
                     className="w-16 h-20 object-cover rounded-lg bg-neutral-950 border border-neutral-800 shrink-0"
                   />
 
@@ -83,12 +87,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-xs font-bold text-white line-clamp-1">
-                          {item.product.name}
+                          {item.product?.name}
                         </h4>
                         <button
                           onClick={() => removeItem(item.variantId)}
                           className="text-neutral-500 hover:text-red-400 p-1 transition-colors"
-                          aria-label="حذف"
+                          aria-label={t('cart.remove', 'Remove')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -96,9 +100,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
                       {/* Variant Specs */}
                       <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                        <span>اللون: {item.color}</span>
+                        <span>{t('cart.color', 'Color:')} {item.color}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="font-mono">المقاس: {item.size}</span>
+                        <span className="font-mono">{t('cart.size', 'Size:')} {item.size}</span>
                       </div>
                     </div>
 
@@ -108,6 +112,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                         <button
                           onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                           className="px-2 py-0.5 text-neutral-400 hover:text-white"
+                          aria-label={t('cart.decrease', 'Decrease quantity')}
                         >
                           -
                         </button>
@@ -117,6 +122,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                         <button
                           onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                           className="px-2 py-0.5 text-neutral-400 hover:text-white"
+                          aria-label={t('cart.increase', 'Increase quantity')}
                         >
                           +
                         </button>
@@ -139,19 +145,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             {/* Price Breakdown */}
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between text-neutral-400">
-                <span>مجموع المنتجات:</span>
+                <span>{t('cart.subtotal', 'Subtotal:')}</span>
                 <span className="font-mono-numbers text-white font-medium">
                   {formatPrice(subtotal)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-400">
-                <span>تكلفة الشحن لجميع المحافظات:</span>
+                <span>{t('cart.shipping', 'Shipping & Delivery:')}</span>
                 <span className="font-mono-numbers text-white font-medium">
                   {formatPrice(shippingFee)}
                 </span>
               </div>
               <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
-                <span>الإجمالي للدفع عند الاستلام:</span>
+                <span>{t('checkout.total_on_delivery', 'Total on Delivery:')}</span>
                 <span className="font-mono-numbers text-base text-white">
                   {formatPrice(grandTotal)}
                 </span>
@@ -161,7 +167,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             {/* Trust badge */}
             <div className="flex items-center gap-2 text-[11px] text-neutral-400 bg-neutral-900/80 p-2.5 rounded-lg border border-neutral-800/70">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>الدفع عند الاستلام مع إمكانية فتح الشحنة والمعاينة قبل الدفع.</span>
+              <span>{t('about.trust_text', 'Cash on delivery with the option to open the package and check the size and fabric before making any payment.')}</span>
             </div>
 
             {/* Buttons */}
@@ -173,15 +179,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                 }}
                 className="w-full py-3 px-4 bg-white text-black font-bold rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors shadow-sm"
               >
-                <span>متابعة إتمام الطلب (الدفع عند الاستلام)</span>
-                <ArrowLeft className="w-4 h-4" />
+                <span>{t('cart.drawer_checkout', 'Proceed to Checkout (Cash on Delivery)')}</span>
+                <CheckoutArrow className="w-4 h-4" />
               </button>
 
               <button
                 onClick={() => setIsCartOpen(false)}
                 className="w-full py-2.5 text-center text-xs text-neutral-400 hover:text-white transition-colors"
               >
-                متابعة التسوق
+                {t('cart.continue_shopping', 'Continue Shopping')}
               </button>
             </div>
           </div>
