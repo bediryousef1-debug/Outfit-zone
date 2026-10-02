@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface WhatsAppFloatingButtonProps {
   customMessage?: string;
@@ -10,6 +11,8 @@ interface WhatsAppFloatingButtonProps {
 export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ customMessage }) => {
   const { getWhatsAppUrl, contactSocial, settings } = useStore();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
+
   const whatsappUrl = getWhatsAppUrl(customMessage);
 
   const rawPhone =
@@ -18,6 +21,7 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
     contactSocial?.whatsapp_number ||
     settings?.whatsapp_number ||
     '01012345678';
+
   const displayPhone = rawPhone.replace(/^\+2/, '');
 
   return (
@@ -45,9 +49,10 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
 
         <div className="flex flex-col text-right leading-none">
           <span className="text-[11px] sm:text-xs font-black tracking-tight flex items-center gap-1.5">
-            <span>تواصل معنا</span>
+            <span>{t('common.contact_us', 'تواصل معنا')}</span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
           </span>
+
           {displayPhone && (
             <span className="text-[10px] font-mono font-bold text-neutral-400 group-hover:text-emerald-500 transition-colors dir-ltr text-right mt-1">
               {displayPhone}
