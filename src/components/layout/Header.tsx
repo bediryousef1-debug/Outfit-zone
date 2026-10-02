@@ -72,13 +72,16 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const localizedAnnouncement =
-    announcementText ||
-    t(
-      'announcement.cod_inspection',
-      language === 'en'
-        ? 'Cash on Delivery only across all governorates in Egypt · Free inspection before payment and receiving'
-        : 'الدفع عند الاستلام فقط داخل جميع محافظات مصر · معاينة مجانية للطلب قبل الدفع والاستلام'
-    );
+    language === 'en'
+      ? t(
+          'announcement.cod_inspection',
+          'Cash on Delivery only across all governorates in Egypt · Free inspection before payment and receiving'
+        )
+      : announcementText ||
+        t(
+          'announcement.cod_inspection',
+          'الدفع عند الاستلام فقط داخل جميع محافظات مصر · معاينة مجانية للطلب قبل الدفع والاستلام'
+        );
 
   return (
     <>
