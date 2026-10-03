@@ -4,6 +4,13 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import {
+  CustomerRecord,
+  normalizePhone,
+  recordCustomerFromOrder,
+  handleTelegramUpdate,
+  getTelegramAdminUserIds,
+} from './src/services/customerManagement.ts';
 
 dotenv.config();
 
@@ -103,6 +110,7 @@ interface ProductVariantRecord {
 interface OrderRecord {
   id: string;
   order_number: string;
+  customer_id?: string | null;
   receipt_token?: string;
   customer_name: string;
   phone: string;
@@ -342,6 +350,7 @@ const db = {
   order_items: [] as OrderItemRecord[],
   order_status_history: [] as OrderStatusHistoryRecord[],
   shipping_rates: [] as ShippingRateRecord[],
+  customers: [] as CustomerRecord[],
 };
 
 // ==============================================================================
@@ -382,6 +391,11 @@ function loadFromFile<T>(filename: string, fallback: T): T {
 function initializeCatalog() {
   const persistedOrders = loadFromFile<OrderRecord[]>(
     'orders.json',
+    []
+  );
+
+  const persistedCustomers = loadFromFile<CustomerRecord[]>(
+    'customers.json',
     []
   );
 
@@ -439,6 +453,10 @@ function initializeCatalog() {
 
   if (persistedOrders.length > 0) {
     db.orders = persistedOrders;
+  }
+
+  if (persistedCustomers.length > 0) {
+    db.customers = persistedCustomers;
   }
 
   if (persistedOrderItems.length > 0) {
@@ -2379,6 +2397,20 @@ if (supabaseClient) {
         db.orders
       );
 
+      // Customer Management: safely link and update customer history without blocking order
+      await recordCustomerFromOrder(
+        {
+          id: (data as any)?.id || orderRecord.id,
+          order_number: data.order_number,
+          customer_name: customer.customer_name.trim(),
+          phone: cleanPhone,
+          created_at: (data as any)?.created_at || orderRecord.created_at,
+        },
+        db,
+        saveToFile,
+        supabaseClient
+      );
+
       // IMPORTANT:
       // Await Telegram so the serverless function has time to complete
       // the notification before returning the response.
@@ -2697,6 +2729,20 @@ db.orders.unshift(
     saveToFile(
       'product_variants.json',
       db.product_variants
+    );
+
+    // Customer Management: safely link and update customer history without blocking order
+    await recordCustomerFromOrder(
+      {
+        id: orderId,
+        order_number: orderNumber,
+        customer_name: customer.customer_name.trim(),
+        phone: cleanPhone,
+        created_at: newOrder.created_at,
+      },
+      db,
+      saveToFile,
+      supabaseClient
     );
 
     // ==========================================================================
@@ -4289,8 +4335,149 @@ app.get(
         ),
       ordersCount:
         db.orders.length,
+      customersCount:
+        db.customers.length,
       timestamp:
         new Date().toISOString(),
+    });
+  }
+);
+
+// ==============================================================================
+// Telegram Webhook & Customer Management Routes
+// ==============================================================================
+
+app.post(
+  ['/api/telegram-webhook', '/api/telegram/webhook'],
+  async (req: Request, res: Response) => {
+    // Immediate 200 response to acknowledge receipt to Telegram
+    res.status(200).json({ ok: true });
+
+    try {
+      const update = req.body;
+      if (!update) return;
+      await handleTelegramUpdate(update, db);
+    } catch (err) {
+      console.error('[Telegram Webhook] Error processing update:', err);
+    }
+  }
+);
+
+app.get(
+  '/api/telegram/webhook-info',
+  async (_req: Request, res: Response) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    if (!botToken) {
+      return res.status(400).json({
+        error: 'TELEGRAM_BOT_TOKEN is not configured.',
+      });
+    }
+
+    try {
+      const [meRes, whRes] = await Promise.all([
+        fetch(`https://api.telegram.org/bot${botToken}/getMe`).then((r) => r.json()),
+        fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`).then((r) => r.json()),
+      ]);
+
+      res.json({
+        bot: meRes,
+        webhook: whRes,
+        adminUserIds: getTelegramAdminUserIds(),
+        customersCount: db.customers.length,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+app.post(
+  '/api/telegram/set-webhook',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    if (!botToken) {
+      return res.status(400).json({
+        error: 'TELEGRAM_BOT_TOKEN is not configured.',
+      });
+    }
+
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({
+        error: 'url is required in request body.',
+      });
+    }
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url,
+          drop_pending_updates: false,
+          allowed_updates: ['message', 'callback_query'],
+        }),
+      }).then((r) => r.json());
+
+      res.json(response);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// Admin Customer Management API endpoints
+app.get(
+  '/api/admin/customers',
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    try {
+      const customersWithStats = db.customers.map((c) => {
+        const matchingOrders = db.orders.filter(
+          (o) => (o as any).customer_id === c.id || normalizePhone(o.phone) === c.normalized_phone
+        );
+        return {
+          ...c,
+          actual_orders_count: matchingOrders.length || c.order_count || 1,
+        };
+      });
+
+      res.json({
+        total: customersWithStats.length,
+        customers: customersWithStats,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+app.get(
+  '/api/admin/customers/:identifier',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const { identifier } = req.params;
+    const normalized = normalizePhone(identifier);
+
+    const customer = db.customers.find(
+      (c) =>
+        c.id === identifier ||
+        c.normalized_phone === normalized ||
+        c.original_phone === identifier
+    );
+
+    if (!customer) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+
+    const orders = db.orders.filter(
+      (o) => (o as any).customer_id === customer.id || normalizePhone(o.phone) === customer.normalized_phone
+    );
+
+    res.json({
+      customer,
+      orders,
     });
   }
 );

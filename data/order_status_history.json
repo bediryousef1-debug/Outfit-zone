@@ -75,5 +75,19 @@
     "status": "pending",
     "created_at": "2026-09-30T09:07:25.723Z",
     "changed_by": "guest_checkout"
+  },
+  {
+    "id": "hist_1791024946751",
+    "order_id": "ord_1791024946751_fg5xb",
+    "status": "pending",
+    "created_at": "2026-10-03T10:55:46.751Z",
+    "changed_by": "guest_checkout"
+  },
+  {
+    "id": "hist_1791024954942",
+    "order_id": "ord_1791024954942_zaf82",
+    "status": "pending",
+    "created_at": "2026-10-03T10:55:54.942Z",
+    "changed_by": "guest_checkout"
   }
 ]

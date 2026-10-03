@@ -141,13 +141,18 @@ CREATE TABLE IF NOT EXISTS public.customers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   normalized_phone TEXT UNIQUE NOT NULL,
   original_phone TEXT NOT NULL,
+  current_name TEXT NOT NULL DEFAULT '',
   names_used JSONB NOT NULL DEFAULT '[]'::jsonb,
   has_multiple_names BOOLEAN NOT NULL DEFAULT false,
   order_count INTEGER NOT NULL DEFAULT 1,
+  first_order_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   last_order_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS current_name TEXT DEFAULT '';
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS first_order_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
 
 CREATE INDEX IF NOT EXISTS idx_customers_normalized_phone ON public.customers(normalized_phone);
 CREATE INDEX IF NOT EXISTS idx_customers_has_multiple_names ON public.customers(has_multiple_names);
