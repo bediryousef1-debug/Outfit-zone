@@ -27,18 +27,40 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
     >
       {/* Trust Elements Section */}
       {showTrust && (
-        <div className="border-b border-neutral-900 py-10 px-4 sm:px-6">
+        <div
+          className={`border-b py-10 px-4 sm:px-6 ${
+            isDark ? 'border-neutral-900' : 'border-neutral-200'
+          }`}
+        >
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Cash on Delivery */}
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
-              <Truck className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
+            <div
+              className={`flex items-start gap-3 p-4 rounded-lg border ${
+                isDark
+                  ? 'bg-neutral-950/40 border-neutral-900'
+                  : 'bg-white border-neutral-200'
+              }`}
+            >
+              <Truck
+                className={`w-5 h-5 mt-0.5 shrink-0 ${
+                  isDark ? 'text-neutral-200' : 'text-neutral-700'
+                }`}
+              />
 
               <div>
-                <h4 className="text-white text-sm font-semibold mb-1">
+                <h4
+                  className={`text-sm font-semibold mb-1 ${
+                    isDark ? 'text-white' : 'text-neutral-900'
+                  }`}
+                >
                   {t('footer.cod_title', 'الدفع عند الاستلام')}
                 </h4>
 
-                <p className="text-xs text-neutral-400 leading-relaxed">
+                <p
+                  className={`text-xs leading-relaxed ${
+                    isDark ? 'text-neutral-400' : 'text-neutral-600'
+                  }`}
+                >
                   {isAr
                     ? (
                         content?.cod_text ||
@@ -54,15 +76,33 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
             {/* Free Inspection */}
             {settings?.inspection_available && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
-                <ShieldCheck className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
+              <div
+                className={`flex items-start gap-3 p-4 rounded-lg border ${
+                  isDark
+                    ? 'bg-neutral-950/40 border-neutral-900'
+                    : 'bg-white border-neutral-200'
+                }`}
+              >
+                <ShieldCheck
+                  className={`w-5 h-5 mt-0.5 shrink-0 ${
+                    isDark ? 'text-neutral-200' : 'text-neutral-700'
+                  }`}
+                />
 
                 <div>
-                  <h4 className="text-white text-sm font-semibold mb-1">
+                  <h4
+                    className={`text-sm font-semibold mb-1 ${
+                      isDark ? 'text-white' : 'text-neutral-900'
+                    }`}
+                  >
                     {t('footer.inspection_title', 'معاينة مجانية عند الاستلام')}
                   </h4>
 
-                  <p className="text-xs text-neutral-400 leading-relaxed">
+                  <p
+                    className={`text-xs leading-relaxed ${
+                      isDark ? 'text-neutral-400' : 'text-neutral-600'
+                    }`}
+                  >
                     {isAr
                       ? (
                           content?.inspection_text ||
@@ -78,15 +118,33 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             )}
 
             {/* Size Exchange */}
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-950/40 border border-neutral-900">
-              <RotateCcw className="w-5 h-5 text-neutral-200 mt-0.5 shrink-0" />
+            <div
+              className={`flex items-start gap-3 p-4 rounded-lg border ${
+                isDark
+                  ? 'bg-neutral-950/40 border-neutral-900'
+                  : 'bg-white border-neutral-200'
+              }`}
+            >
+              <RotateCcw
+                className={`w-5 h-5 mt-0.5 shrink-0 ${
+                  isDark ? 'text-neutral-200' : 'text-neutral-700'
+                }`}
+              />
 
               <div>
-                <h4 className="text-white text-sm font-semibold mb-1">
+                <h4
+                  className={`text-sm font-semibold mb-1 ${
+                    isDark ? 'text-white' : 'text-neutral-900'
+                  }`}
+                >
                   {t('footer.exchange_title', 'استبدال المقاس')}
                 </h4>
 
-                <p className="text-xs text-neutral-400 leading-relaxed">
+                <p
+                  className={`text-xs leading-relaxed ${
+                    isDark ? 'text-neutral-400' : 'text-neutral-600'
+                  }`}
+                >
                   {isAr
                     ? (
                         content?.exchange_policy ||
@@ -107,12 +165,18 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
           {/* Brand Info with Official Logo */}
           <div className="md:col-span-2 space-y-3">
-            <OutfitZoneLogo variant="horizontal" className="text-white" />
+            <OutfitZoneLogo
+              variant="horizontal"
+              className={isDark ? 'text-white' : 'text-neutral-900'}
+            />
 
-            <p className="text-xs text-neutral-400 max-w-md leading-relaxed mt-2">
+            <p
+              className={`text-xs max-w-md leading-relaxed mt-2 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}
+            >
               {isAr
                 ? (
                     content?.footer_text ||
@@ -134,7 +198,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   href={socialLinks.instagram}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-neutral-400 hover:text-white transition-colors"
+                  className={`transition-colors ${
+                    isDark
+                      ? 'text-neutral-400 hover:text-white'
+                      : 'text-neutral-500 hover:text-neutral-900'
+                  }`}
                 >
                   Instagram
                 </a>
@@ -143,14 +211,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               {socialLinks.facebook && (
                 <>
                   {socialLinks.instagram && (
-                    <span className="text-neutral-700">·</span>
+                    <span
+                      className={
+                        isDark ? 'text-neutral-700' : 'text-neutral-300'
+                      }
+                    >
+                      ·
+                    </span>
                   )}
 
                   <a
                     href={socialLinks.facebook}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-neutral-400 hover:text-white transition-colors"
+                    className={`transition-colors ${
+                      isDark
+                        ? 'text-neutral-400 hover:text-white'
+                        : 'text-neutral-500 hover:text-neutral-900'
+                    }`}
                   >
                     Facebook
                   </a>
@@ -160,14 +238,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               {socialLinks.tiktok && (
                 <>
                   {(socialLinks.instagram || socialLinks.facebook) && (
-                    <span className="text-neutral-700">·</span>
+                    <span
+                      className={
+                        isDark ? 'text-neutral-700' : 'text-neutral-300'
+                      }
+                    >
+                      ·
+                    </span>
                   )}
 
                   <a
                     href={socialLinks.tiktok}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-neutral-400 hover:text-white transition-colors"
+                    className={`transition-colors ${
+                      isDark
+                        ? 'text-neutral-400 hover:text-white'
+                        : 'text-neutral-500 hover:text-neutral-900'
+                    }`}
                   >
                     TikTok
                   </a>
@@ -179,14 +267,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   {(socialLinks.instagram ||
                     socialLinks.facebook ||
                     socialLinks.tiktok) && (
-                    <span className="text-neutral-700">·</span>
+                    <span
+                      className={
+                        isDark ? 'text-neutral-700' : 'text-neutral-300'
+                      }
+                    >
+                      ·
+                    </span>
                   )}
 
                   <a
                     href={socialLinks.messenger}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-neutral-400 hover:text-white transition-colors"
+                    className={`transition-colors ${
+                      isDark
+                        ? 'text-neutral-400 hover:text-white'
+                        : 'text-neutral-500 hover:text-neutral-900'
+                    }`}
                   >
                     Messenger
                   </a>
@@ -197,7 +295,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+            <h4
+              className={`text-xs font-bold uppercase tracking-wider ${
+                isDark ? 'text-neutral-300' : 'text-neutral-800'
+              }`}
+            >
               {t('footer.quick_nav', 'التنقل السريع')}
             </h4>
 
@@ -242,13 +344,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Policies */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+            <h4
+              className={`text-xs font-bold uppercase tracking-wider ${
+                isDark ? 'text-neutral-300' : 'text-neutral-800'
+              }`}
+            >
               {t('footer.policies', 'السياسات والشحن')}
             </h4>
 
             <ul className="space-y-2 text-xs">
               {/* Return Policy */}
-              <li className="text-neutral-400">
+              <li className={isDark ? 'text-neutral-400' : 'text-neutral-600'}>
                 {isAr
                   ? (
                       content?.return_policy ||
@@ -262,7 +368,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
 
               {/* Shipping */}
-              <li className="text-neutral-400">
+              <li className={isDark ? 'text-neutral-400' : 'text-neutral-600'}>
                 {isAr
                   ? (
                       content?.shipping_text ||
@@ -275,7 +381,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
 
               {/* Exchange Policy */}
-              <li className="text-neutral-400">
+              <li className={isDark ? 'text-neutral-400' : 'text-neutral-600'}>
                 {isAr
                   ? (
                       content?.exchange_policy ||
@@ -289,7 +395,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
 
               {/* Inspection */}
-              <li className="text-neutral-400">
+              <li className={isDark ? 'text-neutral-400' : 'text-neutral-600'}>
                 {isAr
                   ? (
                       content?.inspection_text ||
@@ -305,7 +411,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Quiet copyright */}
-        <div className="mt-12 pt-6 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-500 gap-3">
+        <div
+          className={`mt-12 pt-6 border-t flex flex-col sm:flex-row items-center justify-between text-[11px] gap-3 ${
+            isDark
+              ? 'border-neutral-900 text-neutral-500'
+              : 'border-neutral-200 text-neutral-500'
+          }`}
+        >
           <p>
             © {new Date().getFullYear()}{' '}
             {settings?.store_name || 'Outfit Zone'}.{' '}
