@@ -322,6 +322,56 @@ export async function getAuthoritativeCustomers(
 }
 
 /**
+ * Reads actual existing orders from authoritative store (Supabase when configured, fallback to db.orders).
+ * Excludes deleted orders and queries the actual rows in Supabase.
+ */
+export async function getAuthoritativeOrders(
+  db: {
+    orders: any[];
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void
+): Promise<any[]> {
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        db.orders = data;
+        if (saveToFile) {
+          saveToFile('orders.json', data);
+        }
+        return data;
+      } else if (error) {
+        console.warn('[Customer Management] Supabase orders select notice:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Customer Management] Supabase orders query error:', err);
+    }
+  }
+
+  return db.orders;
+}
+
+/**
+ * Calculates customer actual orders count from the authoritative orders list.
+ */
+export function getCustomerActualOrderCount(customer: CustomerRecord, orders?: any[]): number {
+  if (orders && Array.isArray(orders)) {
+    return orders.filter(
+      (o) =>
+        (o as any).customer_id === customer.id ||
+        (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
+        (customer.original_phone && o.phone === customer.original_phone)
+    ).length;
+  }
+  return customer.order_count || 0;
+}
+
+/**
  * Authoritatively deletes a customer from Supabase and local cache.
  */
 export async function deleteCustomerAuthoritative(
@@ -582,7 +632,9 @@ export function buildCustomerDashboardView(
 ): { text: string; replyMarkup: any } {
   const totalCustomers = customers.length;
   const totalOrders = orders.length;
-  const repeatCustomers = customers.filter((c) => (c.order_count || 0) > 1).length;
+  const repeatCustomers = customers.filter(
+    (c) => getCustomerActualOrderCount(c, orders) > 1
+  ).length;
   const multiNames = customers.filter(
     (c) => c.has_multiple_names || (c.names_used && c.names_used.length > 1)
   ).length;
@@ -621,7 +673,8 @@ export function buildCustomerDashboardView(
  */
 export function buildCustomerListView(
   customers: CustomerRecord[],
-  page = 1
+  page = 1,
+  orders?: any[]
 ): { text: string; replyMarkup: any } {
   const pageSize = 5;
   const total = customers.length;
@@ -655,10 +708,11 @@ export function buildCustomerListView(
 
   pageItems.forEach((c, idx) => {
     const num = startIdx + idx + 1;
+    const actualOrderCount = getCustomerActualOrderCount(c, orders);
     lines.push(
       `${num}. 👤 <b>${escapeHtml(c.current_name || 'عميل بدون اسم')}</b>`,
       `   📱 <code>${escapeHtml(c.normalized_phone)}</code>`,
-      `   📦 عدد الطلبات: <b>${c.order_count || 1}</b>`
+      `   📦 عدد الطلبات: <b>${actualOrderCount}</b>`
     );
     if (c.has_multiple_names) {
       lines.push(`   ⚠️ <i>أسماء متعددة: ${escapeHtml(c.names_used.join(' · '))}</i>`);
@@ -669,7 +723,7 @@ export function buildCustomerListView(
 
     customerButtons.push([
       {
-        text: `👤 ${c.current_name || c.normalized_phone} (${c.order_count || 1} طلب)`,
+        text: `👤 ${c.current_name || c.normalized_phone} (${actualOrderCount} طلب)`,
         callback_data: `cust:view:${c.id}`,
       },
     ]);
@@ -712,7 +766,8 @@ export function buildCustomerListView(
  */
 export function buildCustomerMultiNamesView(
   customers: CustomerRecord[],
-  page = 1
+  page = 1,
+  orders?: any[]
 ): { text: string; replyMarkup: any } {
   const multi = customers.filter(
     (c) => c.has_multiple_names || (c.names_used && c.names_used.length > 1)
@@ -750,12 +805,13 @@ export function buildCustomerMultiNamesView(
 
   pageItems.forEach((c, idx) => {
     const num = startIdx + idx + 1;
+    const actualOrderCount = getCustomerActualOrderCount(c, orders);
     lines.push(
       `${num}. 📱 رقم الهاتف: <code>${escapeHtml(c.normalized_phone)}</code>`,
       `   👤 الاسم الحالي: <b>${escapeHtml(c.current_name)}</b>`,
       `   📝 الأسماء المستخدمة:`,
       ...(c.names_used || []).map((n) => `      • ${escapeHtml(n)}`),
-      `   📦 عدد الطلبات: <b>${c.order_count}</b>`
+      `   📦 عدد الطلبات: <b>${actualOrderCount}</b>`
     );
     if (idx < pageItems.length - 1) {
       lines.push('');
@@ -806,10 +862,16 @@ export function buildCustomerMultiNamesView(
  */
 export function buildCustomerRepeatView(
   customers: CustomerRecord[],
-  page = 1
+  page = 1,
+  orders?: any[]
 ): { text: string; replyMarkup: any } {
-  const repeat = customers.filter((c) => (c.order_count || 0) > 1);
-  repeat.sort((a, b) => (b.order_count || 0) - (a.order_count || 0));
+  const repeat = customers.filter(
+    (c) => getCustomerActualOrderCount(c, orders) > 1
+  );
+  repeat.sort(
+    (a, b) =>
+      getCustomerActualOrderCount(b, orders) - getCustomerActualOrderCount(a, orders)
+  );
 
   const pageSize = 5;
   const total = repeat.length;
@@ -843,10 +905,11 @@ export function buildCustomerRepeatView(
 
   pageItems.forEach((c, idx) => {
     const num = startIdx + idx + 1;
+    const actualOrderCount = getCustomerActualOrderCount(c, orders);
     lines.push(
       `${num}. 👤 <b>${escapeHtml(c.current_name)}</b>`,
       `   📱 <code>${escapeHtml(c.normalized_phone)}</code>`,
-      `   📦 عدد الطلبات: <b>${c.order_count} طلبات</b>`,
+      `   📦 عدد الطلبات: <b>${actualOrderCount} طلبات</b>`,
       `   🕒 آخر طلب: <i>${formatEgyptianDateTime(c.last_order_at)}</i>`
     );
     if (idx < pageItems.length - 1) {
@@ -855,7 +918,7 @@ export function buildCustomerRepeatView(
 
     customerButtons.push([
       {
-        text: `👤 ملف ${c.current_name} (${c.order_count} طلب)`,
+        text: `👤 ملف ${c.current_name} (${actualOrderCount} طلب)`,
         callback_data: `cust:view:${c.id}`,
       },
     ]);
@@ -930,7 +993,8 @@ export function buildCustomerProfileView(
   const custOrders = orders.filter(
     (o) =>
       (o as any).customer_id === customer.id ||
-      normalizePhone(o.phone) === customer.normalized_phone
+      (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
+      (customer.original_phone && o.phone === customer.original_phone)
   );
 
   custOrders.sort(
@@ -943,7 +1007,8 @@ export function buildCustomerProfileView(
       ? customer.names_used.join(' · ')
       : customer.current_name || '-';
 
-  const orderCount = Math.max(custOrders.length, customer.order_count || 1);
+  // Customer profiles show actual order count based on their existing orders
+  const orderCount = custOrders.length;
 
   const lines: string[] = [
     '👤 <b>ملف العميل</b>',
@@ -1041,8 +1106,11 @@ export async function handleTelegramUpdate(
 
       // Check if command is dashboard
       if (text === '/عميل' || text === '/customer' || text === '/start') {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
-        const view = buildCustomerDashboardView(currentCustomers, db.orders);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const view = buildCustomerDashboardView(currentCustomers, currentOrders);
         await telegramSendMessage(chatId, view.text, view.replyMarkup);
         return;
       }
@@ -1065,7 +1133,10 @@ export async function handleTelegramUpdate(
         return;
       }
 
-      const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+      const [currentCustomers, currentOrders] = await Promise.all([
+        getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+        getAuthoritativeOrders(db, supabaseClient, saveToFile),
+      ]);
       const targetCustomer = currentCustomers.find(
         (c) =>
           c.normalized_phone === normalizedQuery ||
@@ -1074,7 +1145,7 @@ export async function handleTelegramUpdate(
       );
 
       if (targetCustomer) {
-        const view = buildCustomerProfileView(targetCustomer, db.orders);
+        const view = buildCustomerProfileView(targetCustomer, currentOrders);
         await telegramSendMessage(chatId, view.text, view.replyMarkup);
       } else {
         await telegramSendMessage(
@@ -1156,8 +1227,11 @@ export async function handleTelegramUpdate(
     try {
       // 1. 🔄 تحديث / لوحة التحكم
       if (action === 'cust:dash' || action === 'cust:refresh') {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
-        const view = buildCustomerDashboardView(currentCustomers, db.orders);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const view = buildCustomerDashboardView(currentCustomers, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
@@ -1171,37 +1245,49 @@ export async function handleTelegramUpdate(
 
       // 3. 📋 كل العملاء (مع Pagination)
       if (action === 'cust:list' || action.startsWith('cust:list:')) {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerListView(currentCustomers, page);
+        const view = buildCustomerListView(currentCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 4. ⚠️ أسماء متعددة (مع Pagination)
       if (action === 'cust:multi' || action.startsWith('cust:multi:')) {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerMultiNamesView(currentCustomers, page);
+        const view = buildCustomerMultiNamesView(currentCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 5. 🔁 العملاء المتكررون (مع Pagination)
       if (action === 'cust:repeat' || action.startsWith('cust:repeat:')) {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerRepeatView(currentCustomers, page);
+        const view = buildCustomerRepeatView(currentCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 6. 👤 عرض ملف العميل وتاريخ طلباته
       if (action.startsWith('cust:view:')) {
-        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
         const targetId = action.slice('cust:view:'.length).trim();
         const targetCustomer = currentCustomers.find(
           (c) =>
@@ -1211,7 +1297,7 @@ export async function handleTelegramUpdate(
         );
 
         if (targetCustomer) {
-          const view = buildCustomerProfileView(targetCustomer, db.orders);
+          const view = buildCustomerProfileView(targetCustomer, currentOrders);
           await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         } else {
           await telegramEditMessageText(

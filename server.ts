@@ -11,6 +11,7 @@ import {
   handleTelegramUpdate,
   getTelegramAdminUserIds,
   getAuthoritativeCustomers,
+  getAuthoritativeOrders,
   deleteCustomerAuthoritative,
 } from './src/services/customerManagement.ts';
 
@@ -4438,14 +4439,20 @@ app.get(
   requireAdmin,
   async (_req: Request, res: Response) => {
     try {
-      const customers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+      const [customers, orders] = await Promise.all([
+        getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+        getAuthoritativeOrders(db, supabaseClient, saveToFile),
+      ]);
       const customersWithStats = customers.map((c) => {
-        const matchingOrders = db.orders.filter(
-          (o) => (o as any).customer_id === c.id || normalizePhone(o.phone) === c.normalized_phone
+        const matchingOrders = orders.filter(
+          (o) =>
+            (o as any).customer_id === c.id ||
+            (c.normalized_phone && normalizePhone(o.phone) === c.normalized_phone) ||
+            (c.original_phone && o.phone === c.original_phone)
         );
         return {
           ...c,
-          actual_orders_count: matchingOrders.length || c.order_count || 1,
+          actual_orders_count: matchingOrders.length,
         };
       });
 
@@ -4466,7 +4473,10 @@ app.get(
     const { identifier } = req.params;
     const normalized = normalizePhone(identifier);
 
-    const customers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+    const [customers, orders] = await Promise.all([
+      getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+      getAuthoritativeOrders(db, supabaseClient, saveToFile),
+    ]);
     const customer = customers.find(
       (c) =>
         c.id === identifier ||
@@ -4478,13 +4488,19 @@ app.get(
       return res.status(404).json({ error: 'العميل غير موجود' });
     }
 
-    const orders = db.orders.filter(
-      (o) => (o as any).customer_id === customer.id || normalizePhone(o.phone) === customer.normalized_phone
+    const customerOrders = orders.filter(
+      (o) =>
+        (o as any).customer_id === customer.id ||
+        (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
+        (customer.original_phone && o.phone === customer.original_phone)
     );
 
     res.json({
-      customer,
-      orders,
+      customer: {
+        ...customer,
+        order_count: customerOrders.length,
+      },
+      orders: customerOrders,
     });
   }
 );
