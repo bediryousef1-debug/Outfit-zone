@@ -10,6 +10,8 @@ import {
   recordCustomerFromOrder,
   handleTelegramUpdate,
   getTelegramAdminUserIds,
+  getAuthoritativeCustomers,
+  deleteCustomerAuthoritative,
 } from './src/services/customerManagement.ts';
 
 dotenv.config();
@@ -4353,7 +4355,7 @@ app.post(
     try {
       const update = req.body;
       if (update) {
-        await handleTelegramUpdate(update, db);
+        await handleTelegramUpdate(update, db, supabaseClient, saveToFile);
       }
     } catch (err) {
       console.error('[Telegram Webhook] Error processing update:', err);
@@ -4376,16 +4378,17 @@ app.get(
     }
 
     try {
-      const [meRes, whRes] = await Promise.all([
+      const [meRes, whRes, customers] = await Promise.all([
         fetch(`https://api.telegram.org/bot${botToken}/getMe`).then((r) => r.json()),
         fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`).then((r) => r.json()),
+        getAuthoritativeCustomers(db, supabaseClient, saveToFile),
       ]);
 
       res.json({
         bot: meRes,
         webhook: whRes,
         adminUserIds: getTelegramAdminUserIds(),
-        customersCount: db.customers.length,
+        customersCount: customers.length,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -4435,7 +4438,8 @@ app.get(
   requireAdmin,
   async (_req: Request, res: Response) => {
     try {
-      const customersWithStats = db.customers.map((c) => {
+      const customers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+      const customersWithStats = customers.map((c) => {
         const matchingOrders = db.orders.filter(
           (o) => (o as any).customer_id === c.id || normalizePhone(o.phone) === c.normalized_phone
         );
@@ -4462,7 +4466,8 @@ app.get(
     const { identifier } = req.params;
     const normalized = normalizePhone(identifier);
 
-    const customer = db.customers.find(
+    const customers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+    const customer = customers.find(
       (c) =>
         c.id === identifier ||
         c.normalized_phone === normalized ||
@@ -4481,6 +4486,23 @@ app.get(
       customer,
       orders,
     });
+  }
+);
+
+app.delete(
+  '/api/admin/customers/:id',
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      await deleteCustomerAuthoritative(id, db, supabaseClient, saveToFile);
+      res.json({
+        success: true,
+        message: 'تم حذف العميل بنجاح.',
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'فشل حذف العميل' });
+    }
   }
 );
 

@@ -1641,6 +1641,76 @@ export const api = {
     return res.json();
   },
 
+  // 9.2 Admin: Get Customers
+  async adminGetCustomers(): Promise<any[]> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .order('last_order_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase adminGetCustomers error:', err);
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/customers`, {
+      headers: authHeaders,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل جلب بيانات العملاء');
+    }
+    const json = await res.json();
+    return json.customers || [];
+  },
+
+  // 9.3 Admin: Delete Customer
+  async adminDeleteCustomer(
+    customerId: string
+  ): Promise<{
+    success: boolean;
+    message?: string;
+  }> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('orders')
+          .update({ customer_id: null })
+          .eq('customer_id', customerId);
+
+        const { error } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', customerId);
+
+        if (error) {
+          console.warn('Supabase adminDeleteCustomer notice:', error);
+        }
+      } catch (err) {
+        console.warn('Supabase adminDeleteCustomer error:', err);
+      }
+    }
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل حذف العميل');
+    }
+
+    return res.json();
+  },
+
   // 10. Admin: Create Product
   async adminCreateProduct(
     productData: any

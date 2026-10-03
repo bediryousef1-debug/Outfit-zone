@@ -250,8 +250,131 @@ export async function telegramAnswerCallbackQuery(
 }
 
 // ==============================================================================
-// 5. Customer Record Linking (Safe & Non-blocking)
+// 5. Customer Record Linking & Authoritative Store
 // ==============================================================================
+
+/**
+ * Reads customers from authoritative store (Supabase when configured, fallback to db.customers).
+ * Synchronizes db.customers in-memory cache and file to eliminate stale or ghost records.
+ */
+export async function getAuthoritativeCustomers(
+  db: {
+    customers: CustomerRecord[];
+    orders: any[];
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void
+): Promise<CustomerRecord[]> {
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('customers')
+        .select('*')
+        .order('last_order_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const formatted: CustomerRecord[] = data.map((item: any) => {
+          let namesUsed: string[] = [];
+          if (Array.isArray(item.names_used)) {
+            namesUsed = item.names_used;
+          } else if (typeof item.names_used === 'string') {
+            try {
+              const parsed = JSON.parse(item.names_used);
+              namesUsed = Array.isArray(parsed) ? parsed : [item.names_used];
+            } catch {
+              namesUsed = [item.names_used];
+            }
+          }
+          if (namesUsed.length === 0 && item.current_name) {
+            namesUsed = [item.current_name];
+          }
+
+          return {
+            id: String(item.id),
+            normalized_phone: item.normalized_phone,
+            original_phone: item.original_phone || item.normalized_phone,
+            current_name: item.current_name || '',
+            names_used: namesUsed,
+            has_multiple_names: Boolean(item.has_multiple_names || namesUsed.length > 1),
+            order_count: Number(item.order_count) || 1,
+            first_order_at: item.first_order_at || item.created_at || new Date().toISOString(),
+            last_order_at: item.last_order_at || item.updated_at || new Date().toISOString(),
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString(),
+          };
+        });
+
+        // Always keep in-memory db.customers strictly synced with Supabase
+        db.customers = formatted;
+        if (saveToFile) {
+          saveToFile('customers.json', formatted);
+        }
+        return formatted;
+      } else if (error) {
+        console.warn('[Customer Management] Supabase customers select notice:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Customer Management] Supabase customers query error:', err);
+    }
+  }
+
+  return db.customers;
+}
+
+/**
+ * Authoritatively deletes a customer from Supabase and local cache.
+ */
+export async function deleteCustomerAuthoritative(
+  identifier: string,
+  db: {
+    customers: CustomerRecord[];
+    orders: any[];
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void
+): Promise<boolean> {
+  const normalized = normalizePhone(identifier);
+
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .from('customers')
+        .delete()
+        .or(`id.eq.${identifier},normalized_phone.eq.${normalized || identifier},original_phone.eq.${identifier}`);
+
+      if (error) {
+        console.warn('[Customer Management] Supabase delete error:', error.message);
+      }
+    } catch (err) {
+      console.error('[Customer Management] Supabase delete error:', err);
+    }
+  }
+
+  // Remove from local in-memory db
+  db.customers = db.customers.filter(
+    (c) =>
+      c.id !== identifier &&
+      c.normalized_phone !== normalized &&
+      c.original_phone !== identifier
+  );
+
+  if (saveToFile) {
+    saveToFile('customers.json', db.customers);
+  }
+
+  // Unlink customer from orders
+  db.orders.forEach((o: any) => {
+    if (o.customer_id === identifier || normalizePhone(o.phone) === normalized) {
+      o.customer_id = null;
+    }
+  });
+
+  if (saveToFile) {
+    saveToFile('orders.json', db.orders);
+  }
+
+  return true;
+}
 
 export async function recordCustomerFromOrder(
   order: {
@@ -279,8 +402,44 @@ export async function recordCustomerFromOrder(
     const now = new Date().toISOString();
     const orderDate = order.created_at || now;
 
-    // Check existing customer by normalized phone
-    let customer = db.customers.find((c) => c.normalized_phone === normalized);
+    // Check existing customer in authoritative Supabase store if available
+    let customer: CustomerRecord | undefined = undefined;
+    if (supabaseClient) {
+      try {
+        const { data: supaCust } = await supabaseClient
+          .from('customers')
+          .select('*')
+          .eq('normalized_phone', normalized)
+          .maybeSingle();
+
+        if (supaCust) {
+          customer = {
+            id: String(supaCust.id),
+            normalized_phone: supaCust.normalized_phone,
+            original_phone: supaCust.original_phone || order.phone,
+            current_name: supaCust.current_name || trimmedName,
+            names_used: Array.isArray(supaCust.names_used)
+              ? supaCust.names_used
+              : [supaCust.current_name || trimmedName].filter(Boolean),
+            has_multiple_names: Boolean(supaCust.has_multiple_names),
+            order_count: Number(supaCust.order_count) || 1,
+            first_order_at: supaCust.first_order_at || orderDate,
+            last_order_at: supaCust.last_order_at || orderDate,
+            created_at: supaCust.created_at || now,
+            updated_at: supaCust.updated_at || now,
+          };
+        } else {
+          // If customer was deleted from Supabase, remove any stale copy from local memory
+          db.customers = db.customers.filter((c) => c.normalized_phone !== normalized);
+        }
+      } catch (checkErr) {
+        console.warn('[Customer Management] Supabase customer pre-check notice:', checkErr);
+      }
+    }
+
+    if (!customer) {
+      customer = db.customers.find((c) => c.normalized_phone === normalized);
+    }
 
     if (!customer) {
       // 1. Create new customer
@@ -847,7 +1006,9 @@ export async function handleTelegramUpdate(
   db: {
     customers: CustomerRecord[];
     orders: any[];
-  }
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void
 ): Promise<void> {
   if (!update) return;
 
@@ -880,7 +1041,8 @@ export async function handleTelegramUpdate(
 
       // Check if command is dashboard
       if (text === '/عميل' || text === '/customer' || text === '/start') {
-        const view = buildCustomerDashboardView(db.customers, db.orders);
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const view = buildCustomerDashboardView(currentCustomers, db.orders);
         await telegramSendMessage(chatId, view.text, view.replyMarkup);
         return;
       }
@@ -903,7 +1065,8 @@ export async function handleTelegramUpdate(
         return;
       }
 
-      const targetCustomer = db.customers.find(
+      const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+      const targetCustomer = currentCustomers.find(
         (c) =>
           c.normalized_phone === normalizedQuery ||
           c.original_phone === rawQuery ||
@@ -993,7 +1156,8 @@ export async function handleTelegramUpdate(
     try {
       // 1. 🔄 تحديث / لوحة التحكم
       if (action === 'cust:dash' || action === 'cust:refresh') {
-        const view = buildCustomerDashboardView(db.customers, db.orders);
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
+        const view = buildCustomerDashboardView(currentCustomers, db.orders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
@@ -1007,35 +1171,39 @@ export async function handleTelegramUpdate(
 
       // 3. 📋 كل العملاء (مع Pagination)
       if (action === 'cust:list' || action.startsWith('cust:list:')) {
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerListView(db.customers, page);
+        const view = buildCustomerListView(currentCustomers, page);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 4. ⚠️ أسماء متعددة (مع Pagination)
       if (action === 'cust:multi' || action.startsWith('cust:multi:')) {
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerMultiNamesView(db.customers, page);
+        const view = buildCustomerMultiNamesView(currentCustomers, page);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 5. 🔁 العملاء المتكررون (مع Pagination)
       if (action === 'cust:repeat' || action.startsWith('cust:repeat:')) {
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerRepeatView(db.customers, page);
+        const view = buildCustomerRepeatView(currentCustomers, page);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
       // 6. 👤 عرض ملف العميل وتاريخ طلباته
       if (action.startsWith('cust:view:')) {
+        const currentCustomers = await getAuthoritativeCustomers(db, supabaseClient, saveToFile);
         const targetId = action.slice('cust:view:'.length).trim();
-        const targetCustomer = db.customers.find(
+        const targetCustomer = currentCustomers.find(
           (c) =>
             c.id === targetId ||
             c.normalized_phone === targetId ||
