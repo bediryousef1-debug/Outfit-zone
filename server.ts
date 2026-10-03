@@ -4350,15 +4350,17 @@ app.get(
 app.post(
   ['/api/telegram-webhook', '/api/telegram/webhook'],
   async (req: Request, res: Response) => {
-    // Immediate 200 response to acknowledge receipt to Telegram
-    res.status(200).json({ ok: true });
-
     try {
       const update = req.body;
-      if (!update) return;
-      await handleTelegramUpdate(update, db);
+      if (update) {
+        await handleTelegramUpdate(update, db);
+      }
     } catch (err) {
       console.error('[Telegram Webhook] Error processing update:', err);
+    } finally {
+      if (!res.headersSent) {
+        res.status(200).json({ ok: true });
+      }
     }
   }
 );

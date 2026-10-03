@@ -221,7 +221,7 @@ export async function telegramEditMessageText(
   text: string,
   replyMarkup?: any
 ) {
-  return callTelegramApi('editMessageText', {
+  const res = await callTelegramApi('editMessageText', {
     chat_id: chatId,
     message_id: messageId,
     text,
@@ -229,6 +229,12 @@ export async function telegramEditMessageText(
     reply_markup: replyMarkup,
     disable_web_page_preview: true,
   });
+
+  if (res && !res.ok && res.description?.includes('message is not modified')) {
+    return { ok: true, not_modified: true };
+  }
+
+  return res;
 }
 
 export async function telegramAnswerCallbackQuery(
@@ -930,24 +936,53 @@ export async function handleTelegramUpdate(
   if (update.callback_query) {
     const cq = update.callback_query;
     const fromId = cq.from?.id;
-    const data = cq.data || '';
+    const rawData = String(cq.data || '').trim();
     const messageId = cq.message?.message_id;
-    const chatId = cq.message?.chat?.id;
+    const chatId = cq.message?.chat?.id || cq.from?.id;
 
-    if (!data.startsWith('cust:')) {
+    // Normalize action prefixes (support both 'cust:' and 'customer:')
+    let action = rawData;
+    if (action.startsWith('customer:')) {
+      action = 'cust:' + action.slice('customer:'.length);
+    }
+
+    const isCustomerCallback =
+      action.startsWith('cust:') ||
+      action === 'dash' ||
+      action === 'refresh' ||
+      action === 'search' ||
+      action.startsWith('list') ||
+      action.startsWith('multi') ||
+      action.startsWith('repeat') ||
+      action.startsWith('view:');
+
+    if (!isCustomerCallback) {
+      await telegramAnswerCallbackQuery(cq.id);
       return;
+    }
+
+    if (!action.startsWith('cust:')) {
+      action = 'cust:' + action;
     }
 
     // Verify Admin Authorization
     if (!isTelegramAdmin(fromId)) {
-      await telegramAnswerCallbackQuery(cq.id, '⛔ غير مصرح لك بالوصول', true);
+      await telegramAnswerCallbackQuery(
+        cq.id,
+        '⛔ عذرًا، هذا القسم مخصص لمدراء النظام المصرح لهم فقط.',
+        true
+      );
       return;
     }
 
-    // Answer immediately to stop Telegram loading spinner
-    await telegramAnswerCallbackQuery(cq.id);
+    // Answer immediately so Telegram stops loading spinner
+    if (action === 'cust:dash' || action === 'cust:refresh') {
+      await telegramAnswerCallbackQuery(cq.id, '🔄 تم تحديث لوحة التحكم');
+    } else {
+      await telegramAnswerCallbackQuery(cq.id);
+    }
 
-    if (data === 'cust:noop') {
+    if (action === 'cust:noop') {
       return;
     }
 
@@ -955,68 +990,77 @@ export async function handleTelegramUpdate(
       return;
     }
 
-    // Handle dashboard
-    if (data === 'cust:dash') {
-      const view = buildCustomerDashboardView(db.customers, db.orders);
-      await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      return;
-    }
-
-    // Handle search prompt
-    if (data === 'cust:search') {
-      const view = buildCustomerSearchView();
-      await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      return;
-    }
-
-    // Handle all customers list
-    if (data.startsWith('cust:list:')) {
-      const pageStr = data.split(':')[2] || '1';
-      const page = parseInt(pageStr, 10) || 1;
-      const view = buildCustomerListView(db.customers, page);
-      await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      return;
-    }
-
-    // Handle multiple names list
-    if (data.startsWith('cust:multi:')) {
-      const pageStr = data.split(':')[2] || '1';
-      const page = parseInt(pageStr, 10) || 1;
-      const view = buildCustomerMultiNamesView(db.customers, page);
-      await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      return;
-    }
-
-    // Handle repeat customers list
-    if (data.startsWith('cust:repeat:')) {
-      const pageStr = data.split(':')[2] || '1';
-      const page = parseInt(pageStr, 10) || 1;
-      const view = buildCustomerRepeatView(db.customers, page);
-      await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      return;
-    }
-
-    // Handle viewing individual customer profile
-    if (data.startsWith('cust:view:')) {
-      const targetId = data.slice('cust:view:'.length);
-      const targetCustomer = db.customers.find(
-        (c) => c.id === targetId || c.normalized_phone === targetId
-      );
-
-      if (targetCustomer) {
-        const view = buildCustomerProfileView(targetCustomer, db.orders);
+    try {
+      // 1. 🔄 تحديث / لوحة التحكم
+      if (action === 'cust:dash' || action === 'cust:refresh') {
+        const view = buildCustomerDashboardView(db.customers, db.orders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      } else {
-        await telegramEditMessageText(
-          chatId,
-          messageId,
-          '❌ لم يتم العثور على ملف هذا العميل.',
-          {
-            inline_keyboard: [[{ text: '🔙 لوحة التحكم', callback_data: 'cust:dash' }]],
-          }
-        );
+        return;
       }
-      return;
+
+      // 2. 🔎 البحث عن عميل
+      if (action === 'cust:search') {
+        const view = buildCustomerSearchView();
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+
+      // 3. 📋 كل العملاء (مع Pagination)
+      if (action === 'cust:list' || action.startsWith('cust:list:')) {
+        const parts = action.split(':');
+        const page = parseInt(parts[2] || '1', 10) || 1;
+        const view = buildCustomerListView(db.customers, page);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+
+      // 4. ⚠️ أسماء متعددة (مع Pagination)
+      if (action === 'cust:multi' || action.startsWith('cust:multi:')) {
+        const parts = action.split(':');
+        const page = parseInt(parts[2] || '1', 10) || 1;
+        const view = buildCustomerMultiNamesView(db.customers, page);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+
+      // 5. 🔁 العملاء المتكررون (مع Pagination)
+      if (action === 'cust:repeat' || action.startsWith('cust:repeat:')) {
+        const parts = action.split(':');
+        const page = parseInt(parts[2] || '1', 10) || 1;
+        const view = buildCustomerRepeatView(db.customers, page);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+
+      // 6. 👤 عرض ملف العميل وتاريخ طلباته
+      if (action.startsWith('cust:view:')) {
+        const targetId = action.slice('cust:view:'.length).trim();
+        const targetCustomer = db.customers.find(
+          (c) =>
+            c.id === targetId ||
+            c.normalized_phone === targetId ||
+            c.original_phone === targetId
+        );
+
+        if (targetCustomer) {
+          const view = buildCustomerProfileView(targetCustomer, db.orders);
+          await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        } else {
+          await telegramEditMessageText(
+            chatId,
+            messageId,
+            '❌ لم يتم العثور على ملف هذا العميل.',
+            {
+              inline_keyboard: [
+                [{ text: '🔙 لوحة التحكم', callback_data: 'cust:dash' }],
+              ],
+            }
+          );
+        }
+        return;
+      }
+    } catch (btnErr) {
+      console.error('[Telegram Bot] Error processing button callback:', btnErr);
     }
   }
 }
