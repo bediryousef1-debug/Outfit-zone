@@ -10,6 +10,7 @@ import {
   FileText,
   Share2,
   Images,
+  Ticket,
 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { OutfitZoneLogo } from '../../components/common/OutfitZoneLogo';
@@ -19,10 +20,12 @@ export type AdminTab =
   | 'products'
   | 'categories'
   | 'orders'
+  | 'coupons'
   | 'content'
   | 'contact'
   | 'hero-slider'
   | 'settings';
+
 
 interface AdminLayoutProps {
   currentTab: AdminTab;
@@ -50,6 +53,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     { id: 'products', label: 'المنتجات والمخزون', icon: Package },
     { id: 'categories', label: 'الأقسام', icon: Layers },
     { id: 'orders', label: 'الطلبات', icon: ShoppingBag },
+    { id: 'coupons', label: 'كوبونات الخصم', icon: Ticket },
     { id: 'content', label: 'محتوى المتجر', icon: FileText },
     { id: 'contact', label: 'التواصل والسوشيال', icon: Share2 },
     { id: 'hero-slider', label: 'Hero Slider', icon: Images },
@@ -170,3 +174,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     </div>
   );
 };
+
+export default AdminLayout;
+

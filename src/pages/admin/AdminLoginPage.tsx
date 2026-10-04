@@ -123,3 +123,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
     </div>
   );
 };
+
+export default AdminLoginPage;
+

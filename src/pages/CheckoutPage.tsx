@@ -7,6 +7,9 @@ import {
   Lock,
   CheckCircle2,
   AlertTriangle,
+  Tag,
+  Ticket,
+  X,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
@@ -15,6 +18,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { resolveImageUrl } from '../utils/imageHelper';
 import { ShippingRate } from '../types';
+import { getOrderSource } from '../utils/sourceTracker';
 import {
   EGYPTIAN_GOVERNORATES,
   formatPrice,
@@ -22,6 +26,7 @@ import {
   getLocalizedColorName,
   getLocalizedProductName,
 } from '../utils/constants';
+
 
 interface CheckoutPageProps {
   onOrderSuccess: (orderNumber: string, receiptToken?: string) => void;
@@ -52,6 +57,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Track checkout started for Product Analytics & Abandonment
+  useEffect(() => {
+    api.logAnalyticsEvent({ event_type: 'checkout_started' });
+    api.startCheckout({
+      items_count: items.reduce((s, i) => s + i.quantity, 0),
+      subtotal,
+    });
+  }, []);
 
   // Load dynamic shipping rates from Supabase / API
   useEffect(() => {
@@ -93,7 +114,41 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     ? Number(matchedRate.shipping_fee)
     : Number(settings?.shipping_fee) || 65;
 
-  const grandTotal = subtotal + shippingFee;
+  const discountedSubtotal = Math.max(0, subtotal - couponDiscount);
+  const grandTotal = discountedSubtotal + shippingFee;
+
+  const handleApplyCoupon = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setCouponError(null);
+    const clean = couponInput.trim().toUpperCase();
+    if (!clean) return;
+
+    setCouponLoading(true);
+    try {
+      const res = await api.validateCoupon(clean, subtotal);
+      if (res.valid && res.coupon) {
+        setAppliedCoupon(res.coupon);
+        setCouponDiscount(Number(res.discount_amount) || 0);
+        setCouponError(null);
+      } else {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponError(res.error || 'كوبون الخصم غير صالح أو منتهي الصلاحية');
+      }
+    } catch (err: any) {
+      setCouponError(err.message || 'تعذر التحقق من الكوبون');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponInput('');
+    setCouponError(null);
+  };
+
 
   const validateForm = (): boolean => {
     const errs: Record<string, string> = {};

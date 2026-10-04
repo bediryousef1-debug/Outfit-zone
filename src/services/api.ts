@@ -12,7 +12,13 @@ import {
   StoreContent,
   StoreSettings,
   HeroSlide,
+  Coupon,
+  CouponValidationResult,
+  AnalyticsEvent,
+  AbandonedCheckout,
+  AnalyticsSummary,
 } from '../types';
+
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { EGYPTIAN_GOVERNORATES } from '../utils/constants';
 
@@ -3827,5 +3833,162 @@ export const api = {
     throw new Error(
       'قاعدة بيانات Supabase غير متصلة.'
     );
+  },
+
+  // ============================================================================
+  // Customer Order Tracking
+  // ============================================================================
+  async trackOrder(orderNumber: string, phone: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/orders/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_number: orderNumber.trim(),
+        phone: phone.trim(),
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'لم يتم العثور على طلب مطابق.');
+    }
+
+    return data.order;
+  },
+
+  // ============================================================================
+  // Coupon Validation & Admin Management
+  // ============================================================================
+  async validateCoupon(code: string, subtotal: number): Promise<CouponValidationResult> {
+    const res = await fetch(`${API_BASE}/coupons/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code.trim().toUpperCase(), subtotal }),
+    });
+
+    return res.json().catch(() => ({ valid: false, error: 'تعذر التحقق من الكوبون' }));
+  },
+
+  async adminGetCoupons(): Promise<Coupon[]> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/coupons`, {
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل جلب الكوبونات');
+    }
+
+    return res.json();
+  },
+
+  async adminCreateCoupon(coupon: Partial<Coupon>): Promise<Coupon> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/coupons`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify(coupon),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل إنشاء الكوبون');
+    }
+
+    return res.json();
+  },
+
+  async adminUpdateCoupon(id: string, updates: Partial<Coupon>): Promise<Coupon> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/coupons/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders,
+      body: JSON.stringify(updates),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل تحديث الكوبون');
+    }
+
+    return res.json();
+  },
+
+  async adminDeleteCoupon(id: string): Promise<void> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/coupons/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل حذف الكوبون');
+    }
+  },
+
+  // ============================================================================
+  // Product Analytics & Funnel Tracking
+  // ============================================================================
+  async logAnalyticsEvent(event: AnalyticsEvent): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/analytics/event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+    } catch {
+      // Non-blocking telemetry
+    }
+  },
+
+  async adminGetAnalytics(): Promise<AnalyticsSummary> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/analytics`, {
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل جلب التحليلات');
+    }
+
+    return res.json();
+  },
+
+  // ============================================================================
+  // Checkout Abandonment Tracking
+  // ============================================================================
+  async startCheckout(data: {
+    session_id?: string;
+    items_count: number;
+    subtotal: number;
+    customer_name?: string;
+    phone?: string;
+  }): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/checkout/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // Non-blocking
+    }
+  },
+
+  async adminGetAbandonedCheckouts(): Promise<AbandonedCheckout[]> {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/admin/abandoned-checkouts`, {
+      headers: authHeaders,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'فشل جلب السلات المتروكة');
+    }
+
+    return res.json();
   },
 };

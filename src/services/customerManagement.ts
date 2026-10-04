@@ -159,17 +159,48 @@ export function getOrderStatusArabic(status: string | undefined | null): string 
     case 'pending':
       return '⏳ قيد المراجعة';
     case 'confirmed':
-      return '✅ تم التأكيد';
+      return '📦 جاري التجهيز';
     case 'shipped':
-      return '🚚 جاري الشحن';
+      return '🚚 خرج للشحن';
     case 'delivered':
-      return '📦 تم التوصيل';
+      return '✅ تم التسليم';
     case 'cancelled':
       return '❌ ملغي';
+    case 'returned':
+      return '↩️ مرتجع';
     default:
       return status ? `⏳ ${status}` : 'قيد المراجعة';
   }
 }
+
+/**
+ * Builds inline keyboard for changing order status directly from Telegram
+ * 🆕 جديد / 📦 تجهيز / 🚚 شحن / ✅ تسليم / ❌ إلغاء / ↩️ مرتجع
+ */
+export function buildOrderStatusInlineKeyboard(orderNumber: string, currentStatus?: string): any {
+  const statuses = [
+    { key: 'pending', label: '🆕 جديد' },
+    { key: 'confirmed', label: '📦 تجهيز' },
+    { key: 'shipped', label: '🚚 شحن' },
+    { key: 'delivered', label: '✅ تسليم' },
+    { key: 'cancelled', label: '❌ إلغاء' },
+    { key: 'returned', label: '↩️ مرتجع' },
+  ];
+
+  return {
+    inline_keyboard: [
+      statuses.slice(0, 3).map((s) => ({
+        text: currentStatus === s.key ? `• ${s.label} •` : s.label,
+        callback_data: `order:status:${orderNumber}:${s.key}`,
+      })),
+      statuses.slice(3, 6).map((s) => ({
+        text: currentStatus === s.key ? `• ${s.label} •` : s.label,
+        callback_data: `order:status:${orderNumber}:${s.key}`,
+      })),
+    ],
+  };
+}
+
 
 // ==============================================================================
 // 4. Telegram API Helpers
@@ -425,6 +456,195 @@ export async function deleteCustomerAuthoritative(
 
   return true;
 }
+
+/**
+ * Updates order status authoritatively across Supabase and in-memory store.
+ * Updates order_status_history and ensures Admin UI and Telegram remain in 100% sync.
+ */
+export async function updateOrderStatusAuthoritative(
+  orderIdentifier: string,
+  newStatus: string,
+  db: {
+    orders: any[];
+    order_status_history?: any[];
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void,
+  changedBy: string = 'telegram_admin'
+): Promise<any> {
+  const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'];
+  if (!validStatuses.includes(newStatus)) {
+    throw new Error(`حالة الطلب غير صالحة: ${newStatus}`);
+  }
+
+  const nowIso = new Date().toISOString();
+  let updatedOrder: any = null;
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .update({
+          status: newStatus,
+          updated_at: nowIso,
+        })
+        .or(`id.eq.${orderIdentifier},order_number.eq.${orderIdentifier}`)
+        .select('*, order_items(*)')
+        .maybeSingle();
+
+      if (!error && data) {
+        updatedOrder = data;
+
+        await supabaseClient
+          .from('order_status_history')
+          .insert({
+            order_id: data.id,
+            status: newStatus,
+            changed_by: changedBy,
+          })
+          .catch((hErr: any) => {
+            console.warn('[Status Update] Supabase status history insert notice:', hErr?.message || hErr);
+          });
+      }
+    } catch (supaErr) {
+      console.warn('[Status Update] Supabase update notice:', supaErr);
+    }
+  }
+
+  // Update in-memory db.orders
+  const idx = db.orders.findIndex(
+    (o: any) => o.id === orderIdentifier || o.order_number === orderIdentifier
+  );
+
+  if (idx > -1) {
+    db.orders[idx].status = newStatus;
+    db.orders[idx].updated_at = nowIso;
+    if (!updatedOrder) {
+      updatedOrder = db.orders[idx];
+    }
+  }
+
+  if (saveToFile) {
+    saveToFile('orders.json', db.orders);
+  }
+
+  // Append to order_status_history if exists
+  if (db.order_status_history) {
+    db.order_status_history.push({
+      id: `hist_${Date.now()}`,
+      order_id: updatedOrder?.id || orderIdentifier,
+      status: newStatus,
+      created_at: nowIso,
+      changed_by: changedBy,
+    });
+    if (saveToFile) {
+      saveToFile('order_status_history.json', db.order_status_history);
+    }
+  }
+
+  return updatedOrder;
+}
+
+/**
+ * Generates Daily Sales Summary for Telegram
+ */
+export function buildDailyReport(
+  orders: any[],
+  customers: CustomerRecord[],
+  targetDateStr?: string
+): { text: string; replyMarkup: any } {
+  const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+  const dateKey = targetDate.toISOString().split('T')[0];
+
+  const todayOrders = (orders || []).filter((o) => {
+    if (!o.created_at) return false;
+    return o.created_at.startsWith(dateKey);
+  });
+
+  const totalOrders = todayOrders.length;
+  const validOrders = todayOrders.filter((o) => o.status !== 'cancelled' && o.status !== 'returned');
+  const totalSales = validOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const deliveredCount = todayOrders.filter((o) => o.status === 'delivered').length;
+  const inProgressCount = todayOrders.filter((o) => o.status === 'confirmed' || o.status === 'shipped').length;
+  const pendingCount = todayOrders.filter((o) => o.status === 'pending').length;
+  const cancelledCount = todayOrders.filter((o) => o.status === 'cancelled').length;
+  const returnedCount = todayOrders.filter((o) => o.status === 'returned').length;
+
+  let newCustomersCount = 0;
+  let repeatCustomersCount = 0;
+  const seenPhones = new Set<string>();
+
+  todayOrders.forEach((o) => {
+    const norm = normalizePhone(o.phone);
+    if (!norm || seenPhones.has(norm)) return;
+    seenPhones.add(norm);
+
+    const cust = customers.find((c) => c.normalized_phone === norm);
+    const count = cust ? getCustomerActualOrderCount(cust, orders) : 1;
+    if (count <= 1) {
+      newCustomersCount++;
+    } else {
+      repeatCustomersCount++;
+    }
+  });
+
+  // Top products
+  const productCounts: Record<string, number> = {};
+  todayOrders.forEach((o) => {
+    const items = o.order_items || o.items || [];
+    items.forEach((item: any) => {
+      const name = item.product_name || item.product_name_snapshot || 'موديل Outfit Zone';
+      productCounts[name] = (productCounts[name] || 0) + (Number(item.quantity) || 1);
+    });
+  });
+
+  const sortedProducts = Object.entries(productCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const topProductsLines =
+    sortedProducts.length > 0
+      ? sortedProducts.map(([name, qty], i) => `  ${i + 1}. <b>${escapeHtml(name)}</b>: ${qty} قطع`).join('\n')
+      : '  <i>لا توجد مبيعات مسجلة حتى الآن اليوم.</i>';
+
+  const dateFormatted = targetDate.toLocaleDateString('ar-EG', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const lines = [
+    '📊 <b>Outfit Zone — التقرير اليومي للمبيعات</b>',
+    `📅 التاريخ: <b>${dateFormatted}</b>`,
+    '─────────────────────────',
+    `📦 إجمالي الطلبات اليوم: <b>${totalOrders}</b>`,
+    `💰 إجمالي المبيعات: <b>${totalSales.toFixed(2)} جنيه</b>`,
+    `✅ طلبات تم تسليمها: <b>${deliveredCount}</b>`,
+    `🚚 قيد التجهيز والشحن: <b>${inProgressCount}</b>`,
+    `⏳ قيد المراجعة: <b>${pendingCount}</b>`,
+    `❌ طلبات ملغاة: <b>${cancelledCount}</b>`,
+    `↩️ طلبات مرتجعة: <b>${returnedCount}</b>`,
+    '─────────────────────────',
+    '👥 <b>حركة العملاء اليوم:</b>',
+    `• عملاء جدد: <b>${newCustomersCount}</b>`,
+    `• عملاء متكررون: <b>${repeatCustomersCount}</b>`,
+    '─────────────────────────',
+    '🔥 <b>أكثر المنتجات طلباً اليوم:</b>',
+    topProductsLines,
+    '─────────────────────────',
+  ];
+
+  const inline_keyboard = [
+    [
+      { text: '🔄 تحديث التقرير', callback_data: 'report:refresh' },
+      { text: '🔙 لوحة العملاء', callback_data: 'cust:dash' },
+    ],
+  ];
+
+  return { text: lines.join('\n'), replyMarkup: { inline_keyboard } };
+}
+
 
 export async function recordCustomerFromOrder(
   order: {
@@ -1091,9 +1311,12 @@ export async function handleTelegramUpdate(
       text.startsWith('/عميل ') ||
       text === '/customer' ||
       text.startsWith('/customer ') ||
+      text === '/report' ||
+      text === '/تقرير' ||
+      text === '/daily_report' ||
       text === '/start';
 
-    // If it's a customer command or potential phone search
+    // If it's a customer or report command or potential phone search
     if (isCustomerCommand || /^[0-9+٠-٩۰-۹\s-]{8,}$/.test(text)) {
       // Authorization Check
       if (!isTelegramAdmin(fromId)) {
@@ -1101,6 +1324,17 @@ export async function handleTelegramUpdate(
           chatId,
           '⛔ <b>عذرًا، هذا القسم مخصص لمدراء النظام المصرح لهم فقط.</b>'
         );
+        return;
+      }
+
+      // Check if command is Daily Report
+      if (text === '/report' || text === '/تقرير' || text === '/daily_report') {
+        const [currentCustomers, currentOrders] = await Promise.all([
+          getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const report = buildDailyReport(currentOrders, currentCustomers);
+        await telegramSendMessage(chatId, report.text, report.replyMarkup);
         return;
       }
 
@@ -1180,6 +1414,8 @@ export async function handleTelegramUpdate(
       action = 'cust:' + action.slice('customer:'.length);
     }
 
+    const isOrderCallback = action.startsWith('order:status:');
+    const isReportCallback = action === 'report:refresh' || action === 'report:today';
     const isCustomerCallback =
       action.startsWith('cust:') ||
       action === 'dash' ||
@@ -1190,23 +1426,78 @@ export async function handleTelegramUpdate(
       action.startsWith('repeat') ||
       action.startsWith('view:');
 
-    if (!isCustomerCallback) {
+    if (!isOrderCallback && !isReportCallback && !isCustomerCallback) {
       await telegramAnswerCallbackQuery(cq.id);
       return;
-    }
-
-    if (!action.startsWith('cust:')) {
-      action = 'cust:' + action;
     }
 
     // Verify Admin Authorization
     if (!isTelegramAdmin(fromId)) {
       await telegramAnswerCallbackQuery(
         cq.id,
-        '⛔ عذرًا، هذا القسم مخصص لمدراء النظام المصرح لهم فقط.',
+        '⛔ عذرًا، هذا الإجراء مخصص لمدراء النظام المصرح لهم فقط.',
         true
       );
       return;
+    }
+
+    if (!chatId || !messageId) {
+      await telegramAnswerCallbackQuery(cq.id);
+      return;
+    }
+
+    // 1. Order Status Inline Button Click
+    if (isOrderCallback) {
+      const parts = action.split(':');
+      const orderNumber = parts[2];
+      const targetStatus = parts[3];
+
+      try {
+        await updateOrderStatusAuthoritative(
+          orderNumber,
+          targetStatus,
+          db,
+          supabaseClient,
+          saveToFile,
+          `telegram_${fromId}`
+        );
+
+        await telegramAnswerCallbackQuery(
+          cq.id,
+          `✅ تم تحديث حالة الطلب إلى: ${getOrderStatusArabic(targetStatus)}`
+        );
+
+        const currentMsgText = cq.message?.text || '';
+        const statusRegex = /(⏳\s*الحالة:|الحالة:)[^\n]+/u;
+        let updatedText = currentMsgText;
+        if (statusRegex.test(updatedText)) {
+          updatedText = updatedText.replace(statusRegex, `⏳ الحالة: ${getOrderStatusArabic(targetStatus)}`);
+        } else {
+          updatedText += `\n\n⏳ الحالة: ${getOrderStatusArabic(targetStatus)}`;
+        }
+
+        const newKeyboard = buildOrderStatusInlineKeyboard(orderNumber, targetStatus);
+        await telegramEditMessageText(chatId, messageId, updatedText, newKeyboard);
+      } catch (err: any) {
+        await telegramAnswerCallbackQuery(cq.id, `❌ تعذر تحديث الحالة: ${err.message || 'خطأ'}`, true);
+      }
+      return;
+    }
+
+    // 2. Daily Report Refresh
+    if (isReportCallback) {
+      await telegramAnswerCallbackQuery(cq.id, '🔄 تم تحديث التقرير اليومي');
+      const [currentCustomers, currentOrders] = await Promise.all([
+        getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+        getAuthoritativeOrders(db, supabaseClient, saveToFile),
+      ]);
+      const report = buildDailyReport(currentOrders, currentCustomers);
+      await telegramEditMessageText(chatId, messageId, report.text, report.replyMarkup);
+      return;
+    }
+
+    if (!action.startsWith('cust:')) {
+      action = 'cust:' + action;
     }
 
     // Answer immediately so Telegram stops loading spinner
@@ -1217,10 +1508,6 @@ export async function handleTelegramUpdate(
     }
 
     if (action === 'cust:noop') {
-      return;
-    }
-
-    if (!chatId || !messageId) {
       return;
     }
 

@@ -34,7 +34,9 @@ export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string 
   shipped: { label: 'تم الشحن', color: 'text-purple-400 bg-purple-950/40 border-purple-800/50' },
   delivered: { label: 'تم التسليم', color: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
   cancelled: { label: 'ملغي', color: 'text-rose-400 bg-rose-950/40 border-rose-800/50' },
+  returned: { label: 'مرتجع', color: 'text-orange-400 bg-orange-950/40 border-orange-800/50' },
 };
+
 
 export const STANDARD_SIZES = ['M', 'L', 'XL', '2XL', '3XL'];
 

@@ -3,7 +3,8 @@ export type OrderStatus =
   | 'confirmed'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'returned';
 
 export interface AdminUser {
   id: string;
@@ -137,6 +138,9 @@ export interface Order {
   shipping_fee: number;
   total: number;
   status: OrderStatus;
+  order_source?: string;
+  coupon_code?: string | null;
+  discount_amount?: number;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];
@@ -316,6 +320,8 @@ export interface OrderCreateRequest {
     unit_price?: number;
     line_total?: number;
   }[];
+  coupon_code?: string;
+  order_source?: string;
 }
 
 export interface OrderCreateResponse {
@@ -327,5 +333,68 @@ export interface OrderCreateResponse {
   subtotal?: number;
   shipping_fee?: number;
   total?: number;
+  discount_amount?: number;
+  coupon_code?: string;
   error?: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_order_amount: number;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CouponValidationResult {
+  valid: boolean;
+  error?: string;
+  coupon?: {
+    code: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+  };
+  discount_amount?: number;
+}
+
+export interface AnalyticsEvent {
+  id?: string;
+  event_type: 'product_view' | 'add_to_cart' | 'checkout_started' | 'order_completed';
+  product_id?: string;
+  product_name?: string;
+  metadata?: any;
+  created_at?: string;
+}
+
+export interface AbandonedCheckout {
+  id: string;
+  session_id?: string;
+  items_count: number;
+  subtotal: number;
+  customer_name?: string;
+  phone?: string;
+  status: 'abandoned' | 'completed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsSummary {
+  views: number;
+  add_to_cart: number;
+  checkout_started: number;
+  orders_completed: number;
+  cart_conversion_rate: number;
+  checkout_conversion_rate: number;
+  order_conversion_rate: number;
+  overall_conversion_rate: number;
+  abandoned_checkouts_count: number;
+  abandonment_rate: number;
+  top_viewed: { product_id: string; name: string; count: number }[];
+  top_carted: { product_id: string; name: string; count: number }[];
 }

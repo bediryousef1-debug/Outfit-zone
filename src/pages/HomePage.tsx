@@ -278,6 +278,15 @@ export const HomePage: React.FC<HomePageProps> = ({
   ) => {
     if (currentSlides.length <= 1) return;
 
+    // Do not start swipe/drag tracking when clicking
+    // an interactive element such as slider buttons or links.
+    const target = event.target as HTMLElement;
+
+    if (target.closest('button, a, input, textarea, select')) {
+      heroSwipeDetected.current = false;
+      return;
+    }
+
     heroPointerStartX.current = event.clientX;
     heroPointerStartY.current = event.clientY;
     heroPointerId.current = event.pointerId;
@@ -1070,7 +1079,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         )}
       </section>
 
-            {/* =====================================================================
+      {/* =====================================================================
           4. EDITORIAL PROMO BANNER
           ===================================================================== */}
 
@@ -1160,7 +1169,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </section>
-      
+
       {/* =====================================================================
           5. FEATURED PRODUCTS
           ===================================================================== */}

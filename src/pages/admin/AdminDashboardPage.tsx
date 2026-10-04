@@ -16,9 +16,13 @@ import {
   Trash2,
   Pencil,
   X,
+  BarChart3,
+  Activity,
+  Compass,
 } from 'lucide-react';
-import { Order, ProductReview } from '../../types';
+import { Order, ProductReview, AnalyticsSummary } from '../../types';
 import { api } from '../../services/api';
+
 import { formatPrice, ORDER_STATUS_LABELS } from '../../utils/constants';
 
 interface AdminDashboardPageProps {
@@ -28,6 +32,7 @@ interface AdminDashboardPageProps {
       | 'products'
       | 'categories'
       | 'orders'
+      | 'coupons'
       | 'content'
       | 'contact'
       | 'hero-slider'
@@ -52,9 +57,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [dateFilter, setDateFilter] = useState<
     'all' | 'today' | 'week' | 'month'
   >('all');
+
 
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -97,7 +104,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       setIsLoading(true);
       setReviewsLoading(true);
       try {
-        const [ordersData, reviewsData] = await Promise.all([
+        const [ordersData, reviewsData, analyticsData] = await Promise.all([
           api.adminGetOrders().catch((err) => {
             console.error('Failed to load admin orders:', err);
             return [];
@@ -106,12 +113,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
             console.error('Failed to load admin reviews:', err);
             return [];
           }),
+          api.adminGetAnalytics().catch((err) => {
+            console.error('Failed to load admin analytics:', err);
+            return null;
+          }),
         ]);
 
         if (isMounted) {
           setOrders(ordersData);
           setReviews(reviewsData);
+          if (analyticsData) setAnalytics(analyticsData);
         }
+
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -597,6 +610,117 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
         </div>
       </div>
 
+      {/* Conversion Funnel & Product Analytics (Feature 5 & 8) */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-3">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span>قمع التحويل والتحليلات (Conversion Funnel)</span>
+            </h2>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              متابعة رحلة العميل من تصفح الموديل وحتى إتمام الطلب والسلات المتروكة.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-neutral-400">
+              معدل التحويل الكلي:{' '}
+              <strong className="text-emerald-400 font-mono">
+                {analytics?.overall_conversion_rate?.toFixed(1) || '0.0'}%
+              </strong>
+            </span>
+          </div>
+        </div>
+
+        {/* 4-Step Funnel Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Step 1: Views */}
+          <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 relative overflow-hidden">
+            <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+              <span className="font-bold">1. مشاهدات الموديلات</span>
+              <Eye className="w-3.5 h-3.5 text-blue-400" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono">
+              {analytics?.views || 0}
+            </div>
+            <p className="text-[11px] text-neutral-500 mt-1">تصفح صفحات المنتجات</p>
+          </div>
+
+          {/* Step 2: Add to Cart */}
+          <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 relative overflow-hidden">
+            <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+              <span className="font-bold">2. إضافة إلى السلة</span>
+              <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono">
+              {analytics?.add_to_cart || 0}
+            </div>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              معدل الإضافة:{' '}
+              <strong className="text-purple-400 font-mono font-bold">
+                {analytics?.cart_conversion_rate?.toFixed(1) || '0.0'}%
+              </strong>
+            </p>
+          </div>
+
+          {/* Step 3: Checkout Started */}
+          <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 relative overflow-hidden">
+            <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+              <span className="font-bold">3. بدء الدفع (Checkout)</span>
+              <Compass className="w-3.5 h-3.5 text-amber-400" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono">
+              {analytics?.checkout_started || 0}
+            </div>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              معدل الانتقال للدفع:{' '}
+              <strong className="text-amber-400 font-mono font-bold">
+                {analytics?.checkout_conversion_rate?.toFixed(1) || '0.0'}%
+              </strong>
+            </p>
+          </div>
+
+          {/* Step 4: Orders Completed */}
+          <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 relative overflow-hidden">
+            <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+              <span className="font-bold">4. طلبات مكتملة</span>
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <div className="text-2xl font-black text-emerald-400 font-mono">
+              {analytics?.orders_completed || stats.totalOrders || 0}
+            </div>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              معدل إتمام الشراء:{' '}
+              <strong className="text-emerald-400 font-mono font-bold">
+                {analytics?.order_conversion_rate?.toFixed(1) || '0.0'}%
+              </strong>
+            </p>
+          </div>
+        </div>
+
+        {/* Abandoned Checkouts Banner */}
+        <div className="p-3.5 rounded-xl bg-neutral-900/40 border border-neutral-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+            <span className="text-neutral-300 font-semibold">
+              السلات المتروكة (بدء الشراء ولم يُستكمل):
+            </span>
+            <span className="font-mono font-bold text-amber-300">
+              {analytics?.abandoned_checkouts_count || 0} سلة
+            </span>
+          </div>
+
+          <div className="text-neutral-400">
+            نسبة الارتداد عند الدفع:{' '}
+            <span className="font-mono font-bold text-neutral-200">
+              {analytics?.abandonment_rate?.toFixed(1) || '0.0'}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+
       {/* Recent Orders Preview */}
       <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-4">
         <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
@@ -1026,3 +1150,5 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     </div>
   );
 };
+
+export default AdminDashboardPage;

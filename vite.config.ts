@@ -10,6 +10,10 @@ export default defineConfig(() => {
       alias: {
         '@': fileURLToPath(new URL('./', import.meta.url)),
       },
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

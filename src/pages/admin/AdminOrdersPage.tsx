@@ -283,6 +283,7 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
             { id: 'shipped', label: 'تم الشحن' },
             { id: 'delivered', label: 'تم التسليم' },
             { id: 'cancelled', label: 'ملغي' },
+            { id: 'returned', label: 'مرتجع' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -602,3 +603,5 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
     </div>
   );
 };
+
+export default AdminOrdersPage;

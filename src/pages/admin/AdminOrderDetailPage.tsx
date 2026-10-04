@@ -170,10 +170,10 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
           تغيير حالة الطلب (Workflow Status)
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-          {(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map(
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
+          {(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'] as OrderStatus[]).map(
             (st) => {
-              const info = ORDER_STATUS_LABELS[st];
+              const info = ORDER_STATUS_LABELS[st] || { label: st, color: 'text-neutral-400 bg-neutral-900 border-neutral-700' };
               const isCurrent = order.status === st;
 
               return (
@@ -214,9 +214,16 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
                 <span dir="ltr" className="font-mono text-white">{order.phone}</span>
               </p>
               <p>
+                <span className="text-neutral-500 font-semibold">مصدر الطلب:</span>{' '}
+                <span className="bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded text-white font-mono text-[11px]">
+                  {order.order_source || 'Direct'}
+                </span>
+              </p>
+              <p>
                 <span className="text-neutral-500 font-semibold">المحافظة:</span>{' '}
                 <span className="text-white">{order.governorate}</span>
               </p>
+
               <p>
                 <span className="text-neutral-500 font-semibold">المدينة / الحي:</span>{' '}
                 <span className="text-white">{order.city}</span>
@@ -281,6 +288,12 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
                 <span>إجمالي المنتجات:</span>
                 <span className="font-mono-numbers text-white">{formatPrice(order.subtotal)}</span>
               </div>
+              {order.coupon_code && Number(order.discount_amount) > 0 && (
+                <div className="flex justify-between text-emerald-400 font-semibold">
+                  <span>خصم الكوبون ({order.coupon_code}):</span>
+                  <span className="font-mono-numbers">-{formatPrice(order.discount_amount || 0)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-400">
                 <span>مصاريف الشحن:</span>
                 <span className="font-mono-numbers text-white">{formatPrice(order.shipping_fee)}</span>
@@ -292,6 +305,7 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
                 </span>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -370,3 +384,6 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
     </div>
   );
 };
+
+export default AdminOrderDetailPage;
+

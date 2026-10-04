@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
@@ -19,21 +19,22 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
+import { OrderTrackingPage } from './pages/OrderTrackingPage';
+import { initSourceTracker } from './utils/sourceTracker';
+import { AdminLayout } from './pages/admin/AdminLayout';
 import type { AdminTab } from './pages/admin/AdminLayout';
-
-// Performance optimization: Lazy-load admin bundle so customer storefront remains ultra-fast
-const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
-const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
-const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
-const AdminProductEditPage = lazy(() => import('./pages/admin/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
-const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })));
-const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })));
-const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
-const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage').then(m => ({ default: m.AdminContentPage })));
-const AdminContactPage = lazy(() => import('./pages/admin/AdminContactPage').then(m => ({ default: m.AdminContactPage })));
-const AdminHeroSliderPage = lazy(() => import('./pages/admin/AdminHeroSliderPage').then(m => ({ default: m.AdminHeroSliderPage })));
-const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminProductsPage } from './pages/admin/AdminProductsPage';
+import { AdminProductEditPage } from './pages/admin/AdminProductEditPage';
+import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
+import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
+import { AdminCouponsPage } from './pages/admin/AdminCouponsPage';
+import { AdminContentPage } from './pages/admin/AdminContentPage';
+import { AdminContactPage } from './pages/admin/AdminContactPage';
+import { AdminHeroSliderPage } from './pages/admin/AdminHeroSliderPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 
 function AdminLoadingSpinner() {
   return (
@@ -69,7 +70,13 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Initialize marketing order source tracker on visitor entry
+  useEffect(() => {
+    initSourceTracker();
+  }, []);
+
   const navigate = (path: string) => {
+
     window.history.pushState({}, '', path);
     setCurrentPath(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -101,9 +108,12 @@ function AppContent() {
       document.title = isAr ? 'قصتنا وعن البراند | Outfit Zone' : 'About the Brand | Outfit Zone';
     } else if (pathname === '/contact') {
       document.title = isAr ? 'تواصل معنا | Outfit Zone' : 'Contact Us | Outfit Zone';
+    } else if (pathname === '/track') {
+      document.title = isAr ? 'تتبع حالة طلبك | Outfit Zone' : 'Track Your Order | Outfit Zone';
     } else if (pathname.startsWith('/admin')) {
       document.title = 'لوحة التحكم | Outfit Zone Admin';
     }
+
   }, [pathname, language]);
 
   // Route Parsers
@@ -130,12 +140,10 @@ function AppContent() {
     // Unauthenticated admin route handling: redirect to /admin/login
     if (!isAuthenticated) {
       return (
-        <Suspense fallback={<AdminLoadingSpinner />}>
-          <AdminLoginPage
-            onBackToStore={() => navigate('/')}
-            onLoginSuccess={() => navigate('/admin')}
-          />
-        </Suspense>
+        <AdminLoginPage
+          onBackToStore={() => navigate('/')}
+          onLoginSuccess={() => navigate('/admin')}
+        />
       );
     }
 
@@ -152,6 +160,8 @@ function AppContent() {
       activeTab = 'categories';
     } else if (pathname.startsWith('/admin/orders')) {
       activeTab = 'orders';
+    } else if (pathname.startsWith('/admin/coupons')) {
+      activeTab = 'coupons';
     } else if (pathname.startsWith('/admin/content')) {
       activeTab = 'content';
     } else if (pathname.startsWith('/admin/contact')) {
@@ -174,14 +184,14 @@ function AppContent() {
     const orderDetailId = isOrderDetail ? pathname.replace('/admin/orders/', '') : null;
 
     return (
-      <Suspense fallback={<AdminLoadingSpinner />}>
-        <AdminLayout
+      <AdminLayout
           currentTab={activeTab}
           onSelectTab={(tab) => {
             if (tab === 'dashboard') navigate('/admin');
             if (tab === 'products') navigate('/admin/products');
             if (tab === 'categories') navigate('/admin/categories');
             if (tab === 'orders') navigate('/admin/orders');
+            if (tab === 'coupons') navigate('/admin/coupons');
             if (tab === 'content') navigate('/admin/content');
             if (tab === 'contact') navigate('/admin/contact');
             if (tab === 'hero-slider') navigate('/admin/hero-slider');
@@ -197,6 +207,7 @@ function AppContent() {
                 if (tab === 'products') navigate('/admin/products');
                 if (tab === 'categories') navigate('/admin/categories');
                 if (tab === 'orders') navigate('/admin/orders');
+                if (tab === 'coupons') navigate('/admin/coupons');
                 if (tab === 'content') navigate('/admin/content');
                 if (tab === 'contact') navigate('/admin/contact');
                 if (tab === 'hero-slider') navigate('/admin/hero-slider');
@@ -250,8 +261,12 @@ function AppContent() {
             </>
           )}
 
+          {/* /admin/coupons */}
+          {activeTab === 'coupons' && <AdminCouponsPage />}
+
           {/* /admin/content */}
           {activeTab === 'content' && <AdminContentPage />}
+
 
           {/* /admin/contact */}
           {activeTab === 'contact' && <AdminContactPage />}
@@ -262,7 +277,6 @@ function AppContent() {
           {/* /admin/settings */}
           {activeTab === 'settings' && <AdminSettingsPage />}
         </AdminLayout>
-      </Suspense>
     );
   }
 
@@ -350,7 +364,13 @@ function AppContent() {
         {pathname === '/contact' && (
           <ContactPage />
         )}
+
+        {/* /track */}
+        {pathname === '/track' && (
+          <OrderTrackingPage onNavigate={(path) => navigate(path)} />
+        )}
         </ErrorBoundary>
+
       </main>
 
       {/* Customer Footer */}

@@ -39,9 +39,11 @@ export const Header: React.FC<HeaderProps> = ({
   const navLinks = [
     { label: t('nav.home', 'الرئيسية'), path: '/' },
     { label: t('nav.products', 'الموديلات'), path: '/products' },
+    { label: t('nav.track', 'تتبع طلبك'), path: '/track' },
     { label: t('nav.about', 'قصة البراند'), path: '/about' },
     { label: t('nav.contact', 'تواصل معنا'), path: '/contact' },
   ];
+
 
   const handleNav = (path: string) => {
     setMobileMenuOpen(false);

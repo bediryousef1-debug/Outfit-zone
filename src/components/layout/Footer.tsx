@@ -339,7 +339,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   {t('nav.contact', 'تواصل معنا')}
                 </button>
               </li>
+
+              <li>
+                <button
+                  onClick={() => onNavigate('/track')}
+                  className="hover:text-white transition-colors text-right cursor-pointer"
+                >
+                  {t('nav.track', 'تتبع حالة طلبك')}
+                </button>
+              </li>
             </ul>
+
           </div>
 
           {/* Policies */}

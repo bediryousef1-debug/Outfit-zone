@@ -103,6 +103,19 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
           </a>
         </div>
 
+        {/* Direct Order Tracking Button */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => onNavigate(`/track?order=${encodeURIComponent(orderNumber)}&phone=${encodeURIComponent(order?.phone || '')}`)}
+            className="inline-flex items-center gap-2 py-2.5 px-5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+          >
+            <Truck className="w-4 h-4 text-emerald-400" />
+            <span>تتبع خط سير هذا الطلب لحظياً عبر الموقع</span>
+          </button>
+        </div>
+
+
         {/* Order Details Breakdown (Displayed only when verified via secure receipt token) */}
         {hasFullDetails && order && (
           <div className="space-y-6">
