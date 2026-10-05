@@ -43,7 +43,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'انستجرام',
       url: contactSocial.instagram_url,
       icon: Instagram,
-      bg: 'hover:text-pink-500',
+      bg: 'hover:text-pink-500 hover:bg-pink-500/10 dark:hover:bg-pink-500/20',
     });
   }
 
@@ -53,7 +53,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'فيسبوك',
       url: contactSocial.facebook_url,
       icon: Facebook,
-      bg: 'hover:text-blue-500',
+      bg: 'hover:text-blue-500 hover:bg-blue-500/10 dark:hover:bg-blue-500/20',
     });
   }
 
@@ -63,7 +63,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'تيك توك',
       url: contactSocial.tiktok_url,
       icon: TikTokIcon,
-      bg: 'hover:text-neutral-400',
+      bg: 'hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-500/10 dark:hover:bg-neutral-500/20',
     });
   }
 
@@ -103,7 +103,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
 
   if (variant === 'inline') {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {links.map((link) => {
           const Icon = link.icon;
           return (
@@ -112,15 +112,15 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`p-2 rounded-full border transition-all ${
+              className={`oz-btn-press w-9 h-9 rounded-full border flex items-center justify-center transition-all duration-200 ${
                 isDark
-                  ? 'bg-neutral-900/80 border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white'
-                  : 'bg-white border-neutral-300 text-neutral-700 hover:border-black hover:text-black shadow-sm'
+                  ? 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-500 hover:text-white shadow-black/40'
+                  : 'bg-white border-neutral-200 text-neutral-700 hover:border-black hover:text-black shadow-sm'
               } ${link.bg}`}
               title={link.name}
               aria-label={link.name}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
             </a>
           );
         })}
@@ -139,10 +139,10 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       }}
     >
       <div
-        className={`flex flex-col gap-1.5 p-1.5 rounded-full border shadow-xl backdrop-blur-md transition-colors ${
+        className={`flex flex-col gap-1.5 p-1.5 rounded-2xl border shadow-xl backdrop-blur-md transition-colors ${
           isDark
-            ? 'bg-black/85 border-neutral-800 text-neutral-300'
-            : 'bg-white/95 border-neutral-200 text-neutral-700 shadow-md'
+            ? 'bg-[#141417]/95 border-neutral-800 text-neutral-300 shadow-black/80'
+            : 'bg-white/95 border-neutral-200/90 text-neutral-700 shadow-neutral-300/50'
         }`}
       >
         {links.map((link) => {
@@ -153,15 +153,15 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`oz-btn-press group w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${
                 isDark
-                  ? 'hover:bg-neutral-800 hover:text-white'
-                  : 'hover:bg-neutral-100 hover:text-black'
+                  ? 'text-neutral-300 hover:text-white'
+                  : 'text-neutral-600 hover:text-black'
               } ${link.bg}`}
               title={link.name}
               aria-label={link.name}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
             </a>
           );
         })}

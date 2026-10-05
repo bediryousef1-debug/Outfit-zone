@@ -14,7 +14,7 @@ product: Product;
 onSelect: (slug: string) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onSelect }) => {
 const { t, language } = useLanguage();
 
 const { isDark } = useTheme();
@@ -52,7 +52,7 @@ language === 'en'
 return (
 <div
 onClick={() => onSelect(product.slug)}
-className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden border transition-all duration-300 ${
+className={`group cursor-pointer oz-card-hover animate-fade-in flex flex-col rounded-2xl overflow-hidden border ${
         isDark
           ? 'bg-[#121216] border-neutral-800/80 hover:border-neutral-600 shadow-md'
           : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
@@ -69,11 +69,11 @@ onSelect(product.slug);
        src={primaryImage}
        alt={localizedName}
        loading="lazy"
+       decoding="async"
        referrerPolicy="no-referrer"
        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
      />
 
-```
     {/* Status flags */}
     <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 items-end">
       {isOutOfStock ? (
@@ -166,4 +166,4 @@ onSelect(product.slug);
 </div>
 
 );
-};
+});

@@ -106,15 +106,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       try {
         const [ordersData, reviewsData, analyticsData] = await Promise.all([
           api.adminGetOrders().catch((err) => {
-            console.error('Failed to load admin orders:', err);
+            console.warn('Failed to load admin orders:', err);
             return [];
           }),
           api.adminGetProductReviews().catch((err) => {
-            console.error('Failed to load admin reviews:', err);
+            console.warn('Failed to load admin reviews:', err);
             return [];
           }),
           api.adminGetAnalytics().catch((err) => {
-            console.error('Failed to load admin analytics:', err);
+            console.warn('Failed to load admin analytics:', err);
             return null;
           }),
         ]);

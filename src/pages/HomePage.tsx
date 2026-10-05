@@ -761,14 +761,14 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="pt-2 flex flex-wrap items-center gap-4">
                 <button
                   onClick={() => onNavigate(currentSlide.button_link)}
-                  className={`py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-105 cursor-pointer ${
+                  className={`oz-btn-press py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg cursor-pointer ${
                     isDark
                       ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
                       : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
                   }`}
                 >
                   <span>{localizedCta}</span>
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                 </button>
               </div>
 
@@ -999,7 +999,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div
                   key={cat.id}
                   onClick={() => handleCategoryNavigate(cat.id)}
-                  className={`group cursor-pointer rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col ${
+                  className={`group cursor-pointer oz-card-hover rounded-2xl overflow-hidden border flex flex-col ${
                     isDark
                       ? 'bg-[#121216] border-neutral-800 hover:border-neutral-600 shadow-md'
                       : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
@@ -1127,7 +1127,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => onNavigate('/about')}
-                  className="py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="oz-btn-press py-3 px-7 rounded-full bg-white text-black font-extrabold text-xs sm:text-sm transition-all hover:bg-neutral-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <span>
                     {language === 'en'
@@ -1284,10 +1284,10 @@ export const HomePage: React.FC<HomePageProps> = ({
             <button
               type="button"
               onClick={openReviewForm}
-              className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+              className={`oz-btn-press inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm cursor-pointer ${
                 isDark
-                  ? 'bg-white text-black hover:bg-neutral-200'
-                  : 'bg-black text-white hover:bg-neutral-800'
+                  ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
+                  : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -1584,7 +1584,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={() =>
                     handleReviewProduct(productSlug)
                   }
-                  className={`group rounded-2xl border p-5 transition-all duration-300 ${
+                  className={`group oz-card-hover rounded-2xl border p-5 ${
                     productSlug ? 'cursor-pointer' : ''
                   } ${
                     isDark

@@ -43,8 +43,8 @@ CREATE POLICY "Public read active coupons" ON public.coupons
 CREATE POLICY "Admins full access on coupons" ON public.coupons
   FOR ALL
   TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- 4. Analytics Events Table (Funnel: views, add_to_cart, checkout_started, order_completed)
 CREATE TABLE IF NOT EXISTS public.analytics_events (
@@ -68,7 +68,7 @@ CREATE POLICY "Public insert analytics events" ON public.analytics_events
 CREATE POLICY "Admins select analytics events" ON public.analytics_events
   FOR SELECT
   TO authenticated
-  USING (true);
+  USING (public.is_admin());
 
 -- 5. Abandoned Checkouts Table (for analytics)
 CREATE TABLE IF NOT EXISTS public.abandoned_checkouts (
@@ -88,12 +88,14 @@ CREATE INDEX IF NOT EXISTS idx_abandoned_created_at ON public.abandoned_checkout
 
 ALTER TABLE public.abandoned_checkouts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public insert/update checkouts" ON public.abandoned_checkouts
-  FOR ALL
-  USING (true)
+-- Anonymous and public users can only INSERT their own checkout start events, NEVER select, update, or delete
+CREATE POLICY "Public insert checkouts" ON public.abandoned_checkouts
+  FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Admins select checkouts" ON public.abandoned_checkouts
-  FOR SELECT
+-- Only verified admins can select, update, or delete customer data in abandoned checkouts
+CREATE POLICY "Admins full access checkouts" ON public.abandoned_checkouts
+  FOR ALL
   TO authenticated
-  USING (true);
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());

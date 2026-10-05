@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -51,6 +52,20 @@ const supabaseClient = hasSupabase
   ? createClient(
       supabaseUrl,
       supabaseServiceKey || supabaseAnonKey
+    )
+  : null;
+
+// Dedicated client for user authentication to prevent mutating or polluting the shared service-role client
+const supabaseAuthClient = Boolean(hasSupabase && (supabaseAnonKey || supabaseServiceKey))
+  ? createClient(
+      supabaseUrl,
+      supabaseAnonKey || supabaseServiceKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
     )
   : null;
 
@@ -354,6 +369,9 @@ const db = {
   order_status_history: [] as OrderStatusHistoryRecord[],
   shipping_rates: [] as ShippingRateRecord[],
   customers: [] as CustomerRecord[],
+  coupons: [] as any[],
+  analytics_events: [] as any[],
+  abandoned_checkouts: [] as any[],
 };
 
 // ==============================================================================
@@ -484,6 +502,21 @@ function initializeCatalog() {
 
   if (persistedSocial) {
     db.contact_social = persistedSocial;
+  }
+
+  const persistedCoupons = loadFromFile<any[]>('coupons.json', []);
+  if (persistedCoupons && persistedCoupons.length > 0) {
+    db.coupons = persistedCoupons;
+  }
+
+  const persistedAnalytics = loadFromFile<any[]>('analytics_events.json', []);
+  if (persistedAnalytics && persistedAnalytics.length > 0) {
+    db.analytics_events = persistedAnalytics;
+  }
+
+  const persistedAbandoned = loadFromFile<any[]>('abandoned_checkouts.json', []);
+  if (persistedAbandoned && persistedAbandoned.length > 0) {
+    db.abandoned_checkouts = persistedAbandoned;
   }
 
   const defaultShippingRates: ShippingRateRecord[] = [
@@ -1699,8 +1732,72 @@ app.delete(
 );
 
 // ==============================================================================
-// Admin Login
+// Admin Login Rate Limiting & Authentication
 // ==============================================================================
+
+interface LoginAttemptRecord {
+  count: number;
+  firstAttempt: number;
+  blockedUntil?: number;
+}
+
+const adminLoginAttempts = new Map<string, LoginAttemptRecord>();
+const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const ADMIN_LOGIN_BLOCK_MS = 15 * 60 * 1000; // 15 minutes
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || 'unknown-ip';
+}
+
+function checkAdminLoginRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const record = adminLoginAttempts.get(key);
+
+  if (!record) {
+    return { allowed: true };
+  }
+
+  if (record.blockedUntil && record.blockedUntil > now) {
+    const retryAfterSeconds = Math.ceil((record.blockedUntil - now) / 1000);
+    return { allowed: false, retryAfterSeconds };
+  }
+
+  if (now - record.firstAttempt > ADMIN_LOGIN_WINDOW_MS) {
+    adminLoginAttempts.delete(key);
+    return { allowed: true };
+  }
+
+  if (record.count >= ADMIN_LOGIN_MAX_ATTEMPTS) {
+    record.blockedUntil = now + ADMIN_LOGIN_BLOCK_MS;
+    const retryAfterSeconds = Math.ceil(ADMIN_LOGIN_BLOCK_MS / 1000);
+    return { allowed: false, retryAfterSeconds };
+  }
+
+  return { allowed: true };
+}
+
+function recordAdminLoginFailure(key: string): void {
+  const now = Date.now();
+  const record = adminLoginAttempts.get(key);
+
+  if (!record || now - record.firstAttempt > ADMIN_LOGIN_WINDOW_MS) {
+    adminLoginAttempts.set(key, { count: 1, firstAttempt: now });
+  } else {
+    record.count++;
+    if (record.count >= ADMIN_LOGIN_MAX_ATTEMPTS) {
+      record.blockedUntil = now + ADMIN_LOGIN_BLOCK_MS;
+    }
+  }
+}
+
+function clearAdminLoginRateLimit(key: string): void {
+  adminLoginAttempts.delete(key);
+}
 
 app.post(
   '/api/admin/login',
@@ -1710,107 +1807,85 @@ app.post(
     if (!email || !password) {
       return res.status(400).json({
         authorized: false,
-        error:
-          'يرجى إدخال البريد الإلكتروني وكلمة المرور.',
+        error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.',
       });
     }
 
-    const cleanEmail =
-      email.toLowerCase().trim();
+    const cleanEmail = email.toLowerCase().trim();
+    const clientIp = getClientIp(req);
+    const rateLimitKey = `${clientIp}_${cleanEmail}`;
 
-    if (!supabaseClient) {
+    // 1. Rate Limiting Check
+    const rateLimitStatus = checkAdminLoginRateLimit(rateLimitKey);
+    if (!rateLimitStatus.allowed) {
+      return res.status(429).json({
+        authorized: false,
+        error: 'تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة بعد 15 دقيقة.',
+      });
+    }
+
+    if (!supabaseAuthClient || !supabaseClient) {
       return res.status(503).json({
         authorized: false,
-        error:
-          'خدمة المصادقة غير متاحة.',
+        error: 'خدمة المصادقة غير متاحة حالياً.',
       });
     }
 
     try {
+      // 2. Authenticate using dedicated isolated supabaseAuthClient (does not mutate shared service-role client)
       const {
         data: authData,
         error: authErr,
-      } =
-        await supabaseClient.auth.signInWithPassword(
-          {
-            email: cleanEmail,
-            password,
-          }
-        );
+      } = await supabaseAuthClient.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
 
-      if (
-        authErr ||
-        !authData?.user ||
-        !authData.session?.access_token
-      ) {
+      if (authErr || !authData?.user || !authData.session?.access_token) {
+        recordAdminLoginFailure(rateLimitKey);
         return res.status(401).json({
           authorized: false,
-          error:
-            authErr?.message ===
-            'Invalid login credentials'
-              ? 'بيانات الدخول غير صحيحة (البريد الإلكتروني أو كلمة المرور خاطئة).'
-              : authErr?.message ||
-                'فشل التحقق من جلسة الدخول.',
+          error: 'بيانات الدخول غير صحيحة أو غير مصرح لك بالوصول.',
         });
       }
 
+      // 3. Verify admin authorization using shared service-role client
       const {
         data: adminRecord,
         error: adminError,
-      } =
-        await supabaseClient
-          .from('admin_users')
-          .select(
-            'id, email, created_at'
-          )
-          .ilike(
-            'email',
-            cleanEmail
-          )
-          .maybeSingle();
+      } = await supabaseClient
+        .from('admin_users')
+        .select('id, email, created_at')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
 
-      if (adminError) {
-        console.error(
-          '[Admin Login] Supabase admin check error:',
-          adminError
-        );
-
-        await supabaseClient.auth.signOut();
-
-        return res.status(500).json({
-          authorized: false,
-          error:
-            'تعذر التحقق من صلاحيات الأدمن.',
-        });
-      }
-
-      if (!adminRecord) {
-        await supabaseClient.auth.signOut();
+      if (adminError || !adminRecord) {
+        recordAdminLoginFailure(rateLimitKey);
+        if (adminError) {
+          console.error('[Admin Login] Admin verification error:', adminError);
+        }
 
         return res.status(403).json({
           authorized: false,
-          error:
-            'هذا الحساب غير مصرح له بالدخول إلى لوحة التحكم.',
+          error: 'بيانات الدخول غير صحيحة أو غير مصرح لك بالوصول.',
         });
       }
+
+      // Successful login: clear any rate limit counters
+      clearAdminLoginRateLimit(rateLimitKey);
 
       return res.json({
         authorized: true,
         email: adminRecord.email,
-        token:
-          authData.session.access_token,
+        token: authData.session.access_token,
       });
     } catch (err: any) {
-      console.error(
-        '[Admin Login] Unexpected error:',
-        err
-      );
+      recordAdminLoginFailure(rateLimitKey);
+      console.error('[Admin Login] Unexpected error:', err);
 
       return res.status(500).json({
         authorized: false,
-        error:
-          err.message ||
-          'حدث خطأ في الخادم.',
+        error: 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.',
       });
     }
   }
@@ -2619,11 +2694,7 @@ const orderId =
     .substring(2, 7)}`;
 
 const receiptToken =
-  'rec_' +
-  Math.random()
-    .toString(36)
-    .substring(2) +
-  Date.now().toString(36);
+  'rec_' + crypto.randomBytes(24).toString('hex');
 
 const newOrder: OrderRecord = {
   id: orderId,
@@ -2833,31 +2904,55 @@ db.orders.unshift(
 app.get(
   '/api/orders/lookup/:orderNumber',
   async (req: Request, res: Response) => {
-    const {
-      orderNumber,
-    } = req.params;
+    const { orderNumber } = req.params;
+    const token = (req.query.t as string)?.trim() || null;
 
-    const token =
-      (req.query.t as string)
-        ?.trim() || null;
+    // Check if caller has admin authorization via Bearer token
+    let isCallerAdmin = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ') && supabaseClient) {
+      try {
+        const bearerToken = authHeader.slice(7).trim();
+        const { data: userData } = await supabaseClient.auth.getUser(bearerToken);
+        if (userData?.user?.email) {
+          const { data: adminRecord } = await supabaseClient
+            .from('admin_users')
+            .select('id')
+            .ilike('email', userData.user.email)
+            .maybeSingle();
+          if (adminRecord) {
+            isCallerAdmin = true;
+          }
+        }
+      } catch {
+        // Not admin
+      }
+    }
 
     if (supabaseClient) {
       try {
-        const {
-          data,
-          error,
-        } =
-          await supabaseClient.rpc(
-            'get_guest_order_receipt',
-            {
-              p_order_number:
-                orderNumber.trim(),
-              p_receipt_token:
-                token,
-            }
-          );
+        const { data, error } = await supabaseClient.rpc(
+          'get_guest_order_receipt',
+          {
+            p_order_number: orderNumber.trim(),
+            p_receipt_token: token,
+          }
+        );
 
         if (!error && data) {
+          if (isCallerAdmin && !data.has_full_access) {
+            const { data: fullOrder } = await supabaseClient
+              .from('orders')
+              .select('*, order_items(*)')
+              .eq('order_number', orderNumber.trim())
+              .maybeSingle();
+            if (fullOrder) {
+              return res.json({
+                ...fullOrder,
+                has_full_access: true,
+              });
+            }
+          }
           return res.json(data);
         }
       } catch {
@@ -2865,56 +2960,38 @@ app.get(
       }
     }
 
-    const order =
-      db.orders.find(
-        (o) =>
-          o.order_number ===
-          orderNumber.trim()
-      );
+    const order = db.orders.find(
+      (o) => o.order_number === orderNumber.trim()
+    );
 
     if (!order) {
       return res.status(404).json({
-        error:
-          'الطلب غير موجود.',
+        error: 'الطلب غير موجود.',
       });
     }
 
-    const isAuthorized =
-      Boolean(
-        token &&
-          order.receipt_token &&
-          token ===
-            order.receipt_token
-      );
+    const isAuthorized = Boolean(
+      isCallerAdmin ||
+      (token && order.receipt_token && token === order.receipt_token)
+    );
 
-    if (
-      !isAuthorized &&
-      order.receipt_token
-    ) {
+    if (!isAuthorized) {
       return res.json({
-        order_number:
-          order.order_number,
-        status:
-          order.status,
-        created_at:
-          order.created_at,
-        has_full_access:
-          false,
+        order_number: order.order_number,
+        status: order.status,
+        created_at: order.created_at,
+        has_full_access: false,
       });
     }
 
-    const items =
-      db.order_items.filter(
-        (item) =>
-          item.order_id ===
-          order.id
-      );
+    const items = db.order_items.filter(
+      (item) => item.order_id === order.id
+    );
 
     res.json({
       ...order,
       has_full_access: true,
-      order_items:
-        items,
+      order_items: items,
     });
   }
 );
@@ -4316,6 +4393,403 @@ app.delete(
 );
 
 // ==============================================================================
+// Product Analytics & Funnel Tracking
+// ==============================================================================
+
+app.post('/api/analytics/event', async (req: Request, res: Response) => {
+  try {
+    const { event_type, product_id, product_name, metadata } = req.body;
+    if (!event_type) return res.status(400).json({ error: 'event_type is required' });
+
+    const newEvent = {
+      id: `ev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      event_type,
+      product_id: product_id || null,
+      product_name: product_name || null,
+      metadata: metadata || null,
+      created_at: new Date().toISOString(),
+    };
+
+    db.analytics_events.push(newEvent);
+    if (db.analytics_events.length > 2000) {
+      db.analytics_events = db.analytics_events.slice(-2000);
+    }
+    saveToFile('analytics_events.json', db.analytics_events);
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('analytics_events').insert([newEvent]);
+      } catch {}
+    }
+
+    res.json({ success: true });
+  } catch {
+    res.json({ success: false });
+  }
+});
+
+app.get('/api/admin/analytics', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    let events = db.analytics_events || [];
+    if (supabaseClient) {
+      try {
+        const { data } = await supabaseClient.from('analytics_events').select('*').limit(5000);
+        if (data && data.length > 0) events = data;
+      } catch {}
+    }
+
+    let views = 0;
+    let add_to_cart = 0;
+    let checkout_started = 0;
+    let orders_completed = db.orders.length;
+
+    const productViews: Record<string, { name: string; count: number }> = {};
+    const productCarted: Record<string, { name: string; count: number }> = {};
+
+    events.forEach((ev: any) => {
+      const type = ev.event_type;
+      if (type === 'view_product') {
+        views++;
+        if (ev.product_id) {
+          const name = ev.product_name || ev.metadata?.name || 'منتج';
+          if (!productViews[ev.product_id]) productViews[ev.product_id] = { name, count: 0 };
+          productViews[ev.product_id].count++;
+        }
+      } else if (type === 'add_to_cart') {
+        add_to_cart++;
+        if (ev.product_id) {
+          const name = ev.product_name || ev.metadata?.name || 'منتج';
+          if (!productCarted[ev.product_id]) productCarted[ev.product_id] = { name, count: 0 };
+          productCarted[ev.product_id].count++;
+        }
+      } else if (type === 'checkout_started') {
+        checkout_started++;
+      } else if (type === 'order_completed') {
+        orders_completed++;
+      }
+    });
+
+    const abandoned_checkouts_count = db.abandoned_checkouts ? db.abandoned_checkouts.length : 0;
+    const abandonment_rate =
+      checkout_started + abandoned_checkouts_count > 0
+        ? Math.round((abandoned_checkouts_count / (checkout_started + abandoned_checkouts_count)) * 100)
+        : 0;
+
+    const cart_conversion_rate = views > 0 ? Math.round((add_to_cart / views) * 100) : 0;
+    const checkout_conversion_rate = add_to_cart > 0 ? Math.round((checkout_started / add_to_cart) * 100) : 0;
+    const order_conversion_rate = checkout_started > 0 ? Math.round((orders_completed / checkout_started) * 100) : 0;
+    const overall_conversion_rate = views > 0 ? Math.round((orders_completed / views) * 100) : 0;
+
+    const top_viewed = Object.entries(productViews)
+      .map(([product_id, { name, count }]) => ({ product_id, name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const top_carted = Object.entries(productCarted)
+      .map(([product_id, { name, count }]) => ({ product_id, name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    res.json({
+      views,
+      add_to_cart,
+      checkout_started,
+      orders_completed,
+      cart_conversion_rate,
+      checkout_conversion_rate,
+      order_conversion_rate,
+      overall_conversion_rate,
+      abandoned_checkouts_count,
+      abandonment_rate,
+      top_viewed,
+      top_carted,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'فشل جلب التحليلات' });
+  }
+});
+
+// ==============================================================================
+// Checkout Abandonment
+// ==============================================================================
+
+app.post('/api/checkout/start', async (req: Request, res: Response) => {
+  try {
+    const { session_id, items_count, subtotal, customer_name, phone } = req.body;
+    const record = {
+      id: `ab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      session_id: session_id || null,
+      items_count: Number(items_count) || 1,
+      subtotal: Number(subtotal) || 0,
+      customer_name: customer_name || '',
+      phone: phone || '',
+      status: 'abandoned',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    db.abandoned_checkouts.unshift(record);
+    if (db.abandoned_checkouts.length > 500) {
+      db.abandoned_checkouts = db.abandoned_checkouts.slice(0, 500);
+    }
+    saveToFile('abandoned_checkouts.json', db.abandoned_checkouts);
+
+    res.json({ success: true, id: record.id });
+  } catch {
+    res.json({ success: false });
+  }
+});
+
+app.get('/api/admin/abandoned-checkouts', requireAdmin, async (_req: Request, res: Response) => {
+  res.json(db.abandoned_checkouts || []);
+});
+
+// ==============================================================================
+// Coupons Management & Validation
+// ==============================================================================
+
+app.post('/api/coupons/validate', async (req: Request, res: Response) => {
+  try {
+    const { code, subtotal } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.json({ valid: false, error: 'يرجى إدخال كود الكوبون' });
+    }
+
+    const cleanCode = code.trim().toUpperCase();
+    const cleanSubtotal = Number(subtotal) || 0;
+
+    let coupon = db.coupons.find((c: any) => c.code && c.code.toUpperCase() === cleanCode);
+    if (supabaseClient) {
+      try {
+        const { data } = await supabaseClient.from('coupons').select('*').ilike('code', cleanCode).maybeSingle();
+        if (data) coupon = data;
+      } catch {}
+    }
+
+    if (!coupon) {
+      return res.json({ valid: false, error: 'كود الكوبون غير صحيح' });
+    }
+
+    if (coupon.is_active === false) {
+      return res.json({ valid: false, error: 'هذا الكوبون غير مفعّل حالياً' });
+    }
+
+    if (coupon.expires_at && new Date(coupon.expires_at).getTime() < Date.now()) {
+      return res.json({ valid: false, error: 'عذراً، هذا الكوبون منتهي الصلاحية' });
+    }
+
+    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+      return res.json({ valid: false, error: 'وصل هذا الكوبون للحد الأقصى من مرات الاستخدام' });
+    }
+
+    if (coupon.min_order_amount && cleanSubtotal < coupon.min_order_amount) {
+      return res.json({
+        valid: false,
+        error: `الحد الأدنى لتفعيل هذا الكوبون هو ${coupon.min_order_amount} ج.م`,
+      });
+    }
+
+    let discount_amount = 0;
+    if (coupon.discount_type === 'percentage') {
+      discount_amount = Math.round((cleanSubtotal * Number(coupon.discount_value)) / 100);
+    } else {
+      discount_amount = Math.min(Number(coupon.discount_value), cleanSubtotal);
+    }
+
+    res.json({
+      valid: true,
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        discount_type: coupon.discount_type,
+        discount_value: coupon.discount_value,
+      },
+      discount_amount,
+      final_total: Math.max(0, cleanSubtotal - discount_amount),
+    });
+  } catch (err: any) {
+    res.json({ valid: false, error: err.message || 'خطأ أثناء التحقق من الكوبون' });
+  }
+});
+
+app.get('/api/admin/coupons', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.from('coupons').select('*').order('created_at', { ascending: false });
+        if (!error && data) return res.json(data);
+      } catch {}
+    }
+    res.json(db.coupons || []);
+  } catch {
+    res.json(db.coupons || []);
+  }
+});
+
+app.post('/api/admin/coupons', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const payload = req.body;
+    const newCoupon = {
+      id: `cpn_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      code: String(payload.code || '').trim().toUpperCase(),
+      discount_type: payload.discount_type || 'percentage',
+      discount_value: Number(payload.discount_value) || 10,
+      min_order_amount: payload.min_order_amount ? Number(payload.min_order_amount) : null,
+      expires_at: payload.expires_at || null,
+      usage_limit: payload.usage_limit ? Number(payload.usage_limit) : null,
+      used_count: 0,
+      is_active: payload.is_active !== false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.from('coupons').insert([newCoupon]).select().single();
+        if (!error && data) {
+          db.coupons.unshift(data);
+          saveToFile('coupons.json', db.coupons);
+          return res.json(data);
+        }
+      } catch {}
+    }
+
+    db.coupons.unshift(newCoupon);
+    saveToFile('coupons.json', db.coupons);
+    res.json(newCoupon);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'فشل إنشاء الكوبون' });
+  }
+});
+
+app.patch('/api/admin/coupons/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updates = { ...req.body, updated_at: new Date().toISOString() };
+    if (updates.code) updates.code = String(updates.code).trim().toUpperCase();
+
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.from('coupons').update(updates).eq('id', id).select().single();
+        if (!error && data) {
+          const idx = db.coupons.findIndex((c: any) => c.id === id);
+          if (idx !== -1) db.coupons[idx] = data;
+          saveToFile('coupons.json', db.coupons);
+          return res.json(data);
+        }
+      } catch {}
+    }
+
+    const idx = db.coupons.findIndex((c: any) => c.id === id);
+    if (idx !== -1) {
+      db.coupons[idx] = { ...db.coupons[idx], ...updates };
+      saveToFile('coupons.json', db.coupons);
+      return res.json(db.coupons[idx]);
+    }
+    res.status(404).json({ error: 'الكوبون غير موجود' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'فشل تحديث الكوبون' });
+  }
+});
+
+app.delete('/api/admin/coupons/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('coupons').delete().eq('id', id);
+      } catch {}
+    }
+    db.coupons = db.coupons.filter((c: any) => c.id !== id);
+    saveToFile('coupons.json', db.coupons);
+    res.json({ success: true, message: 'تم حذف الكوبون بنجاح' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'فشل حذف الكوبون' });
+  }
+});
+
+// ==============================================================================
+// Customer Order Tracking
+// ==============================================================================
+
+app.post('/api/orders/track', async (req: Request, res: Response) => {
+  try {
+    const { order_number, phone } = req.body;
+    if (!order_number || !phone) {
+      return res.status(400).json({ error: 'يرجى إدخال رقم الطلب ورقم الهاتف' });
+    }
+
+    const cleanNum = String(order_number).trim().toUpperCase();
+    const normalizeDigits = (val: string) => String(val || '').replace(/\D/g, '').replace(/^(20|0)/, '');
+    const cleanPhone = normalizeDigits(phone);
+
+    let matchedOrder: any = null;
+
+    if (supabaseClient) {
+      try {
+        const { data } = await supabaseClient
+          .from('orders')
+          .select('*, order_items(*)')
+          .ilike('order_number', cleanNum)
+          .maybeSingle();
+
+        if (data) {
+          const dbPhone = normalizeDigits(data.phone);
+          if (dbPhone.includes(cleanPhone) || cleanPhone.includes(dbPhone)) {
+            matchedOrder = data;
+          }
+        }
+      } catch {}
+    }
+
+    if (!matchedOrder) {
+      const local = db.orders.find((o) => o.order_number.toUpperCase() === cleanNum);
+      if (local) {
+        const dbPhone = normalizeDigits(local.phone);
+        if (dbPhone.includes(cleanPhone) || cleanPhone.includes(dbPhone)) {
+          const items = db.order_items.filter((it) => it.order_id === local.id);
+          matchedOrder = { ...local, order_items: items };
+        }
+      }
+    }
+
+    if (!matchedOrder) {
+      return res.status(404).json({ error: 'لم يتم العثور على طلب مطابق لرقم الطلب ورقم الهاتف المدخلين' });
+    }
+
+    res.json({
+      success: true,
+      order: {
+        id: matchedOrder.id,
+        order_number: matchedOrder.order_number,
+        status: matchedOrder.status,
+        created_at: matchedOrder.created_at,
+        customer_name: matchedOrder.customer_name,
+        governorate: matchedOrder.governorate,
+        city: matchedOrder.city,
+        address: matchedOrder.address,
+        subtotal: matchedOrder.subtotal,
+        shipping_fee: matchedOrder.shipping_fee,
+        discount_amount: matchedOrder.discount_amount || 0,
+        coupon_code: matchedOrder.coupon_code || null,
+        total: matchedOrder.total,
+        items: (matchedOrder.order_items || []).map((it: any) => ({
+          id: it.id,
+          product_name: it.product_name,
+          color: it.color,
+          size: it.size,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          total_price: it.total_price,
+        })),
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'حدث خطأ أثناء تتبع الطلب' });
+  }
+});
+
+// ==============================================================================
 // System Health
 // ==============================================================================
 
@@ -4350,9 +4824,26 @@ app.get(
 // Telegram Webhook & Customer Management Routes
 // ==============================================================================
 
+function getTelegramWebhookSecret(): string {
+  if (process.env.TELEGRAM_WEBHOOK_SECRET?.trim()) {
+    return process.env.TELEGRAM_WEBHOOK_SECRET.trim();
+  }
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || 'outfit_zone_secret';
+  return crypto.createHash('sha256').update(`${botToken}-telegram-webhook-token`).digest('hex');
+}
+
 app.post(
   ['/api/telegram-webhook', '/api/telegram/webhook'],
   async (req: Request, res: Response) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    if (botToken) {
+      const expectedSecret = getTelegramWebhookSecret();
+      const incomingSecret = req.headers['x-telegram-bot-api-secret-token'];
+      if (!incomingSecret || incomingSecret !== expectedSecret) {
+        return res.status(401).json({ error: 'Unauthorized webhook request.' });
+      }
+    }
+
     try {
       const update = req.body;
       if (update) {
@@ -4370,6 +4861,7 @@ app.post(
 
 app.get(
   '/api/telegram/webhook-info',
+  requireAdmin,
   async (_req: Request, res: Response) => {
     const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
     if (!botToken) {
@@ -4388,7 +4880,7 @@ app.get(
       res.json({
         bot: meRes,
         webhook: whRes,
-        adminUserIds: getTelegramAdminUserIds(),
+        hasConfiguredAdmins: getTelegramAdminUserIds().length > 0,
         customersCount: customers.length,
       });
     } catch (err: any) {
@@ -4416,11 +4908,13 @@ app.post(
     }
 
     try {
+      const secretToken = getTelegramWebhookSecret();
       const response = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url,
+          secret_token: secretToken,
           drop_pending_updates: false,
           allowed_updates: ['message', 'callback_query'],
         }),

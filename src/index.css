@@ -99,3 +99,93 @@
   font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
+
+/* ==============================================================================
+   Outfit Zone Modern Premium Animations & Micro-Interactions
+   ============================================================================== */
+
+@keyframes ozFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ozScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ozPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 211, 102, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: ozFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale-in {
+  animation: ozScaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pulse-glow {
+  animation: ozPulseGlow 2.5s infinite ease-in-out;
+}
+
+/* Card subtle lift on hover */
+.oz-card-hover {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+  will-change: transform;
+}
+.oz-card-hover:hover {
+  transform: translateY(-4px);
+}
+.oz-card-hover:active {
+  transform: scale(0.98);
+}
+
+/* Button smooth haptic-like press */
+.oz-btn-press {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.15s ease;
+  will-change: transform;
+}
+.oz-btn-press:hover {
+  transform: translateY(-1.5px);
+}
+.oz-btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-fade-in,
+  .animate-scale-in,
+  .pulse-glow,
+  .oz-card-hover,
+  .oz-btn-press {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

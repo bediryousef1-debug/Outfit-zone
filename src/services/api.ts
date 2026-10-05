@@ -637,100 +637,85 @@ export const api = {
     if (cached) return cached;
 
     if (isSupabaseConfigured && supabase) {
-      let prodQuery = supabase
-        .from('products')
-        .select('*');
+      try {
+        let prodQuery = supabase
+          .from('products')
+          .select('*');
 
-      if (!options?.admin) {
-        prodQuery = prodQuery.neq(
-          'is_active',
-          false
-        );
-      }
+        if (!options?.admin) {
+          prodQuery = prodQuery.neq(
+            'is_active',
+            false
+          );
+        }
 
-      const [
-        pRes,
-        imgRes,
-        varRes,
-        catRes,
-      ] = await Promise.all([
-        prodQuery.order(
-          'created_at',
-          { ascending: false }
-        ),
-        supabase
-          .from('product_images')
-          .select('*'),
-        supabase
-          .from('product_variants')
-          .select('*'),
-        supabase
-          .from('categories')
-          .select('*'),
-      ]);
+        const [
+          pRes,
+          imgRes,
+          varRes,
+          catRes,
+        ] = await Promise.all([
+          prodQuery.order(
+            'created_at',
+            { ascending: false }
+          ),
+          supabase
+            .from('product_images')
+            .select('*'),
+          supabase
+            .from('product_variants')
+            .select('*'),
+          supabase
+            .from('categories')
+            .select('*'),
+        ]);
 
-      if (varRes.error) {
-        throw new Error(
-          varRes.error.message ||
-            'فشل تحميل مخزون المنتجات'
-        );
-      }
+        if (!pRes.error && pRes.data && pRes.data.length > 0) {
+          const allImages = imgRes.data || [];
+          const allVariants = varRes.data || [];
+          const allCategories = catRes.data || [];
 
-      if (pRes.error) {
-        throw new Error(
-          pRes.error.code === 'PGRST205' ||
-          pRes.error.message.includes(
-            'schema cache'
-          )
-            ? 'جداول المنتجات غير مهيأة بعد في Supabase. يرجى تشغيل supabase/schema.sql في Supabase SQL Editor.'
-            : pRes.error.message ||
-              'تعذر جلب المنتجات من Supabase'
-        );
-      }
+          const result = pRes.data.map((p: any) => {
+            const category = allCategories.find(
+              (c: any) =>
+                c.id === p.category_id
+            );
 
-      const allImages = imgRes.data || [];
-      const allVariants = varRes.data || [];
-      const allCategories = catRes.data || [];
+            const images = allImages
+              .filter(
+                (img: any) =>
+                  img.product_id === p.id
+              )
+              .sort(
+                (a: any, b: any) =>
+                  (a.sort_order ?? 0) -
+                  (b.sort_order ?? 0)
+              );
 
-      const result = (
-        pRes.data || []
-      ).map((p: any) => {
-        const category = allCategories.find(
-          (c: any) =>
-            c.id === p.category_id
-        );
+            const variants = allVariants.filter(
+              (v: any) =>
+                v.product_id === p.id
+            );
 
-        const images = allImages
-          .filter(
-            (img: any) =>
-              img.product_id === p.id
-          )
-          .sort(
-            (a: any, b: any) =>
-              (a.sort_order ?? 0) -
-              (b.sort_order ?? 0)
+            return {
+              ...p,
+              category,
+              images,
+              variants,
+            };
+          });
+
+          setCached(
+            cacheKey,
+            result,
+            60_000
           );
 
-        const variants = allVariants.filter(
-          (v: any) =>
-            v.product_id === p.id
-        );
-
-        return {
-          ...p,
-          category,
-          images,
-          variants,
-        };
-      });
-
-      setCached(
-        cacheKey,
-        result,
-        60_000
-      );
-
-      return result;
+          return result;
+        }
+      } catch (sbErr) {
+        console.warn('Direct Supabase getProducts notice, falling back to server API:', sbErr);
+      }
     }
 
     try {
@@ -3943,18 +3928,34 @@ export const api = {
     }
   },
 
-  async adminGetAnalytics(): Promise<AnalyticsSummary> {
-    const authHeaders = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/admin/analytics`, {
-      headers: authHeaders,
-    });
+  async adminGetAnalytics(): Promise<AnalyticsSummary | null> {
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/admin/analytics`, {
+        headers: {
+          ...authHeaders,
+          Accept: 'application/json',
+        },
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'فشل جلب التحليلات');
+      if (!res.ok) {
+        return null;
+      }
+
+      const contentType = res.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        return null;
+      }
+
+      const text = await res.text();
+      if (!text || text.trim().startsWith('<')) {
+        return null;
+      }
+
+      return JSON.parse(text);
+    } catch {
+      return null;
     }
-
-    return res.json();
   },
 
   // ============================================================================
@@ -3979,16 +3980,32 @@ export const api = {
   },
 
   async adminGetAbandonedCheckouts(): Promise<AbandonedCheckout[]> {
-    const authHeaders = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/admin/abandoned-checkouts`, {
-      headers: authHeaders,
-    });
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/admin/abandoned-checkouts`, {
+        headers: {
+          ...authHeaders,
+          Accept: 'application/json',
+        },
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'فشل جلب السلات المتروكة');
+      if (!res.ok) {
+        return [];
+      }
+
+      const contentType = res.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        return [];
+      }
+
+      const text = await res.text();
+      if (!text || text.trim().startsWith('<')) {
+        return [];
+      }
+
+      return JSON.parse(text);
+    } catch {
+      return [];
     }
-
-    return res.json();
   },
 };
