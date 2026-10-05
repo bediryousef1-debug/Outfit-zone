@@ -3237,6 +3237,7 @@ app.patch(
       'shipped',
       'delivered',
       'cancelled',
+      'returned',
     ];
 
     if (
