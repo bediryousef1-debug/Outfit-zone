@@ -139,12 +139,16 @@ interface OrderRecord {
   subtotal: number;
   shipping_fee: number;
   total: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
+  order_source?: string | null;
   status:
     | 'pending'
     | 'confirmed'
     | 'shipped'
     | 'delivered'
-    | 'cancelled';
+    | 'cancelled'
+    | 'returned';
   created_at: string;
   updated_at: string;
 }
@@ -504,9 +508,37 @@ function initializeCatalog() {
     db.contact_social = persistedSocial;
   }
 
-  const persistedCoupons = loadFromFile<any[]>('coupons.json', []);
+  const defaultCoupons = [
+    {
+      id: 'cpn_oz10',
+      code: 'OZ10',
+      discount_type: 'percentage',
+      discount_value: 10,
+      min_order_amount: 0,
+      used_count: 0,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: 'cpn_welcome50',
+      code: 'WELCOME50',
+      discount_type: 'fixed',
+      discount_value: 50,
+      min_order_amount: 300,
+      used_count: 0,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ];
+
+  const persistedCoupons = loadFromFile<any[]>('coupons.json', defaultCoupons);
   if (persistedCoupons && persistedCoupons.length > 0) {
     db.coupons = persistedCoupons;
+  } else {
+    db.coupons = defaultCoupons;
+    saveToFile('coupons.json', db.coupons);
   }
 
   const persistedAnalytics = loadFromFile<any[]>('analytics_events.json', []);
@@ -2290,6 +2322,8 @@ app.post(
     const {
       customer,
       items,
+      coupon_code,
+      order_source,
     } = req.body;
 
     if (
@@ -2398,177 +2432,274 @@ app.post(
       };
     });
 
+    const computedItemsSubtotal = enrichedItems.reduce(
+      (acc: number, it: any) => acc + (Number(it.line_total) || 0),
+      0
+    );
+
     // ==========================================================================
-// Supabase RPC
-// ==========================================================================
+    // Authoritative Coupon Validation
+    // ==========================================================================
+    const cleanCouponCode =
+      typeof coupon_code === 'string' && coupon_code.trim()
+        ? coupon_code.trim().toUpperCase()
+        : null;
 
-if (supabaseClient) {
-  try {
-    const {
-      data,
-      error,
-    } = await supabaseClient.rpc(
-      'create_guest_order',
-      {
-        p_customer_name:
-          customer.customer_name,
-        p_phone:
-          cleanPhone,
-        p_governorate:
-          customer.governorate,
-        p_city:
-          customer.city,
-        p_address:
-          customer.address,
-        p_notes:
-          customer.notes ||
-          null,
-        p_items:
-          items,
+    let authoritativeCoupon: any = null;
+    let couponDiscountAmount = 0;
+
+    if (cleanCouponCode) {
+      if (supabaseClient) {
+        try {
+          const { data } = await supabaseClient
+            .from('coupons')
+            .select('*')
+            .ilike('code', cleanCouponCode)
+            .maybeSingle();
+          if (data) authoritativeCoupon = data;
+        } catch {}
       }
-    );
 
-    if (
-      !error &&
-      data &&
-      data.success
-    ) {
-      const orderRecord: OrderRecord = {
-        id:
-          data.order_id ||
-          `ord_${Date.now()}`,
-        order_number:
-          data.order_number,
-        customer_name:
-          customer.customer_name.trim(),
-        phone:
-          cleanPhone,
-        governorate:
-          customer.governorate,
-        city:
-          customer.city.trim(),
-        address:
-          customer.address.trim(),
-        notes:
-          customer.notes?.trim() ||
-          null,
-        subtotal:
-          data.subtotal,
-        shipping_fee:
-          data.shipping_fee,
-        total:
-          data.total,
-        status:
-          'pending',
-        created_at:
-          new Date().toISOString(),
-        updated_at:
-          new Date().toISOString(),
-      };
+      if (!authoritativeCoupon) {
+        authoritativeCoupon = db.coupons.find(
+          (c: any) => c.code && c.code.toUpperCase() === cleanCouponCode
+        );
+      }
 
-      db.orders.unshift(
-        orderRecord
-      );
+      if (authoritativeCoupon && authoritativeCoupon.is_active !== false) {
+        const isExpired =
+          authoritativeCoupon.expires_at &&
+          new Date(authoritativeCoupon.expires_at).getTime() < Date.now();
+        const isLimitReached =
+          authoritativeCoupon.usage_limit &&
+          authoritativeCoupon.used_count >= authoritativeCoupon.usage_limit;
+        const isBelowMin =
+          authoritativeCoupon.min_order_amount &&
+          computedItemsSubtotal < authoritativeCoupon.min_order_amount;
 
-      saveToFile(
-        'orders.json',
-        db.orders
-      );
-
-      // Customer Management: safely link and update customer history without blocking order
-      await recordCustomerFromOrder(
-        {
-          id: (data as any)?.id || orderRecord.id,
-          order_number: data.order_number,
-          customer_name: customer.customer_name.trim(),
-          phone: cleanPhone,
-          created_at: (data as any)?.created_at || orderRecord.created_at,
-        },
-        db,
-        saveToFile,
-        supabaseClient
-      );
-
-      // IMPORTANT:
-      // Await Telegram so the serverless function has time to complete
-      // the notification before returning the response.
-      await sendTelegramOrderNotification(
-        {
-          order_number:
-            data.order_number,
-          customer_name:
-            customer.customer_name.trim(),
-          phone:
-            cleanPhone,
-          governorate:
-            customer.governorate,
-          city:
-            customer.city.trim(),
-          address:
-            customer.address.trim(),
-          notes:
-            customer.notes?.trim() ||
-            null,
-          subtotal:
-            Number(
-              data.subtotal
-            ) || 0,
-          shipping_fee:
-            Number(
-              data.shipping_fee
-            ) || 0,
-          total:
-            Number(
-              data.total
-            ) || 0,
-          items: enrichedItems,
+        if (!isExpired && !isLimitReached && !isBelowMin) {
+          if (authoritativeCoupon.discount_type === 'percentage') {
+            couponDiscountAmount = Math.round(
+              (computedItemsSubtotal * Number(authoritativeCoupon.discount_value)) / 100
+            );
+          } else {
+            couponDiscountAmount = Math.min(
+              Number(authoritativeCoupon.discount_value),
+              computedItemsSubtotal
+            );
+          }
         }
-      );
-
-      return res.json(data);
+      }
     }
 
-    if (error) {
-      const errMsg =
-        error.message || '';
+    // ==========================================================================
+    // Supabase RPC
+    // ==========================================================================
 
-      if (
-        errMsg.includes(
-          'OZ_SHIPPING_GOVERNORATE_UNAVAILABLE'
-        ) ||
-        errMsg.includes(
-          'OZ_SHIPPING_SETTINGS_MISSING'
-        )
-      ) {
-        return res.status(400).json({
-          error:
-            'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
-        });
+    if (supabaseClient) {
+      try {
+        const {
+          data,
+          error,
+        } = await supabaseClient.rpc(
+          'create_guest_order',
+          {
+            p_customer_name:
+              customer.customer_name,
+            p_phone:
+              cleanPhone,
+            p_governorate:
+              customer.governorate,
+            p_city:
+              customer.city,
+            p_address:
+              customer.address,
+            p_notes:
+              customer.notes ||
+              null,
+            p_items:
+              items,
+          }
+        );
+
+        if (
+          !error &&
+          data &&
+          data.success
+        ) {
+          const rpcSubtotal = Number(data.subtotal) || computedItemsSubtotal;
+          const rpcShippingFee = Number(data.shipping_fee) || 0;
+          const finalDiscount = couponDiscountAmount;
+          const finalTotal = Math.max(0, rpcSubtotal - finalDiscount) + rpcShippingFee;
+
+          const orderRecord: OrderRecord = {
+            id:
+              data.order_id ||
+              `ord_${Date.now()}`,
+            order_number:
+              data.order_number,
+            customer_name:
+              customer.customer_name.trim(),
+            phone:
+              cleanPhone,
+            governorate:
+              customer.governorate,
+            city:
+              customer.city.trim(),
+            address:
+              customer.address.trim(),
+            notes:
+              customer.notes?.trim() ||
+              null,
+            subtotal:
+              rpcSubtotal,
+            shipping_fee:
+              rpcShippingFee,
+            total:
+              finalTotal,
+            discount_amount:
+              finalDiscount,
+            coupon_code:
+              finalDiscount > 0 ? cleanCouponCode : null,
+            order_source:
+              order_source || 'Direct',
+            status:
+              'pending',
+            created_at:
+              new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
+          };
+
+          db.orders.unshift(
+            orderRecord
+          );
+
+          saveToFile(
+            'orders.json',
+            db.orders
+          );
+
+          // Update coupon discount and order source in Supabase order record
+          if (finalDiscount > 0 || order_source) {
+            try {
+              await supabaseClient
+                .from('orders')
+                .update({
+                  discount_amount: finalDiscount,
+                  coupon_code: finalDiscount > 0 ? cleanCouponCode : null,
+                  total: finalTotal,
+                  order_source: order_source || 'Direct',
+                })
+                .eq('order_number', data.order_number);
+
+              if (authoritativeCoupon?.id && finalDiscount > 0) {
+                await supabaseClient
+                  .from('coupons')
+                  .update({ used_count: (authoritativeCoupon.used_count || 0) + 1 })
+                  .eq('id', authoritativeCoupon.id);
+              }
+            } catch (updateErr) {
+              console.warn('[Orders] Supabase order coupon metadata notice:', updateErr);
+            }
+          }
+
+          // Customer Management: safely link and update customer history without blocking order
+          await recordCustomerFromOrder(
+            {
+              id: (data as any)?.id || orderRecord.id,
+              order_number: data.order_number,
+              customer_name: customer.customer_name.trim(),
+              phone: cleanPhone,
+              created_at: (data as any)?.created_at || orderRecord.created_at,
+            },
+            db,
+            saveToFile,
+            supabaseClient
+          );
+
+          // IMPORTANT: Await Telegram so notifications complete before returning response
+          await sendTelegramOrderNotification(
+            {
+              order_number:
+                data.order_number,
+              customer_name:
+                customer.customer_name.trim(),
+              phone:
+                cleanPhone,
+              governorate:
+                customer.governorate,
+              city:
+                customer.city.trim(),
+              address:
+                customer.address.trim(),
+              notes:
+                customer.notes?.trim() ||
+                null,
+              subtotal:
+                rpcSubtotal,
+              discount_amount:
+                finalDiscount,
+              coupon_code:
+                finalDiscount > 0 ? cleanCouponCode : null,
+              shipping_fee:
+                rpcShippingFee,
+              total:
+                finalTotal,
+              items: enrichedItems,
+            }
+          );
+
+          return res.json({
+            ...data,
+            subtotal: rpcSubtotal,
+            discount_amount: finalDiscount,
+            coupon_code: finalDiscount > 0 ? cleanCouponCode : null,
+            total: finalTotal,
+          });
+        }
+
+        if (error) {
+          const errMsg =
+            error.message || '';
+
+          if (
+            errMsg.includes(
+              'OZ_SHIPPING_GOVERNORATE_UNAVAILABLE'
+            ) ||
+            errMsg.includes(
+              'OZ_SHIPPING_SETTINGS_MISSING'
+            )
+          ) {
+            return res.status(400).json({
+              error:
+                'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
+            });
+          }
+
+          if (
+            errMsg.includes(
+              'OZ_INSUFFICIENT_STOCK'
+            )
+          ) {
+            return res.status(400).json({
+              error:
+                'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
+            });
+          }
+
+          console.warn(
+            '[Orders] Supabase RPC notice, falling through to local database:',
+            error.message
+          );
+        }
+      } catch (rpcErr: any) {
+        console.warn(
+          '[Orders] Supabase RPC execution notice, falling through to local database:',
+          rpcErr?.message || rpcErr
+        );
       }
-
-      if (
-        errMsg.includes(
-          'OZ_INSUFFICIENT_STOCK'
-        )
-      ) {
-        return res.status(400).json({
-          error:
-            'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
-        });
-      }
-
-      console.warn(
-        '[Orders] Supabase RPC notice, falling through to local database:',
-        error.message
-      );
     }
-  } catch (rpcErr: any) {
-    console.warn(
-      '[Orders] Supabase RPC execution notice, falling through to local database:',
-      rpcErr?.message || rpcErr
-    );
-  }
-}
     // ==========================================================================
 // Authoritative server-side stock & price verification
 // ==========================================================================
@@ -2682,8 +2813,9 @@ for (const item of items) {
   });
 }
 
+const localDiscount = couponDiscountAmount;
 const total =
-  subtotal + shippingFee;
+  Math.max(0, subtotal - localDiscount) + shippingFee;
 
 const orderNumber =
   generateOrderNumber();
@@ -2715,6 +2847,12 @@ const newOrder: OrderRecord = {
     customer.notes?.trim() ||
     null,
   subtotal,
+  discount_amount:
+    localDiscount,
+  coupon_code:
+    localDiscount > 0 ? cleanCouponCode : null,
+  order_source:
+    order_source || 'Direct',
   shipping_fee:
     shippingFee,
   total,
@@ -2724,6 +2862,11 @@ const newOrder: OrderRecord = {
   updated_at:
     new Date().toISOString(),
 };
+
+if (authoritativeCoupon && localDiscount > 0) {
+  authoritativeCoupon.used_count = (authoritativeCoupon.used_count || 0) + 1;
+  saveToFile('coupons.json', db.coupons);
+}
 
 db.orders.unshift(
   newOrder
@@ -2844,6 +2987,8 @@ db.orders.unshift(
           customer.notes?.trim() ||
           null,
         subtotal,
+        discount_amount: localDiscount,
+        coupon_code: localDiscount > 0 ? cleanCouponCode : null,
         shipping_fee:
           shippingFee,
         total,
@@ -2890,6 +3035,10 @@ db.orders.unshift(
       receipt_token:
         receiptToken,
       subtotal,
+      discount_amount:
+        localDiscount,
+      coupon_code:
+        localDiscount > 0 ? cleanCouponCode : null,
       shipping_fee:
         shippingFee,
       total,
@@ -5092,6 +5241,8 @@ async function sendTelegramOrderNotification(order: {
   address: string;
   notes?: string | null;
   subtotal: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
   shipping_fee: number;
   total: number;
   items?: any[];
@@ -5182,6 +5333,11 @@ async function sendTelegramOrderNotification(order: {
     `💰 المجموع: ${Number(
       order.subtotal
     ).toFixed(2)} جنيه`,
+    order.coupon_code && Number(order.discount_amount) > 0
+      ? `🎟️ خصم الكوبون (${order.coupon_code}): -${Number(
+          order.discount_amount
+        ).toFixed(2)} جنيه`
+      : null,
     `🚚 الشحن: ${Number(
       order.shipping_fee
     ).toFixed(2)} جنيه`,
