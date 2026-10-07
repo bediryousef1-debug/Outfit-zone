@@ -515,6 +515,7 @@ function initializeCatalog() {
       discount_type: 'percentage',
       discount_value: 10,
       min_order_amount: 0,
+      max_uses_per_customer: 1,
       used_count: 0,
       is_active: true,
       created_at: new Date().toISOString(),
@@ -526,6 +527,7 @@ function initializeCatalog() {
       discount_type: 'fixed',
       discount_value: 50,
       min_order_amount: 300,
+      max_uses_per_customer: null,
       used_count: 0,
       is_active: true,
       created_at: new Date().toISOString(),
@@ -2470,12 +2472,39 @@ app.post(
         const isExpired =
           authoritativeCoupon.expires_at &&
           new Date(authoritativeCoupon.expires_at).getTime() < Date.now();
+        const maxUsesTotal =
+          authoritativeCoupon.usage_limit || authoritativeCoupon.max_uses;
         const isLimitReached =
-          authoritativeCoupon.usage_limit &&
-          authoritativeCoupon.used_count >= authoritativeCoupon.usage_limit;
+          maxUsesTotal && authoritativeCoupon.used_count >= maxUsesTotal;
         const isBelowMin =
           authoritativeCoupon.min_order_amount &&
           computedItemsSubtotal < authoritativeCoupon.min_order_amount;
+
+        // Strict Server-Side Customer Limit Check using normalizePhone
+        let isCustomerLimitReached = false;
+        if (authoritativeCoupon.max_uses_per_customer && cleanPhone) {
+          const normOrderPhone = normalizePhone(cleanPhone);
+          if (normOrderPhone) {
+            const allOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
+            const priorCustomerUses = allOrders.filter((o) => {
+              const isMatchPhone = normalizePhone(o.phone) === normOrderPhone;
+              const isSameCoupon = o.coupon_code && o.coupon_code.toUpperCase() === cleanCouponCode;
+              const isApplied = Number(o.discount_amount) > 0;
+              const notCancelled = o.status !== 'cancelled';
+              return isMatchPhone && isSameCoupon && isApplied && notCancelled;
+            }).length;
+
+            if (priorCustomerUses >= Number(authoritativeCoupon.max_uses_per_customer)) {
+              isCustomerLimitReached = true;
+            }
+          }
+        }
+
+        if (isCustomerLimitReached) {
+          return res.status(400).json({
+            error: `عذرًا، لقد استنفدت الحد الأقصى المسموح به لاستخدام كود الخصم (${cleanCouponCode}) لهذا الرقم (${authoritativeCoupon.max_uses_per_customer} ${authoritativeCoupon.max_uses_per_customer === 1 ? 'مرة واحدة' : 'مرات'} لكل عميل).`,
+          });
+        }
 
         if (!isExpired && !isLimitReached && !isBelowMin) {
           if (authoritativeCoupon.discount_type === 'percentage') {
@@ -4700,7 +4729,7 @@ app.get('/api/admin/abandoned-checkouts', requireAdmin, async (_req: Request, re
 
 app.post('/api/coupons/validate', async (req: Request, res: Response) => {
   try {
-    const { code, subtotal } = req.body;
+    const { code, subtotal, phone } = req.body;
     if (!code || typeof code !== 'string') {
       return res.json({ valid: false, error: 'يرجى إدخال كود الكوبون' });
     }
@@ -4728,7 +4757,8 @@ app.post('/api/coupons/validate', async (req: Request, res: Response) => {
       return res.json({ valid: false, error: 'عذراً، هذا الكوبون منتهي الصلاحية' });
     }
 
-    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+    const maxUsesTotal = coupon.usage_limit || coupon.max_uses;
+    if (maxUsesTotal && coupon.used_count >= maxUsesTotal) {
       return res.json({ valid: false, error: 'وصل هذا الكوبون للحد الأقصى من مرات الاستخدام' });
     }
 
@@ -4737,6 +4767,28 @@ app.post('/api/coupons/validate', async (req: Request, res: Response) => {
         valid: false,
         error: `الحد الأدنى لتفعيل هذا الكوبون هو ${coupon.min_order_amount} ج.م`,
       });
+    }
+
+    // Check max uses per customer if phone is provided
+    if (coupon.max_uses_per_customer && coupon.max_uses_per_customer > 0 && phone) {
+      const normPhone = normalizePhone(phone);
+      if (normPhone) {
+        const orders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
+        const customerCouponUses = orders.filter((o) => {
+          const isMatchPhone = normalizePhone(o.phone) === normPhone;
+          const isSameCoupon = o.coupon_code && o.coupon_code.toUpperCase() === cleanCode;
+          const isApplied = Number(o.discount_amount) > 0;
+          const notCancelled = o.status !== 'cancelled';
+          return isMatchPhone && isSameCoupon && isApplied && notCancelled;
+        }).length;
+
+        if (customerCouponUses >= Number(coupon.max_uses_per_customer)) {
+          return res.json({
+            valid: false,
+            error: `لقد استنفدت الحد الأقصى المسموح به لاستخدام هذا الكوبون (${coupon.max_uses_per_customer} ${coupon.max_uses_per_customer === 1 ? 'مرة واحدة' : 'مرات'} لكل عميل)`,
+          });
+        }
+      }
     }
 
     let discount_amount = 0;
@@ -4753,6 +4805,7 @@ app.post('/api/coupons/validate', async (req: Request, res: Response) => {
         code: coupon.code,
         discount_type: coupon.discount_type,
         discount_value: coupon.discount_value,
+        max_uses_per_customer: coupon.max_uses_per_customer,
       },
       discount_amount,
       final_total: Math.max(0, cleanSubtotal - discount_amount),
@@ -4786,7 +4839,8 @@ app.post('/api/admin/coupons', requireAdmin, async (req: Request, res: Response)
       discount_value: Number(payload.discount_value) || 10,
       min_order_amount: payload.min_order_amount ? Number(payload.min_order_amount) : null,
       expires_at: payload.expires_at || null,
-      usage_limit: payload.usage_limit ? Number(payload.usage_limit) : null,
+      usage_limit: payload.usage_limit || payload.max_uses ? Number(payload.usage_limit || payload.max_uses) : null,
+      max_uses_per_customer: payload.max_uses_per_customer ? Number(payload.max_uses_per_customer) : null,
       used_count: 0,
       is_active: payload.is_active !== false,
       created_at: new Date().toISOString(),
@@ -4817,6 +4871,9 @@ app.patch('/api/admin/coupons/:id', requireAdmin, async (req: Request, res: Resp
     const { id } = req.params;
     const updates = { ...req.body, updated_at: new Date().toISOString() };
     if (updates.code) updates.code = String(updates.code).trim().toUpperCase();
+    if (updates.max_uses !== undefined && updates.usage_limit === undefined) {
+      updates.usage_limit = updates.max_uses;
+    }
 
     if (supabaseClient) {
       try {
@@ -5312,6 +5369,8 @@ async function sendTelegramOrderNotification(order: {
       )
       .join('\n\n');
 
+  const hasCoupon = Boolean(order.coupon_code && Number(order.discount_amount) > 0);
+
   const message = [
     '🔔 طلب جديد - Outfit Zone',
     '',
@@ -5330,20 +5389,22 @@ async function sendTelegramOrderNotification(order: {
     itemsText ||
       'لا توجد تفاصيل منتجات متاحة.',
     '',
-    `💰 المجموع: ${Number(
-      order.subtotal
-    ).toFixed(2)} جنيه`,
-    order.coupon_code && Number(order.discount_amount) > 0
-      ? `🎟️ خصم الكوبون (${order.coupon_code}): -${Number(
-          order.discount_amount
-        ).toFixed(2)} جنيه`
-      : null,
-    `🚚 الشحن: ${Number(
-      order.shipping_fee
-    ).toFixed(2)} جنيه`,
-    `💵 الإجمالي: ${Number(
-      order.total
-    ).toFixed(2)} جنيه`,
+    hasCoupon
+      ? [
+          '🎟️ تفاصيل الكوبون والخصم:',
+          `• كود الكوبون: ${order.coupon_code}`,
+          `• قيمة الخصم: -${Number(order.discount_amount).toFixed(2)} جنيه`,
+          `• الإجمالي قبل الخصم: ${Number(order.subtotal).toFixed(2)} جنيه`,
+          `• الإجمالي بعد الخصم: ${Math.max(0, Number(order.subtotal) - Number(order.discount_amount)).toFixed(2)} جنيه`,
+          '',
+          `🚚 مصاريف الشحن: ${Number(order.shipping_fee).toFixed(2)} جنيه`,
+          `💵 الإجمالي النهائي: ${Number(order.total).toFixed(2)} جنيه`,
+        ].join('\n')
+      : [
+          `💰 المجموع: ${Number(order.subtotal).toFixed(2)} جنيه`,
+          `🚚 مصاريف الشحن: ${Number(order.shipping_fee).toFixed(2)} جنيه`,
+          `💵 الإجمالي النهائي: ${Number(order.total).toFixed(2)} جنيه`,
+        ].join('\n'),
     '',
     '💳 الدفع: عند الاستلام',
     '⏳ الحالة: قيد المراجعة',

@@ -125,7 +125,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     setCouponLoading(true);
     try {
-      const res = await api.validateCoupon(clean, subtotal);
+      const res = await api.validateCoupon(clean, subtotal, formData.phone);
       if (res.valid && res.coupon) {
         setAppliedCoupon(res.coupon);
         setCouponDiscount(Number(res.discount_amount) || 0);
@@ -152,7 +152,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   // Re-validate applied coupon if subtotal changes (e.g. cart items modified)
   useEffect(() => {
     if (appliedCoupon?.code && subtotal > 0) {
-      api.validateCoupon(appliedCoupon.code, subtotal).then((res) => {
+      api.validateCoupon(appliedCoupon.code, subtotal, formData.phone).then((res) => {
         if (res.valid && res.coupon) {
           setAppliedCoupon(res.coupon);
           setCouponDiscount(Number(res.discount_amount) || 0);

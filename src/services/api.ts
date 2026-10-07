@@ -3844,11 +3844,11 @@ export const api = {
   // ============================================================================
   // Coupon Validation & Admin Management
   // ============================================================================
-  async validateCoupon(code: string, subtotal: number): Promise<CouponValidationResult> {
+  async validateCoupon(code: string, subtotal: number, phone?: string): Promise<CouponValidationResult> {
     const res = await fetch(`${API_BASE}/coupons/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code.trim().toUpperCase(), subtotal }),
+      body: JSON.stringify({ code: code.trim().toUpperCase(), subtotal, phone: phone?.trim() || undefined }),
     });
 
     return res.json().catch(() => ({ valid: false, error: 'تعذر التحقق من الكوبون' }));

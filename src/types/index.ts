@@ -345,6 +345,7 @@ export interface Coupon {
   discount_value: number;
   min_order_amount: number;
   max_uses: number | null;
+  max_uses_per_customer?: number | null;
   used_count: number;
   expires_at: string | null;
   is_active: boolean;

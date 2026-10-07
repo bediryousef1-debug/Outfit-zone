@@ -285,6 +285,79 @@ export async function telegramAnswerCallbackQuery(
 // ==============================================================================
 
 /**
+ * Dynamically derives normalized customer records from existing orders.
+ * Ensures 100% data consistency even if customers table is empty or unpopulated.
+ */
+export function deriveCustomersFromOrders(orders: any[]): CustomerRecord[] {
+  const map = new Map<
+    string,
+    {
+      normalized_phone: string;
+      original_phone: string;
+      names: Set<string>;
+      latestName: string;
+      ordersCount: number;
+      firstOrderAt: string;
+      lastOrderAt: string;
+    }
+  >();
+
+  for (const o of orders) {
+    if (!o.phone) continue;
+    const norm = normalizePhone(o.phone);
+    if (!norm) continue;
+
+    const existing = map.get(norm);
+    const orderDate = o.created_at || new Date().toISOString();
+    const name = (o.customer_name || '').trim();
+
+    if (!existing) {
+      const names = new Set<string>();
+      if (name) names.add(name);
+      map.set(norm, {
+        normalized_phone: norm,
+        original_phone: o.phone,
+        names,
+        latestName: name || 'عميل Outfit Zone',
+        ordersCount: 1,
+        firstOrderAt: orderDate,
+        lastOrderAt: orderDate,
+      });
+    } else {
+      if (name) existing.names.add(name);
+      existing.ordersCount++;
+      if (new Date(orderDate).getTime() > new Date(existing.lastOrderAt).getTime()) {
+        existing.lastOrderAt = orderDate;
+        if (name) existing.latestName = name;
+      }
+      if (new Date(orderDate).getTime() < new Date(existing.firstOrderAt).getTime()) {
+        existing.firstOrderAt = orderDate;
+      }
+    }
+  }
+
+  const list: CustomerRecord[] = [];
+  for (const [norm, data] of map.entries()) {
+    const namesArr = Array.from(data.names);
+    list.push({
+      id: `cust_${norm}`,
+      normalized_phone: norm,
+      original_phone: data.original_phone,
+      current_name: data.latestName,
+      names_used: namesArr.length > 0 ? namesArr : [data.latestName],
+      has_multiple_names: namesArr.length > 1,
+      order_count: data.ordersCount,
+      first_order_at: data.firstOrderAt,
+      last_order_at: data.lastOrderAt,
+      created_at: data.firstOrderAt,
+      updated_at: data.lastOrderAt,
+    });
+  }
+
+  return list;
+}
+
+/**
  * Reads customers from authoritative store (Supabase when configured, fallback to db.customers).
  * Synchronizes db.customers in-memory cache and file to eliminate stale or ghost records.
  */
@@ -303,7 +376,7 @@ export async function getAuthoritativeCustomers(
         .select('*')
         .order('last_order_at', { ascending: false });
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         const formatted: CustomerRecord[] = data.map((item: any) => {
           let namesUsed: string[] = [];
           if (Array.isArray(item.names_used)) {
@@ -335,22 +408,61 @@ export async function getAuthoritativeCustomers(
           };
         });
 
-        // Always keep in-memory db.customers strictly synced with Supabase
         db.customers = formatted;
         if (saveToFile) {
           saveToFile('customers.json', formatted);
         }
         return formatted;
-      } else if (error) {
-        console.warn('[Customer Management] Supabase customers select notice:', error.message);
       }
     } catch (err) {
       console.warn('[Customer Management] Supabase customers query error:', err);
     }
   }
 
-  return db.customers;
+  // Fallback: If db.customers is empty or unpopulated, derive from authoritative orders
+  if ((!db.customers || db.customers.length === 0) && db.orders && db.orders.length > 0) {
+    const derived = deriveCustomersFromOrders(db.orders);
+    db.customers = derived;
+    if (saveToFile) {
+      saveToFile('customers.json', derived);
+    }
+  }
+
+  return db.customers || [];
 }
+
+/**
+ * Reads coupons from authoritative store (Supabase when configured, fallback to db.coupons).
+ */
+export async function getAuthoritativeCoupons(
+  db: {
+    coupons?: any[];
+  },
+  supabaseClient?: any,
+  saveToFile?: (filename: string, data: any) => void
+): Promise<any[]> {
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('coupons')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        db.coupons = data;
+        if (saveToFile) {
+          saveToFile('coupons.json', data);
+        }
+        return data;
+      }
+    } catch {
+      // Supabase table may not exist, fallback safely
+    }
+  }
+
+  return db.coupons || [];
+}
+
 
 /**
  * Reads actual existing orders from authoritative store (Supabase when configured, fallback to db.orders).
@@ -859,33 +971,212 @@ export function buildCustomerDashboardView(
     (c) => c.has_multiple_names || (c.names_used && c.names_used.length > 1)
   ).length;
 
+  const couponOrders = orders.filter((o) => o.coupon_code && Number(o.discount_amount) > 0);
+  const totalCouponUses = couponOrders.length;
+  const totalDiscountsValue = couponOrders.reduce(
+    (sum, o) => sum + (Number(o.discount_amount) || 0),
+    0
+  );
+
   const text = [
-    '👥 <b>إدارة العملاء - Outfit Zone</b>',
+    '👥 <b>إدارة العملاء والكوبونات - Outfit Zone</b>',
     '',
-    '📊 <b>إحصائيات العملاء:</b>',
+    '📊 <b>إحصائيات Dashboard (بيانات فعلية مباشرة):</b>',
     `• إجمالي العملاء: <b>${totalCustomers}</b>`,
     `• إجمالي الطلبات: <b>${totalOrders}</b>`,
     `• العملاء المتكررون: <b>${repeatCustomers}</b>`,
     `• أسماء متعددة: <b>${multiNames}</b>`,
+    `• إجمالي استخدام الكوبونات: <b>${totalCouponUses}</b> مرة`,
+    `• إجمالي قيمة الخصومات: <b>${totalDiscountsValue.toFixed(2)} جنيه</b>`,
     '',
-    'اختر من القائمة أدناه لعرض العملاء أو البحث:',
+    'اختر من القائمة أدناه لعرض العملاء أو الكوبونات أو البحث:',
   ].join('\n');
 
   const inline_keyboard = [
     [
       { text: '📋 كل العملاء', callback_data: 'cust:list:1' },
-      { text: '⚠️ أسماء متعددة', callback_data: 'cust:multi:1' },
+      { text: '🎟️ إدارة الكوبونات', callback_data: 'cust:coupons' },
     ],
     [
       { text: '🔁 العملاء المتكررون', callback_data: 'cust:repeat:1' },
-      { text: '🔎 البحث عن عميل', callback_data: 'cust:search' },
+      { text: '⚠️ أسماء متعددة', callback_data: 'cust:multi:1' },
     ],
     [
+      { text: '🔎 البحث عن عميل', callback_data: 'cust:search' },
       { text: '🔄 تحديث الإحصائيات', callback_data: 'cust:dash' },
     ],
   ];
 
   return { text, replyMarkup: { inline_keyboard } };
+}
+
+/**
+ * Builds Coupons List View for Telegram (/كوبونات or cust:coupons)
+ */
+export function buildCouponsListView(
+  coupons: any[],
+  orders: any[]
+): { text: string; replyMarkup: any } {
+  const lines: string[] = [
+    '🎟️ <b>إدارة الكوبونات - Outfit Zone</b>',
+    '─────────────────────────',
+  ];
+
+  if (!coupons || coupons.length === 0) {
+    lines.push('<i>لا توجد أي كوبونات مسجلة في النظام حاليًا.</i>');
+  } else {
+    lines.push(`إجمالي الكوبونات: <b>${coupons.length}</b>\n`);
+
+    coupons.forEach((c, idx) => {
+      const isExpired = c.expires_at ? new Date(c.expires_at).getTime() < Date.now() : false;
+      const statusIcon = !c.is_active ? '🔴 معطّل' : isExpired ? '⏳ منتهي' : '🟢 نشط';
+
+      const matchingOrders = orders.filter(
+        (o) =>
+          o.coupon_code &&
+          o.coupon_code.toUpperCase() === String(c.code).toUpperCase() &&
+          Number(o.discount_amount) > 0
+      );
+      const actualUses = matchingOrders.length > 0 ? matchingOrders.length : (c.used_count || 0);
+      const totalDiscount = matchingOrders.reduce(
+        (sum, o) => sum + (Number(o.discount_amount) || 0),
+        0
+      );
+
+      const discountLabel =
+        c.discount_type === 'percentage'
+          ? `${c.discount_value}%`
+          : `${Number(c.discount_value).toFixed(2)} جنيه`;
+
+      const perCustomer = c.max_uses_per_customer
+        ? `${c.max_uses_per_customer} مرة لكل عميل`
+        : 'غير محدود';
+
+      lines.push(
+        `${idx + 1}. 🎟️ <b>${escapeHtml(c.code)}</b> (${statusIcon})`,
+        `   • الخصم: <b>${discountLabel}</b>`,
+        `   • مرات الاستخدام: <b>${actualUses}</b> مرة`,
+        `   • الحد لكل عميل: <b>${perCustomer}</b>`,
+        `   • إجمالي الخصومات: <b>${totalDiscount.toFixed(2)} جنيه</b>`
+      );
+      if (idx < coupons.length - 1) {
+        lines.push('');
+      }
+    });
+  }
+
+  lines.push('─────────────────────────');
+  lines.push('💡 <i>اضغط على أي كوبون أدناه لعرض تفاصيل استخدامه والطلبات المرتبطة به.</i>');
+
+  const couponButtons = (coupons || []).map((c) => [
+    {
+      text: `🔍 تفاصيل ${c.code} (${c.is_active ? 'نشط' : 'معطل'})`,
+      callback_data: `cust:cpndetail:${c.id}`,
+    },
+  ]);
+
+  const inline_keyboard = [
+    ...couponButtons,
+    [
+      { text: '🔄 تحديث الكوبونات', callback_data: 'cust:coupons' },
+      { text: '🔙 لوحة التحكم', callback_data: 'cust:dash' },
+    ],
+  ];
+
+  return {
+    text: lines.join('\n'),
+    replyMarkup: { inline_keyboard },
+  };
+}
+
+/**
+ * Builds Detailed View of a specific Coupon
+ */
+export function buildCouponDetailView(
+  coupon: any,
+  orders: any[]
+): { text: string; replyMarkup: any } {
+  const isExpired = coupon.expires_at
+    ? new Date(coupon.expires_at).getTime() < Date.now()
+    : false;
+  const statusStr = !coupon.is_active
+    ? '🔴 معطّل'
+    : isExpired
+    ? '⏳ منتهي الصلاحية'
+    : '🟢 نشط ومفعّل';
+
+  const discountLabel =
+    coupon.discount_type === 'percentage'
+      ? `${coupon.discount_value}%`
+      : `${Number(coupon.discount_value).toFixed(2)} جنيه (خصم ثابت)`;
+
+  const matchingOrders = orders.filter(
+    (o) =>
+      o.coupon_code &&
+      o.coupon_code.toUpperCase() === String(coupon.code).toUpperCase() &&
+      Number(o.discount_amount) > 0
+  );
+
+  const actualUses = matchingOrders.length > 0 ? matchingOrders.length : (coupon.used_count || 0);
+  const totalDiscount = matchingOrders.reduce(
+    (sum, o) => sum + (Number(o.discount_amount) || 0),
+    0
+  );
+
+  const lines: string[] = [
+    '🎟️ <b>تفاصيل الكوبون</b>',
+    '',
+    `• <b>كود الكوبون:</b> <code>${escapeHtml(coupon.code)}</code>`,
+    `• <b>الحالة:</b> ${statusStr}`,
+    `• <b>نوع وقيمة الخصم:</b> <b>${discountLabel}</b>`,
+    `• <b>الحد الأدنى للطلب:</b> ${
+      coupon.min_order_amount > 0 ? `${coupon.min_order_amount} جنيه` : 'بدون حد أدنى'
+    }`,
+    `• <b>إجمالي مرات الاستخدام:</b> <b>${actualUses}</b> مرة${
+      coupon.usage_limit || coupon.max_uses ? ` (الحد الأقصى الكلي: ${coupon.usage_limit || coupon.max_uses})` : ''
+    }`,
+    `• <b>الحد الأقصى لكل عميل:</b> <b>${
+      coupon.max_uses_per_customer
+        ? `${coupon.max_uses_per_customer} ${coupon.max_uses_per_customer === 1 ? 'مرة واحدة' : 'مرات'}`
+        : 'غير محدود'
+    }</b>`,
+    `• <b>تاريخ الانتهاء:</b> ${
+      coupon.expires_at ? formatEgyptianDateTime(coupon.expires_at) : 'مفتوح دائماً'
+    }`,
+    `• <b>إجمالي قيمة الخصومات الناتجة:</b> <b>${totalDiscount.toFixed(2)} جنيه</b>`,
+    '',
+    '📦 <b>الطلبات التي استخدمت هذا الكوبون:</b>',
+  ];
+
+  if (matchingOrders.length === 0) {
+    lines.push('<i>لم يُستخدم هذا الكوبون في أي طلبات حتى الآن.</i>');
+  } else {
+    const recent = matchingOrders.slice(0, 10);
+    recent.forEach((o, i) => {
+      lines.push(
+        `${i + 1}. 📦 <b>طلب ${escapeHtml(o.order_number)}</b>`,
+        `   👤 العميل: ${escapeHtml(o.customer_name || 'غير محدد')}`,
+        `   📱 الهاتف: <code>${escapeHtml(o.phone || '-')}</code>`,
+        `   🏷️ الخصم: <b>-${Number(o.discount_amount).toFixed(2)} جنيه</b> (الإجمالي: ${Number(o.total).toFixed(2)} ج.م)`,
+        `   🕒 التاريخ: <i>${formatEgyptianDateTime(o.created_at)}</i>`
+      );
+    });
+    if (matchingOrders.length > 10) {
+      lines.push(`<i>... وهناك ${matchingOrders.length - 10} طلبات إضافية</i>`);
+    }
+  }
+
+  const inline_keyboard = [
+    [
+      { text: '🔙 قائمة الكوبونات', callback_data: 'cust:coupons' },
+      { text: '🔙 لوحة التحكم', callback_data: 'cust:dash' },
+    ],
+  ];
+
+  return {
+    text: lines.join('\n'),
+    replyMarkup: { inline_keyboard },
+  };
 }
 
 /**
@@ -1229,6 +1520,33 @@ export function buildCustomerProfileView(
 
   // Customer profiles show actual order count based on their existing orders
   const orderCount = custOrders.length;
+  const totalSpent = custOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+  // Analyze coupons used by this customer
+  const couponUsageMap = new Map<string, { count: number; totalDiscount: number; lastUsedAt: string }>();
+  let lastCouponUsed: { code: string; date: string } | null = null;
+
+  for (const o of custOrders) {
+    if (o.coupon_code && Number(o.discount_amount) > 0) {
+      const code = String(o.coupon_code).trim().toUpperCase();
+      const orderDate = o.created_at || '';
+      const discount = Number(o.discount_amount) || 0;
+      const existing = couponUsageMap.get(code);
+      if (!existing) {
+        couponUsageMap.set(code, { count: 1, totalDiscount: discount, lastUsedAt: orderDate });
+      } else {
+        existing.count += 1;
+        existing.totalDiscount += discount;
+        if (new Date(orderDate).getTime() > new Date(existing.lastUsedAt).getTime()) {
+          existing.lastUsedAt = orderDate;
+        }
+      }
+
+      if (!lastCouponUsed || new Date(orderDate).getTime() > new Date(lastCouponUsed.date).getTime()) {
+        lastCouponUsed = { code, date: orderDate };
+      }
+    }
+  }
 
   const lines: string[] = [
     '👤 <b>ملف العميل</b>',
@@ -1244,11 +1562,28 @@ export function buildCustomerProfileView(
   lines.push(
     `• <b>الأسماء المستخدمة:</b> ${escapeHtml(namesList)}`,
     `• <b>عدد الطلبات:</b> <b>${orderCount}</b> طلب`,
+    `• <b>إجمالي المشتريات:</b> <b>${totalSpent.toFixed(2)} جنيه</b>`,
     `• <b>أول طلب:</b> <i>${formatEgyptianDateTime(customer.first_order_at || customer.created_at)}</i>`,
     `• <b>آخر طلب:</b> <i>${formatEgyptianDateTime(customer.last_order_at || customer.updated_at)}</i>`,
     '',
-    '📜 <b>سجل الطلبات:</b>'
+    '🎟️ <b>ملخص الكوبونات المستخدمة:</b>'
   );
+
+  if (couponUsageMap.size === 0) {
+    lines.push('• <i>لم يسبق لهذا العميل استخدام أي كوبونات خصم.</i>');
+  } else {
+    lines.push(
+      `• <b>آخر كوبون مستخدم:</b> <code>${escapeHtml(lastCouponUsed?.code || '-')}</code> <i>(${formatEgyptianDateTime(lastCouponUsed?.date)})</i>`,
+      '• <b>تفاصيل الكوبونات المستخدمة:</b>'
+    );
+    couponUsageMap.forEach((data, code) => {
+      lines.push(
+        `   ▫️ كود <code>${escapeHtml(code)}</code>: استُخدم <b>${data.count}</b> ${data.count === 1 ? 'مرة واحدة' : 'مرات'} (وفّر: ${data.totalDiscount.toFixed(2)} ج.م)`
+      );
+    });
+  }
+
+  lines.push('', '📜 <b>سجل الطلبات:</b>');
 
   if (custOrders.length === 0) {
     lines.push('<i>لا توجد تفاصيل طلبات سابقة محفوظة لهذا العميل.</i>');
@@ -1258,7 +1593,14 @@ export function buildCustomerProfileView(
         '─────────────────────────',
         `📦 <b>طلب رقم: ${escapeHtml(o.order_number)}</b>`,
         `📅 التاريخ: ${formatEgyptianDateTime(o.created_at)}`,
-        `💰 المبلغ: <b>${Number(o.subtotal || o.total).toFixed(2)} جنيه</b>`,
+        `💰 المبلغ: <b>${Number(o.subtotal || o.total).toFixed(2)} جنيه</b>`
+      );
+      if (o.coupon_code && Number(o.discount_amount) > 0) {
+        lines.push(
+          `🎟️ الكوبون: <code>${escapeHtml(o.coupon_code)}</code> (خصم: -${Number(o.discount_amount).toFixed(2)} جنيه)`
+        );
+      }
+      lines.push(
         `🚚 الشحن: <b>${Number(o.shipping_fee || 0).toFixed(2)} جنيه</b>`,
         `💵 الإجمالي: <b>${Number(o.total).toFixed(2)} جنيه</b>`,
         `📍 العنوان: ${escapeHtml(o.governorate)} - ${escapeHtml(o.city)}`,
@@ -1273,7 +1615,10 @@ export function buildCustomerProfileView(
       { text: '📋 كل العملاء', callback_data: 'cust:list:1' },
       { text: '🔁 العملاء المتكررون', callback_data: 'cust:repeat:1' },
     ],
-    [{ text: '🔙 لوحة التحكم', callback_data: 'cust:dash' }],
+    [
+      { text: '🎟️ قائمة الكوبونات', callback_data: 'cust:coupons' },
+      { text: '🔙 لوحة التحكم', callback_data: 'cust:dash' },
+    ],
   ];
 
   return {
@@ -1291,13 +1636,14 @@ export async function handleTelegramUpdate(
   db: {
     customers: CustomerRecord[];
     orders: any[];
+    coupons?: any[];
   },
   supabaseClient?: any,
   saveToFile?: (filename: string, data: any) => void
 ): Promise<void> {
   if (!update) return;
 
-  // 1. Text Message Handlers (/عميل, /customer, /start, phone search)
+  // 1. Text Message Handlers (/عميل, /customer, /coupons, /كوبونات, /start, phone search)
   if (update.message) {
     const msg = update.message;
     const fromId = msg.from?.id;
@@ -1311,6 +1657,8 @@ export async function handleTelegramUpdate(
       text.startsWith('/عميل ') ||
       text === '/customer' ||
       text.startsWith('/customer ') ||
+      text === '/coupons' ||
+      text === '/كوبونات' ||
       text === '/report' ||
       text === '/تقرير' ||
       text === '/daily_report' ||
@@ -1327,13 +1675,30 @@ export async function handleTelegramUpdate(
         return;
       }
 
+      // Check if command is Coupons List
+      if (text === '/coupons' || text === '/كوبونات') {
+        const [currentCoupons, currentOrders] = await Promise.all([
+          getAuthoritativeCoupons(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const view = buildCouponsListView(currentCoupons, currentOrders);
+        await telegramSendMessage(chatId, view.text, view.replyMarkup);
+        return;
+      }
+
       // Check if command is Daily Report
       if (text === '/report' || text === '/تقرير' || text === '/daily_report') {
         const [currentCustomers, currentOrders] = await Promise.all([
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
-        const report = buildDailyReport(currentOrders, currentCustomers);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
+        const report = buildDailyReport(currentOrders, effectiveCustomers);
         await telegramSendMessage(chatId, report.text, report.replyMarkup);
         return;
       }
@@ -1344,7 +1709,13 @@ export async function handleTelegramUpdate(
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
-        const view = buildCustomerDashboardView(currentCustomers, currentOrders);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
+        const view = buildCustomerDashboardView(effectiveCustomers, currentOrders);
         await telegramSendMessage(chatId, view.text, view.replyMarkup);
         return;
       }
@@ -1371,7 +1742,13 @@ export async function handleTelegramUpdate(
         getAuthoritativeCustomers(db, supabaseClient, saveToFile),
         getAuthoritativeOrders(db, supabaseClient, saveToFile),
       ]);
-      const targetCustomer = currentCustomers.find(
+      let effectiveCustomers = currentCustomers;
+      if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+        effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+        db.customers = effectiveCustomers;
+        if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+      }
+      const targetCustomer = effectiveCustomers.find(
         (c) =>
           c.normalized_phone === normalizedQuery ||
           c.original_phone === rawQuery ||
@@ -1491,7 +1868,13 @@ export async function handleTelegramUpdate(
         getAuthoritativeCustomers(db, supabaseClient, saveToFile),
         getAuthoritativeOrders(db, supabaseClient, saveToFile),
       ]);
-      const report = buildDailyReport(currentOrders, currentCustomers);
+      let effectiveCustomers = currentCustomers;
+      if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+        effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+        db.customers = effectiveCustomers;
+        if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+      }
+      const report = buildDailyReport(currentOrders, effectiveCustomers);
       await telegramEditMessageText(chatId, messageId, report.text, report.replyMarkup);
       return;
     }
@@ -1503,6 +1886,8 @@ export async function handleTelegramUpdate(
     // Answer immediately so Telegram stops loading spinner
     if (action === 'cust:dash' || action === 'cust:refresh') {
       await telegramAnswerCallbackQuery(cq.id, '🔄 تم تحديث لوحة التحكم');
+    } else if (action === 'cust:coupons') {
+      await telegramAnswerCallbackQuery(cq.id, '🔄 جاري تحميل الكوبونات');
     } else {
       await telegramAnswerCallbackQuery(cq.id);
     }
@@ -1518,65 +1903,133 @@ export async function handleTelegramUpdate(
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
-        const view = buildCustomerDashboardView(currentCustomers, currentOrders);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
+        const view = buildCustomerDashboardView(effectiveCustomers, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
-      // 2. 🔎 البحث عن عميل
+      // 2. 🎟️ إدارة الكوبونات
+      if (action === 'cust:coupons') {
+        const [currentCoupons, currentOrders] = await Promise.all([
+          getAuthoritativeCoupons(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const view = buildCouponsListView(currentCoupons, currentOrders);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+
+      // 3. 🔍 تفاصيل كوبون محدد
+      if (action.startsWith('cust:cpndetail:')) {
+        const cpnId = action.slice('cust:cpndetail:'.length).trim();
+        const [currentCoupons, currentOrders] = await Promise.all([
+          getAuthoritativeCoupons(db, supabaseClient, saveToFile),
+          getAuthoritativeOrders(db, supabaseClient, saveToFile),
+        ]);
+        const targetCoupon = currentCoupons.find((c) => c.id === cpnId || c.code === cpnId);
+        if (targetCoupon) {
+          const view = buildCouponDetailView(targetCoupon, currentOrders);
+          await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        } else {
+          await telegramEditMessageText(
+            chatId,
+            messageId,
+            '❌ لم يتم العثور على هذا الكوبون.',
+            {
+              inline_keyboard: [
+                [{ text: '🔙 قائمة الكوبونات', callback_data: 'cust:coupons' }],
+                [{ text: '🔙 لوحة التحكم', callback_data: 'cust:dash' }],
+              ],
+            }
+          );
+        }
+        return;
+      }
+
+      // 4. 🔎 البحث عن عميل
       if (action === 'cust:search') {
         const view = buildCustomerSearchView();
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
-      // 3. 📋 كل العملاء (مع Pagination)
+      // 5. 📋 كل العملاء (مع Pagination)
       if (action === 'cust:list' || action.startsWith('cust:list:')) {
         const [currentCustomers, currentOrders] = await Promise.all([
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerListView(currentCustomers, page, currentOrders);
+        const view = buildCustomerListView(effectiveCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
-      // 4. ⚠️ أسماء متعددة (مع Pagination)
+      // 6. ⚠️ أسماء متعددة (مع Pagination)
       if (action === 'cust:multi' || action.startsWith('cust:multi:')) {
         const [currentCustomers, currentOrders] = await Promise.all([
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerMultiNamesView(currentCustomers, page, currentOrders);
+        const view = buildCustomerMultiNamesView(effectiveCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
-      // 5. 🔁 العملاء المتكررون (مع Pagination)
+      // 7. 🔁 العملاء المتكررون (مع Pagination)
       if (action === 'cust:repeat' || action.startsWith('cust:repeat:')) {
         const [currentCustomers, currentOrders] = await Promise.all([
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
-        const view = buildCustomerRepeatView(currentCustomers, page, currentOrders);
+        const view = buildCustomerRepeatView(effectiveCustomers, page, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
       }
 
-      // 6. 👤 عرض ملف العميل وتاريخ طلباته
+      // 8. 👤 عرض ملف العميل وتاريخ طلباته
       if (action.startsWith('cust:view:')) {
         const [currentCustomers, currentOrders] = await Promise.all([
           getAuthoritativeCustomers(db, supabaseClient, saveToFile),
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
+        let effectiveCustomers = currentCustomers;
+        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
+          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
+          db.customers = effectiveCustomers;
+          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
+        }
         const targetId = action.slice('cust:view:'.length).trim();
-        const targetCustomer = currentCustomers.find(
+        const targetCustomer = effectiveCustomers.find(
           (c) =>
             c.id === targetId ||
             c.normalized_phone === targetId ||

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Phone, MessageCircle, Truck, Package, Clock, CheckCircle, ShieldAlert, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Phone, MessageCircle, Truck, Package, Clock, CheckCircle, ShieldAlert, Trash2, AlertTriangle, Ticket, Tag } from 'lucide-react';
 import { Order, OrderStatus } from '../../types';
 import { api } from '../../services/api';
 import { formatPrice, ORDER_STATUS_LABELS } from '../../utils/constants';
@@ -248,6 +248,50 @@ export const AdminOrderDetailPage: React.FC<AdminOrderDetailPageProps> = ({ orde
             <p>
               <strong>طريقة الدفع:</strong> كاش عند الاستلام (COD)
             </p>
+          </div>
+
+          {/* Coupon Information Card */}
+          <div className={`p-4 rounded-xl border text-xs space-y-2 transition-colors ${
+            order.coupon_code && Number(order.discount_amount) > 0
+              ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-200'
+              : 'bg-neutral-900/40 border-neutral-800 text-neutral-400'
+          }`}>
+            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+              <span className="font-bold flex items-center gap-1.5 text-white">
+                <Ticket className="w-4 h-4 text-emerald-400" />
+                <span>كوبون الخصم:</span>
+              </span>
+              {order.coupon_code && Number(order.discount_amount) > 0 ? (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  تم الاستخدام ✓
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-800 text-neutral-400">
+                  لم يُستخدم كوبون
+                </span>
+              )}
+            </div>
+
+            {order.coupon_code && Number(order.discount_amount) > 0 ? (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400">كود الكوبون:</span>
+                  <span className="font-mono font-bold text-white bg-neutral-900 px-2 py-0.5 rounded border border-neutral-700 tracking-wider">
+                    {order.coupon_code}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400">قيمة الخصم:</span>
+                  <span className="font-mono-numbers font-bold text-emerald-400">
+                    -{formatPrice(order.discount_amount || 0)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-neutral-500">
+                هذا الطلب تم بدون إدخال أي كود خصم.
+              </p>
+            )}
           </div>
         </div>
 

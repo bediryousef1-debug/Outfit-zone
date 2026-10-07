@@ -13,6 +13,7 @@ import {
   Calendar,
   ToggleLeft,
   ToggleRight,
+  Edit2,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Coupon } from '../../types';
@@ -26,6 +27,7 @@ export const AdminCouponsPage: React.FC = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     code: '',
@@ -33,6 +35,7 @@ export const AdminCouponsPage: React.FC = () => {
     discount_value: 10,
     min_order_amount: 0,
     max_uses: '' as number | '',
+    max_uses_per_customer: '' as number | '',
     expires_at: '',
     is_active: true,
   });
@@ -52,6 +55,38 @@ export const AdminCouponsPage: React.FC = () => {
   useEffect(() => {
     loadCoupons();
   }, []);
+
+  const handleOpenCreateModal = () => {
+    setError(null);
+    setEditingCoupon(null);
+    setForm({
+      code: '',
+      discount_type: 'percentage',
+      discount_value: 10,
+      min_order_amount: 0,
+      max_uses: '',
+      max_uses_per_customer: '',
+      expires_at: '',
+      is_active: true,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (coupon: Coupon) => {
+    setError(null);
+    setEditingCoupon(coupon);
+    setForm({
+      code: coupon.code,
+      discount_type: coupon.discount_type,
+      discount_value: coupon.discount_value,
+      min_order_amount: coupon.min_order_amount || 0,
+      max_uses: coupon.max_uses ?? '',
+      max_uses_per_customer: coupon.max_uses_per_customer ?? '',
+      expires_at: coupon.expires_at ? coupon.expires_at.split('T')[0] : '',
+      is_active: coupon.is_active,
+    });
+    setIsModalOpen(true);
+  };
 
   const handleToggleActive = async (coupon: Coupon) => {
     try {
@@ -78,7 +113,7 @@ export const AdminCouponsPage: React.FC = () => {
     }
   };
 
-  const handleCreateCoupon = async (e: React.FormEvent) => {
+  const handleSubmitCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.code.trim()) {
       setError('يرجى إدخال كود الكوبون');
@@ -91,31 +126,52 @@ export const AdminCouponsPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const newCoupon = await api.adminCreateCoupon({
-        code: form.code.trim().toUpperCase(),
-        discount_type: form.discount_type,
-        discount_value: Number(form.discount_value),
-        min_order_amount: Number(form.min_order_amount) || 0,
-        max_uses: form.max_uses === '' ? null : Number(form.max_uses),
-        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-        is_active: form.is_active,
-      });
+      if (editingCoupon) {
+        const updated = await api.adminUpdateCoupon(editingCoupon.id, {
+          code: form.code.trim().toUpperCase(),
+          discount_type: form.discount_type,
+          discount_value: Number(form.discount_value),
+          min_order_amount: Number(form.min_order_amount) || 0,
+          max_uses: form.max_uses === '' ? null : Number(form.max_uses),
+          max_uses_per_customer: form.max_uses_per_customer === '' ? null : Number(form.max_uses_per_customer),
+          expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+          is_active: form.is_active,
+        });
 
-      setCoupons((prev) => [newCoupon, ...prev]);
-      setIsModalOpen(false);
+        setCoupons((prev) => prev.map((c) => (c.id === editingCoupon.id ? updated : c)));
+        setIsModalOpen(false);
+        setEditingCoupon(null);
+        setSuccess('تم تحديث الكوبون بنجاح.');
+      } else {
+        const newCoupon = await api.adminCreateCoupon({
+          code: form.code.trim().toUpperCase(),
+          discount_type: form.discount_type,
+          discount_value: Number(form.discount_value),
+          min_order_amount: Number(form.min_order_amount) || 0,
+          max_uses: form.max_uses === '' ? null : Number(form.max_uses),
+          max_uses_per_customer: form.max_uses_per_customer === '' ? null : Number(form.max_uses_per_customer),
+          expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+          is_active: form.is_active,
+        });
+
+        setCoupons((prev) => [newCoupon, ...prev]);
+        setIsModalOpen(false);
+        setSuccess('تم إنشاء الكوبون بنجاح.');
+      }
+
       setForm({
         code: '',
         discount_type: 'percentage',
         discount_value: 10,
         min_order_amount: 0,
         max_uses: '',
+        max_uses_per_customer: '',
         expires_at: '',
         is_active: true,
       });
-      setSuccess('تم إنشاء الكوبون بنجاح.');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'فشل إنشاء الكوبون');
+      setError(err.message || 'فشل حفظ الكوبون');
     } finally {
       setIsSubmitting(false);
     }
@@ -137,16 +193,13 @@ export const AdminCouponsPage: React.FC = () => {
             <span>إدارة كوبونات الخصم</span>
           </h1>
           <p className="text-neutral-400 text-xs mt-1">
-            أنشئ كوبونات خصم (نسبة مئوية أو مبلغ ثابت)، حدد شروط الحد الأدنى وتواريخ الانتهاء.
+            أنشئ كوبونات خصم، حدد الحد الأقصى لكل عميل، الشروط، وتواريخ الصلاحية.
           </p>
         </div>
 
         <button
           type="button"
-          onClick={() => {
-            setError(null);
-            setIsModalOpen(true);
-          }}
+          onClick={handleOpenCreateModal}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-black text-xs font-bold rounded-xl hover:bg-neutral-200 transition-colors cursor-pointer shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -196,6 +249,7 @@ export const AdminCouponsPage: React.FC = () => {
                   <th className="p-4">نوع وقيمة الخصم</th>
                   <th className="p-4">الحد الأدنى للطلب</th>
                   <th className="p-4">مرات الاستخدام</th>
+                  <th className="p-4">الحد لكل عميل</th>
                   <th className="p-4">تاريخ الانتهاء</th>
                   <th className="p-4">الحالة</th>
                   <th className="p-4 text-left">إجراءات</th>
@@ -240,6 +294,16 @@ export const AdminCouponsPage: React.FC = () => {
                         {c.max_uses ? <span className="text-neutral-500 font-mono"> / {c.max_uses}</span> : ' (غير محدود)'}
                       </td>
 
+                      <td className="p-4 text-neutral-300 font-mono">
+                        {c.max_uses_per_customer ? (
+                          <span className="px-2 py-0.5 rounded bg-neutral-800 text-white font-semibold">
+                            {c.max_uses_per_customer} مرة
+                          </span>
+                        ) : (
+                          <span className="text-neutral-500">غير محدود</span>
+                        )}
+                      </td>
+
                       <td className="p-4 text-neutral-400">
                         {c.expires_at ? (
                           <span className={isExpired ? 'text-rose-400 font-medium' : ''}>
@@ -270,14 +334,24 @@ export const AdminCouponsPage: React.FC = () => {
                       </td>
 
                       <td className="p-4 text-left">
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(c.id)}
-                          className="p-1.5 rounded hover:bg-rose-950/40 text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
-                          title="حذف الكوبون"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(c)}
+                            className="p-1.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                            title="تعديل الكوبون"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(c.id)}
+                            className="p-1.5 rounded hover:bg-rose-950/40 text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
+                            title="حذف الكوبون"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -288,7 +362,7 @@ export const AdminCouponsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create Coupon Modal */}
+      {/* Create / Edit Coupon Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="bg-[#121216] border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
@@ -301,13 +375,13 @@ export const AdminCouponsPage: React.FC = () => {
 
             <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
               <Ticket className="w-5 h-5 text-white" />
-              <span>إنشاء كود خصم جديد</span>
+              <span>{editingCoupon ? `تعديل كود الخصم (${editingCoupon.code})` : 'إنشاء كود خصم جديد'}</span>
             </h3>
             <p className="text-xs text-neutral-400 mb-6">
-              يتم التحقق من الكوبون وتطبيقه server-side بأمان أثناء إتمام الطلب.
+              يتم التحقق من الكوبون والحد الأقصى لكل عميل server-side بأمان.
             </p>
 
-            <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
+            <form onSubmit={handleSubmitCoupon} className="space-y-4 text-xs">
               <div>
                 <label className="block text-neutral-300 font-semibold mb-1">كود الكوبون</label>
                 <input
@@ -364,7 +438,7 @@ export const AdminCouponsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">أقصى عدد مرات استخدام</label>
+                  <label className="block text-neutral-300 font-semibold mb-1">إجمالي مرات الاستخدام للكوبون</label>
                   <input
                     type="number"
                     min="1"
@@ -374,6 +448,23 @@ export const AdminCouponsPage: React.FC = () => {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-700 text-white font-mono outline-none focus:border-white"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-neutral-300 font-semibold mb-1">
+                  الحد الأقصى لاستخدام الكوبون لكل عميل
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.max_uses_per_customer}
+                  onChange={(e) => setForm({ ...form, max_uses_per_customer: e.target.value === '' ? '' : Number(e.target.value) })}
+                  placeholder="مثال: 1 (مرة واحدة فقط) أو اترك فارغًا لغير محدود"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-700 text-white font-mono outline-none focus:border-white"
+                />
+                <p className="text-[11px] text-neutral-400 mt-1">
+                  يتم التحقق من العميل بناءً على تطبيع رقم هاتفه (normalizePhone) Server-Side لمنع تكرار الاستخدام بالاحتيال بصيغ أرقام مختلفة.
+                </p>
               </div>
 
               <div>
@@ -405,7 +496,7 @@ export const AdminCouponsPage: React.FC = () => {
                   disabled={isSubmitting}
                   className="flex-1 py-2.5 px-4 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-colors cursor-pointer text-xs disabled:opacity-50"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ الكوبون'}
+                  {isSubmitting ? 'جاري الحفظ...' : editingCoupon ? 'تحديث الكوبون' : 'حفظ الكوبون'}
                 </button>
                 <button
                   type="button"
