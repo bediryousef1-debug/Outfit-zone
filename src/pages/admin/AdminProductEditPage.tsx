@@ -1608,20 +1608,25 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                             }}
                             onBlur={(e) => {
                               const inputKey = `${group.color}___${size}`;
-                              const normalizedValue = String(
-                                Math.max(0, Number.parseInt(e.target.value, 10) || 0)
+                              const rawValue = e.target.value;
+                              const normalizedValue = Math.max(
+                                0,
+                                Number.parseInt(rawValue, 10) || 0
                               );
 
-                              setStockInputDrafts((prev) => {
-                                const next = { ...prev };
-                                delete next[inputKey];
-                                return next;
-                              });
+                              // Keep an intentionally empty field visually empty; it still saves as zero.
+                              if (rawValue !== '') {
+                                setStockInputDrafts((prev) => {
+                                  const next = { ...prev };
+                                  delete next[inputKey];
+                                  return next;
+                                });
+                              }
 
                               updateSizeStock(
                                 group.color,
                                 size,
-                                Number(normalizedValue)
+                                normalizedValue
                               );
                             }}
                             className="w-full min-w-0 bg-neutral-950 border border-neutral-700 rounded-lg py-2 px-3 text-center text-sm font-mono font-bold text-white placeholder-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white"
