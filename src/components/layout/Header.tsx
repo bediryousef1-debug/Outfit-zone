@@ -41,7 +41,6 @@ export const Header: React.FC<HeaderProps> = ({
     { label: t('nav.products', 'الموديلات'), path: '/products' },
     { label: t('nav.track', 'تتبع طلبك'), path: '/track' },
     { label: t('nav.about', 'قصة البراند'), path: '/about' },
-    { label: t('nav.contact', 'تواصل معنا'), path: '/contact' },
   ];
 
 
@@ -92,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-2 min-w-0">
           <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
 
-          <span className="truncate tracking-tight min-w-0">
+          <span className="text-center leading-relaxed tracking-tight min-w-0 flex-1">
             {localizedAnnouncement}
           </span>
 
