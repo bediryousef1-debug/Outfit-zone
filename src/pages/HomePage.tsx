@@ -1063,7 +1063,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Product grid appears once real products are active. */}
-      {!isLoading && !error && featuredProducts.length > 0 && (
+      {(
         {/* =====================================================================
             5. FEATURED PRODUCTS
             ===================================================================== */}
