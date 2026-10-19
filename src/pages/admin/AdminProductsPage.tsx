@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Edit2, Archive, Trash2, Search, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Archive, Trash2, Search, CheckCircle, XCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import { Product } from '../../types';
 import { api } from '../../services/api';
 import { formatPrice } from '../../utils/constants';
@@ -16,17 +16,20 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [archiveSuccess, setArchiveSuccess] = useState<string | null>(null);
 
   const loadProducts = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const data = await api.getProducts({ admin: true });
       setProducts(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load admin products:', err);
+      setLoadError(err?.message || 'تعذر تحميل المنتجات. حاول تحديث القائمة.');
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +93,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Title & Action */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-2xl border border-neutral-800 bg-[#121216] p-4 sm:p-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white">
             إدارة منتجات وموديلات Outfit Zone
@@ -100,14 +103,37 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
           </p>
         </div>
 
+        <div className="flex w-full sm:w-auto items-center gap-2">
         <button
+          type="button"
+          onClick={loadProducts}
+          disabled={isLoading}
+          className="p-2.5 rounded-xl border border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+          title="تحديث قائمة المنتجات"
+          aria-label="تحديث قائمة المنتجات"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
+        <button
+          type="button"
           onClick={onNewProduct}
-          className="py-2.5 px-4 bg-white text-black font-extrabold text-xs rounded-xl hover:bg-neutral-200 transition-colors flex items-center gap-2 shadow-sm"
+          className="flex-1 sm:flex-none justify-center py-2.5 px-4 bg-white text-black font-extrabold text-xs rounded-xl hover:bg-neutral-200 transition-colors flex items-center gap-2 shadow-sm"
         >
           <Plus className="w-4 h-4" />
           <span>إضافة موديل جديد</span>
         </button>
+        </div>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-red-950/40 border border-red-800/70 text-red-200 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{loadError}</span>
+          </div>
+          <button type="button" onClick={loadProducts} className="px-3 py-2 rounded-lg border border-red-800 bg-red-950/60 hover:bg-red-900/60 font-bold">إعادة المحاولة</button>
+        </div>
+      )}
 
       {archiveSuccess && (
         <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs">
@@ -116,7 +142,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
       )}
 
       {/* Controls: Search and Status tabs */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-[#0e0e12] p-3 sm:p-4">
         <div className="relative max-w-sm flex-1">
           <input
             type="text"
@@ -128,7 +154,7 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
           <Search className="w-4 h-4 text-neutral-500 absolute top-2.5 right-3" />
         </div>
 
-        <div className="flex items-center bg-[#121216] border border-neutral-800 rounded-lg p-1 text-xs self-start sm:self-auto">
+        <div className="flex items-center flex-wrap bg-[#121216] border border-neutral-800 rounded-lg p-1 text-xs self-start sm:self-auto gap-1">
           {[
             { id: 'all', label: 'الكل' },
             { id: 'active', label: 'النشطة بالمتجر' },
@@ -157,6 +183,8 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
               <div key={i} className="h-16 bg-neutral-900 rounded-lg animate-pulse" />
             ))}
           </div>
+        ) : loadError ? (
+          <div className="p-10 text-center text-xs text-neutral-400">تعذر تحميل القائمة. استخدم زر إعادة المحاولة بالأعلى.</div>
         ) : filteredProducts.length === 0 ? (
           <div className="p-12 text-center text-xs text-neutral-500">
             لا توجد منتجات مطابقة للبحث أو الفلتر.
