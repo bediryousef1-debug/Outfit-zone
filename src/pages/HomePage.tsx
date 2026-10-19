@@ -707,7 +707,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            <div className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300">
+            <div className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy">
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-[1px] bg-neutral-500" />
@@ -847,7 +847,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            <div className="lg:col-span-6 relative order-1 lg:order-2">
+            <div className="lg:col-span-6 relative order-1 lg:order-2 oz-hero-visual">
               <div
                 onClick={() => onNavigate(currentSlide.button_link)}
                 className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
@@ -872,7 +872,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   key={currentSlide.image_url}
                   src={resolveImageUrl(currentSlide.image_url)}
                   alt={localizedSubtitle}
-                  className="w-full h-full object-cover object-top sm:object-center transition-all duration-700 ease-out group-hover:scale-105"
+                  className="w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
                   draggable={false}
                 />

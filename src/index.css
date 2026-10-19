@@ -147,10 +147,40 @@
   animation: ozPulseGlow 2.5s infinite ease-in-out;
 }
 
+/* Small, one-time entrance motion for the hero only (not every product card). */
+@keyframes ozHeroReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oz-hero-copy {
+    animation: ozHeroReveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .oz-hero-visual {
+    animation: ozHeroReveal 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+  }
+}
+
+/* Touch devices should not trigger hover lifts that can feel sticky. */
+@media (hover: none) {
+  .oz-card-hover:hover,
+  .oz-btn-press:hover {
+    transform: none;
+  }
+}
+
 /* Card subtle lift on hover */
 .oz-card-hover {
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
-  will-change: transform;
+  /* Avoid reserving a GPU layer for every card on mobile. */
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 .oz-card-hover:hover {
   transform: translateY(-4px);
@@ -161,8 +191,7 @@
 
 /* Button smooth haptic-like press */
 .oz-btn-press {
-  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.15s ease;
-  will-change: transform;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
 }
 .oz-btn-press:hover {
   transform: translateY(-1.5px);
