@@ -776,6 +776,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   key={currentSlide.image_url}
                   src={resolveImageUrl(currentSlide.image_url)}
                   alt={localizedSubtitle}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    if (image.dataset.fallbackApplied !== 'true') {
+                      image.dataset.fallbackApplied = 'true';
+                      image.src = resolveImageUrl('/images/hero_streetwear_editorial_1790342899745.jpg');
+                    }
+                  }}
                   className="w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
                   draggable={false}
@@ -914,6 +921,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <img
                         src={categoryImage}
                         alt={localizedCategoryName}
+                        onError={(event) => {
+                          const image = event.currentTarget;
+                          if (image.dataset.fallbackApplied !== 'true') {
+                            image.dataset.fallbackApplied = 'true';
+                            image.src = resolveImageUrl('/images/product_streetwear_shirt_olive_1790342946975.jpg');
+                          }
+                        }}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
                       />
@@ -1041,6 +1055,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     content?.editorial_image_url ||
                       '/images/hero_streetwear_editorial_1790342899745.jpg'
                   )}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    if (image.dataset.fallbackApplied !== 'true') {
+                      image.dataset.fallbackApplied = 'true';
+                      image.src = resolveImageUrl('/images/hero_streetwear_editorial_1790342899745.jpg');
+                    }
+                  }}
                   alt={
                     language === 'en'
                       ? content?.editorial_title_en ||
@@ -1063,11 +1084,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Product grid appears once real products are active. */}
-      {!isLoading && !error && featuredProducts.length > 0 && (
-        {/* =====================================================================
-            5. FEATURED PRODUCTS
-            ===================================================================== */}
-  
+
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-8">
             <div className="text-right">
@@ -1150,16 +1167,9 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
-  
-  
-      )}
 
       {/* Reviews appear after real customer reviews are approved. */}
-      {!reviewsLoading && reviews.length > 0 && (
-        {/* =====================================================================
-            6. CUSTOMER REVIEWS
-            ===================================================================== */}
-  
+
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
             <div className="text-right">
@@ -1560,7 +1570,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
-      )}
     </div>
   );
 };

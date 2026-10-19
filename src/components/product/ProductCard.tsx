@@ -71,6 +71,13 @@ onSelect(product.slug);
        loading="lazy"
        decoding="async"
        referrerPolicy="no-referrer"
+       onError={(event) => {
+         const image = event.currentTarget;
+         if (image.dataset.fallbackApplied !== 'true') {
+           image.dataset.fallbackApplied = 'true';
+           image.src = resolveImageUrl('/images/product_boxfit_tee_black_1790342911897.jpg');
+         }
+       }}
        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
      />
 
