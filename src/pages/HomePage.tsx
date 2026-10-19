@@ -80,126 +80,13 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  /*
-   * ==========================================================================
-   * FALLBACK HERO SLIDES
-   * ==========================================================================
-   */
-
-  const fallbackHeroSlides: HeroSlide[] = [
-    {
-      id: 'slide-main',
-      tag_ar: 'NEW COLLECTION 2026',
-      tag_en: 'NEW COLLECTION 2026',
-      title_line1_ar: 'WEAR IN',
-      title_line1_en: 'WEAR IN',
-      title_line2_ar: 'THE ZONE',
-      title_line2_en: 'THE ZONE',
-      subtitle_ar: content?.hero_subtitle || 'ستايلك له حضور',
-      subtitle_en: 'Your style has presence',
-      description_ar:
-        'قطع مختارة بعناية تعكس شخصيتك وتخليك دايماً في قلب الحدث بأعلى خامات قطنية مصرية.',
-      description_en:
-        'Carefully selected pieces that reflect your personality, made with premium Egyptian cotton.',
-      button_text_ar: content?.hero_button_text || 'تسوق الآن',
-      button_text_en: 'Shop Now',
-      button_link: '/products',
-      image_url:
-        content?.hero_image_url ||
-        '/images/hero_streetwear_editorial_1790342899745.jpg',
-      badge_top_ar: 'Style Your Zone',
-      badge_top_en: 'Style Your Zone',
-      badge_bottom_ar: 'STYLE BUILDS CONFIDENCE',
-      badge_bottom_en: 'STYLE BUILDS CONFIDENCE',
-      sort_order: 0,
-      is_active: true,
-    },
-    {
-      id: 'slide-boxfit',
-      tag_ar: 'BOX FIT ESSENTIALS',
-      tag_en: 'BOX FIT ESSENTIALS',
-      title_line1_ar: 'HEAVYWEIGHT',
-      title_line1_en: 'HEAVYWEIGHT',
-      title_line2_ar: 'COTTON 240+',
-      title_line2_en: 'COTTON 240+',
-      subtitle_ar: 'تيشيرتات Box Fit الفاخرة',
-      subtitle_en: 'Premium Box Fit T-Shirts',
-      description_ar:
-        'قصات مريحة وتطريز متقن صُمم ليدوم معك مع الحفاظ على رونق القماش ومقاومة الغسيل.',
-      description_en:
-        'Comfortable cuts and premium finishing designed to last while maintaining the fabric quality.',
-      button_text_ar: 'اكتشف التيشيرتات',
-      button_text_en: 'Discover T-Shirts',
-      button_link: '/products?search=تيشيرت',
-      image_url: '/images/product_boxfit_tee_black_1790342911897.jpg',
-      badge_top_ar: 'Heavyweight Fit',
-      badge_top_en: 'Heavyweight Fit',
-      badge_bottom_ar: '100% EGYPTIAN COTTON',
-      badge_bottom_en: '100% EGYPTIAN COTTON',
-      sort_order: 1,
-      is_active: true,
-    },
-    {
-      id: 'slide-oversized',
-      tag_ar: 'OVERSIZED STREETWEAR',
-      tag_en: 'OVERSIZED STREETWEAR',
-      title_line1_ar: 'EFFORTLESS',
-      title_line1_en: 'EFFORTLESS',
-      title_line2_ar: 'OVERSIZED',
-      title_line2_en: 'OVERSIZED',
-      subtitle_ar: 'تشكيلة الأوفرسايز الواسعة',
-      subtitle_en: 'Oversized Streetwear Collection',
-      description_ar:
-        'ستايل الشارع العصري بقصات هدلة مريحة تمنحك إطلالة فريدة ومميزة طوال اليوم.',
-      description_en:
-        'Modern streetwear with relaxed oversized cuts for a distinctive look throughout the day.',
-      button_text_ar: 'تسوق الأوفرسايز',
-      button_text_en: 'Shop Oversized',
-      button_link: '/products?search=اوفرسايز',
-      image_url: '/images/product_oversized_tee_offwhite_1790342923739.jpg',
-      badge_top_ar: 'Streetwear Drop',
-      badge_top_en: 'Streetwear Drop',
-      badge_bottom_ar: 'WEAR IN THE ZONE',
-      badge_bottom_en: 'WEAR IN THE ZONE',
-      sort_order: 2,
-      is_active: true,
-    },
-    {
-      id: 'slide-polos',
-      tag_ar: 'URBAN INTERLOCK',
-      tag_en: 'URBAN INTERLOCK',
-      title_line1_ar: 'MODERN',
-      title_line1_en: 'MODERN',
-      title_line2_ar: 'POLOS & SHIRTS',
-      title_line2_en: 'POLOS & SHIRTS',
-      subtitle_ar: 'بولو وقمصان إنترلوك أنيقة',
-      subtitle_en: 'Modern Interlock Polos & Shirts',
-      description_ar:
-        'دمج مثالي بين المظهر المهندم والطابع الكاجوال بخامة إنترلوك ناعمة وباردة ومريحة.',
-      description_en:
-        'A perfect balance between polished and casual style with soft, cool and comfortable interlock fabric.',
-      button_text_ar: 'عرض التشكيلة',
-      button_text_en: 'View Collection',
-      button_link: '/products?category=streetwear-polos',
-      image_url:
-        '/images/product_interlock_polo_charcoal_1790342934447.jpg',
-      badge_top_ar: 'Urban Interlock',
-      badge_top_en: 'Urban Interlock',
-      badge_bottom_ar: 'CASH ON DELIVERY',
-      badge_bottom_en: 'CASH ON DELIVERY',
-      sort_order: 3,
-      is_active: true,
-    },
-  ];
-
   const currentSlides = storeLoading
     ? []
-    : heroSlides.length > 0
-      ? heroSlides
-      : fallbackHeroSlides;
+    : heroSlides
+        .filter((slide) => slide.is_active !== false)
+        .sort((a, b) => a.sort_order - b.sort_order);
 
-  const currentSlide =
-    currentSlides[activeSlide] || currentSlides[0] || fallbackHeroSlides[0];
+  const currentSlide = currentSlides[activeSlide] || currentSlides[0];
 
   /*
    * ==========================================================================
@@ -208,44 +95,60 @@ export const HomePage: React.FC<HomePageProps> = ({
    */
 
   const localizedTag =
-    !isRTL && currentSlide.tag_en
-      ? currentSlide.tag_en
-      : currentSlide.tag_ar;
+    currentSlide
+      ? !isRTL && currentSlide.tag_en
+        ? currentSlide.tag_en
+        : currentSlide.tag_ar
+      : '';
 
   const localizedTitleLine1 =
-    !isRTL && currentSlide.title_line1_en
-      ? currentSlide.title_line1_en
-      : currentSlide.title_line1_ar;
+    currentSlide
+      ? !isRTL && currentSlide.title_line1_en
+        ? currentSlide.title_line1_en
+        : currentSlide.title_line1_ar
+      : '';
 
   const localizedTitleLine2 =
-    !isRTL && currentSlide.title_line2_en
-      ? currentSlide.title_line2_en
-      : currentSlide.title_line2_ar;
+    currentSlide
+      ? !isRTL && currentSlide.title_line2_en
+        ? currentSlide.title_line2_en
+        : currentSlide.title_line2_ar
+      : '';
 
   const localizedSubtitle =
-    !isRTL && currentSlide.subtitle_en
-      ? currentSlide.subtitle_en
-      : currentSlide.subtitle_ar;
+    currentSlide
+      ? !isRTL && currentSlide.subtitle_en
+        ? currentSlide.subtitle_en
+        : currentSlide.subtitle_ar
+      : '';
 
   const localizedDescription =
-    !isRTL && currentSlide.description_en
-      ? currentSlide.description_en
-      : currentSlide.description_ar;
+    currentSlide
+      ? !isRTL && currentSlide.description_en
+        ? currentSlide.description_en
+        : currentSlide.description_ar
+      : '';
 
   const localizedCta =
-    !isRTL && currentSlide.button_text_en
-      ? currentSlide.button_text_en
-      : currentSlide.button_text_ar;
+    currentSlide
+      ? !isRTL && currentSlide.button_text_en
+        ? currentSlide.button_text_en
+        : currentSlide.button_text_ar
+      : '';
 
   const localizedBadgeTop =
-    !isRTL && currentSlide.badge_top_en
-      ? currentSlide.badge_top_en
-      : currentSlide.badge_top_ar;
+    currentSlide
+      ? !isRTL && currentSlide.badge_top_en
+        ? currentSlide.badge_top_en
+        : currentSlide.badge_top_ar
+      : '';
 
   const localizedBadgeBottom =
-    !isRTL && currentSlide.badge_bottom_en
-      ? currentSlide.badge_bottom_en
-      : currentSlide.badge_bottom_ar;
+    currentSlide
+      ? !isRTL && currentSlide.badge_bottom_en
+        ? currentSlide.badge_bottom_en
+        : currentSlide.badge_bottom_ar
+      : '';
 
   /*
    * ==========================================================================
@@ -674,6 +577,586 @@ export const HomePage: React.FC<HomePageProps> = ({
           1. HERO SECTION & SLIDER
           ===================================================================== */}
 
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Truck,
+  Percent,
+  Headphones,
+  RotateCcw,
+  AlertCircle,
+  Star,
+  Send,
+  X,
+} from 'lucide-react';
+import { Product, ProductReview, HeroSlide } from '../types';
+import { api } from '../services/api';
+import { ProductCard } from '../components/product/ProductCard';
+import { useStore } from '../context/StoreContext';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { resolveImageUrl } from '../utils/imageHelper';
+
+interface HomePageProps {
+  onNavigate: (path: string) => void;
+  onSelectProduct: (slug: string) => void;
+}
+
+interface HomepageReview extends ProductReview {
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export const HomePage: React.FC<HomePageProps> = ({
+  onNavigate,
+  onSelectProduct,
+}) => {
+  const { categories, content, heroSlides, isLoading: storeLoading } = useStore();
+  const { isDark } = useTheme();
+  const { isRtl, t, language } = useLanguage();
+
+  const isRTL = isRtl;
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<HomepageReview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  /*
+   * ==========================================================================
+   * HERO SWIPE / DRAG
+   * ==========================================================================
+   */
+
+  const heroPointerStartX = useRef<number | null>(null);
+  const heroPointerStartY = useRef<number | null>(null);
+  const heroPointerId = useRef<number | null>(null);
+  const heroSwipeDetected = useRef(false);
+
+  const SWIPE_THRESHOLD = 50;
+
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
+
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const currentSlides = storeLoading
+    ? []
+    : heroSlides
+        .filter((slide) => slide.is_active !== false)
+        .sort((a, b) => a.sort_order - b.sort_order);
+
+  const currentSlide = currentSlides[activeSlide] || currentSlides[0];
+
+  /*
+   * ==========================================================================
+   * LOCALIZED HERO CONTENT
+   * ==========================================================================
+   */
+
+  const localizedTag =
+    currentSlide
+      ? !isRTL && currentSlide.tag_en
+        ? currentSlide.tag_en
+        : currentSlide.tag_ar
+      : '';
+
+  const localizedTitleLine1 =
+    currentSlide
+      ? !isRTL && currentSlide.title_line1_en
+        ? currentSlide.title_line1_en
+        : currentSlide.title_line1_ar
+      : '';
+
+  const localizedTitleLine2 =
+    currentSlide
+      ? !isRTL && currentSlide.title_line2_en
+        ? currentSlide.title_line2_en
+        : currentSlide.title_line2_ar
+      : '';
+
+  const localizedSubtitle =
+    currentSlide
+      ? !isRTL && currentSlide.subtitle_en
+        ? currentSlide.subtitle_en
+        : currentSlide.subtitle_ar
+      : '';
+
+  const localizedDescription =
+    currentSlide
+      ? !isRTL && currentSlide.description_en
+        ? currentSlide.description_en
+        : currentSlide.description_ar
+      : '';
+
+  const localizedCta =
+    currentSlide
+      ? !isRTL && currentSlide.button_text_en
+        ? currentSlide.button_text_en
+        : currentSlide.button_text_ar
+      : '';
+
+  const localizedBadgeTop =
+    currentSlide
+      ? !isRTL && currentSlide.badge_top_en
+        ? currentSlide.badge_top_en
+        : currentSlide.badge_top_ar
+      : '';
+
+  const localizedBadgeBottom =
+    currentSlide
+      ? !isRTL && currentSlide.badge_bottom_en
+        ? currentSlide.badge_bottom_en
+        : currentSlide.badge_bottom_ar
+      : '';
+
+  /*
+   * ==========================================================================
+   * HERO NAVIGATION
+   * ==========================================================================
+   */
+
+  const nextSlide = () => {
+    if (currentSlides.length <= 1) return;
+
+    setActiveSlide((prev) => (prev + 1) % currentSlides.length);
+  };
+
+  const prevSlide = () => {
+    if (currentSlides.length <= 1) return;
+
+    setActiveSlide(
+      (prev) => (prev - 1 + currentSlides.length) % currentSlides.length
+    );
+  };
+
+  /*
+   * ==========================================================================
+   * HERO POINTER SWIPE / MOUSE DRAG
+   * ==========================================================================
+   */
+
+  const handleHeroPointerDown = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (currentSlides.length <= 1) return;
+
+    // Do not start swipe/drag tracking when clicking
+    // an interactive element such as slider buttons or links.
+    const target = event.target as HTMLElement;
+
+    if (target.closest('button, a, input, textarea, select')) {
+      heroSwipeDetected.current = false;
+      return;
+    }
+
+    heroPointerStartX.current = event.clientX;
+    heroPointerStartY.current = event.clientY;
+    heroPointerId.current = event.pointerId;
+    heroSwipeDetected.current = false;
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore unsupported pointer-capture errors.
+    }
+  };
+
+  const handleHeroPointerMove = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (
+      heroPointerStartX.current === null ||
+      heroPointerStartY.current === null ||
+      heroPointerId.current !== event.pointerId
+    ) {
+      return;
+    }
+
+    const deltaX = event.clientX - heroPointerStartX.current;
+    const deltaY = event.clientY - heroPointerStartY.current;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      return;
+    }
+
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+      heroSwipeDetected.current = true;
+
+      if (deltaX < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+
+      heroPointerStartX.current = null;
+      heroPointerStartY.current = null;
+    }
+  };
+
+  const handleHeroPointerUp = (
+    event: React.PointerEvent<HTMLElement>
+  ) => {
+    if (heroPointerId.current === event.pointerId) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore pointer-capture errors.
+      }
+    }
+
+    heroPointerStartX.current = null;
+    heroPointerStartY.current = null;
+    heroPointerId.current = null;
+  };
+
+  const handleHeroClickCapture = (
+    event: React.MouseEvent<HTMLElement>
+  ) => {
+    if (heroSwipeDetected.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      heroSwipeDetected.current = false;
+    }
+  };
+
+  /*
+   * ==========================================================================
+   * HERO AUTOPLAY
+   * ==========================================================================
+   */
+
+  useEffect(() => {
+    if (isPaused || currentSlides.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % currentSlides.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isPaused, currentSlides.length]);
+
+  /*
+   * ==========================================================================
+   * KEEP ACTIVE SLIDE VALID
+   * ==========================================================================
+   */
+
+  useEffect(() => {
+    if (activeSlide >= currentSlides.length) {
+      setActiveSlide(0);
+    }
+  }, [activeSlide, currentSlides.length]);
+
+  /*
+   * ==========================================================================
+   * LOAD PRODUCTS
+   * ==========================================================================
+   */
+
+  const loadProducts = async () => {
+    setIsLoading(true);
+    setReviewsLoading(true);
+    setError(null);
+
+    try {
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (err: any) {
+      console.error('Error fetching homepage products:', err);
+      setError(
+        err.message ||
+          t(
+            'home.error_products',
+            'Unable to load products right now.'
+          )
+      );
+      setProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /*
+   * ==========================================================================
+   * LOAD PUBLIC HOMEPAGE REVIEWS
+   * ==========================================================================
+   */
+
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+
+    try {
+      const publicReviews = await api.getPublicReviews();
+
+      const productMap = new Map(
+        products.map((product) => [
+          product.id,
+          {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+          },
+        ])
+      );
+
+      const homepageReviews: HomepageReview[] = publicReviews
+        .map((review) => ({
+          ...review,
+          product: review.product_id
+            ? productMap.get(review.product_id)
+            : undefined,
+        }))
+        .slice(0, 6);
+
+      setReviews(homepageReviews);
+    } catch (err) {
+      console.error('Error fetching homepage reviews:', err);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      loadReviews();
+    }
+  }, [isLoading, products]);
+
+  const featuredProducts = products.some((p) => p.is_featured)
+    ? products.filter((p) => p.is_featured).slice(0, 8)
+    : products.slice(0, 8);
+
+  /*
+   * ==========================================================================
+   * REAL CATEGORIES
+   * ==========================================================================
+   */
+
+  const activeCategories = (categories || []).filter(
+    (category) => category.is_active !== false
+  );
+
+  /*
+   * ==========================================================================
+   * TRUST FEATURES
+   * ==========================================================================
+   */
+
+  const trustFeatures = [
+    {
+      id: 'cod',
+      title: t('home.trust.cod_title', 'Cash on Delivery'),
+      subtitle: t('home.trust.cod_subtitle', 'Cash'),
+      icon: ShieldCheck,
+    },
+    {
+      id: 'shipping',
+      title: t('home.trust.shipping_title', 'Fast Shipping'),
+      subtitle: t(
+        'home.trust.shipping_subtitle',
+        'Across All Governorates'
+      ),
+      icon: Truck,
+    },
+    {
+      id: 'discounts',
+      title: t('home.trust.discounts_title', 'Exclusive Discounts'),
+      subtitle: t('home.trust.discounts_subtitle', 'Limited Time'),
+      icon: Percent,
+    },
+    {
+      id: 'support',
+      title: t('home.trust.support_title', 'Customer Support'),
+      subtitle: t('home.trust.support_subtitle', 'Around the Clock'),
+      icon: Headphones,
+    },
+  ];
+
+  /*
+   * ==========================================================================
+   * CATEGORY NAVIGATION
+   * ==========================================================================
+   */
+
+  const handleCategoryNavigate = (categoryId: string) => {
+    onNavigate(
+      `/products?category=${encodeURIComponent(categoryId)}`
+    );
+  };
+
+  /*
+   * ==========================================================================
+   * REVIEW NAVIGATION
+   * ==========================================================================
+   */
+
+  const handleReviewProduct = (slug?: string) => {
+    if (!slug) return;
+
+    onSelectProduct(slug);
+  };
+
+  /*
+   * ==========================================================================
+   * REVIEW FORM
+   * ==========================================================================
+   */
+
+  const openReviewForm = () => {
+    setReviewMessage(null);
+    setReviewError(null);
+    setShowReviewForm(true);
+  };
+
+  const closeReviewForm = () => {
+    if (reviewSubmitting) return;
+
+    setShowReviewForm(false);
+    setReviewError(null);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setReviewMessage(null);
+    setReviewError(null);
+
+    const cleanName = reviewName.trim();
+    const cleanText = reviewText.trim();
+
+    if (!cleanName) {
+      setReviewError(
+        t('home.review_name_required', 'Please enter your name.')
+      );
+      return;
+    }
+
+    if (cleanName.length < 2) {
+      setReviewError(
+        t(
+          'home.review_name_short',
+          'Name must be at least 2 characters.'
+        )
+      );
+      return;
+    }
+
+    if (!cleanText) {
+      setReviewError(
+        t(
+          'home.review_text_required',
+          'Please enter your review.'
+        )
+      );
+      return;
+    }
+
+    if (cleanText.length < 5) {
+      setReviewError(
+        t(
+          'home.review_text_short',
+          'Your review must be at least 5 characters.'
+        )
+      );
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewError(
+        t(
+          'home.review_rating_required',
+          'Please select a rating from 1 to 5 stars.'
+        )
+      );
+      return;
+    }
+
+    setReviewSubmitting(true);
+
+    try {
+      const result = await api.createProductReview({
+        product_id: null,
+        customer_name: cleanName,
+        rating: reviewRating,
+        review_text: cleanText,
+      });
+
+      if (!result.success) {
+        throw new Error(
+          t(
+            'home.error_review',
+            'Unable to submit your review right now.'
+          )
+        );
+      }
+
+      setReviewName('');
+      setReviewRating(5);
+      setReviewText('');
+      setShowReviewForm(false);
+
+      setReviewMessage(
+        t(
+          'home.review_success',
+          'Thank you for your review ❤️ It will be reviewed and approved before appearing on the website.'
+        )
+      );
+    } catch (err: any) {
+      console.error('Error submitting homepage review:', err);
+
+      setReviewError(
+        err.message ||
+          t(
+            'home.error_review',
+            'Unable to submit your review right now.'
+          )
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  /*
+   * ==========================================================================
+   * HERO DIRECTION
+   * ==========================================================================
+   */
+
+  const PreviousArrow = ChevronRight;
+  const NextArrow = ChevronLeft;
+
+  return (
+    <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
+      {/* =====================================================================
+          1. HERO SECTION & SLIDER
+          ===================================================================== */}
+
+      {currentSlide && (
       <section
         className={`relative overflow-hidden transition-colors ${
           isDark
@@ -909,6 +1392,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* =====================================================================
           2. TRUST FEATURES
