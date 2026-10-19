@@ -862,6 +862,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           3. REAL CATEGORIES
           ===================================================================== */}
 
+      {activeCategories.length > 0 && (
       <section className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center my-6">
           <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
@@ -875,20 +876,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
 
-        {activeCategories.length === 0 ? (
-          <div
-            className={`rounded-2xl border p-8 text-center ${
-              isDark
-                ? 'bg-[#121216] border-neutral-800 text-neutral-400'
-                : 'bg-white border-neutral-200 text-neutral-500'
-            }`}
-          >
-            {t(
-              'home.no_categories',
-              'No categories available right now.'
-            )}
-          </div>
-        ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {activeCategories.map((cat) => {
               const categoryImage = cat.image_url
@@ -981,8 +968,8 @@ export const HomePage: React.FC<HomePageProps> = ({
               );
             })}
           </div>
-        )}
       </section>
+      )}
 
       {/* =====================================================================
           4. EDITORIAL PROMO BANNER
