@@ -921,6 +921,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <img
                         src={categoryImage}
                         alt={localizedCategoryName}
+                        onError={(event) => {
+                          const image = event.currentTarget;
+                          if (image.dataset.fallbackApplied !== 'true') {
+                            image.dataset.fallbackApplied = 'true';
+                            image.src = resolveImageUrl('/images/product_streetwear_shirt_olive_1790342946975.jpg');
+                          }
+                        }}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
                       />
@@ -1048,6 +1055,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     content?.editorial_image_url ||
                       '/images/hero_streetwear_editorial_1790342899745.jpg'
                   )}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    if (image.dataset.fallbackApplied !== 'true') {
+                      image.dataset.fallbackApplied = 'true';
+                      image.src = resolveImageUrl('/images/hero_streetwear_editorial_1790342899745.jpg');
+                    }
+                  }}
                   alt={
                     language === 'en'
                       ? content?.editorial_title_en ||
