@@ -52,7 +52,7 @@ language === 'en'
 return (
 <div
 onClick={() => onSelect(product.slug)}
-className={`group cursor-pointer oz-card-hover animate-fade-in flex flex-col rounded-2xl overflow-hidden border ${
+className={`group cursor-pointer oz-card-hover flex flex-col rounded-2xl overflow-hidden border ${
         isDark
           ? 'bg-[#121216] border-neutral-800/80 hover:border-neutral-600 shadow-md'
           : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
