@@ -33,7 +33,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'واتساب',
       url: getWhatsAppUrl('مرحباً Outfit Zone، لدي استفسار بخصوص المنتجات'),
       icon: MessageCircle,
-      bg: 'hover:text-emerald-500',
+      bg: 'hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-500/10',
     });
   }
 
@@ -43,7 +43,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'انستجرام',
       url: contactSocial.instagram_url,
       icon: Instagram,
-      bg: 'hover:text-pink-500 hover:bg-pink-500/10 dark:hover:bg-pink-500/20',
+      bg: 'hover:text-pink-500 hover:border-pink-500/30 hover:bg-pink-500/10',
     });
   }
 
@@ -53,7 +53,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'فيسبوك',
       url: contactSocial.facebook_url,
       icon: Facebook,
-      bg: 'hover:text-blue-500 hover:bg-blue-500/10 dark:hover:bg-blue-500/20',
+      bg: 'hover:text-blue-500 hover:border-blue-500/30 hover:bg-blue-500/10',
     });
   }
 
@@ -63,11 +63,11 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
       name: 'تيك توك',
       url: contactSocial.tiktok_url,
       icon: TikTokIcon,
-      bg: 'hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-500/10 dark:hover:bg-neutral-500/20',
+      bg: 'hover:text-neutral-950 hover:border-neutral-400/50 hover:bg-neutral-500/10 dark:hover:text-white dark:hover:border-neutral-500/50',
     });
   }
 
-  // Dynamic height reporting to root for WhatsApp floating button positioning
+  // Keep the WhatsApp CTA safely above the social rail on small screens.
   useEffect(() => {
     if (variant !== 'floating-mobile') return;
 
@@ -84,9 +84,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
 
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined' && barRef.current) {
-      observer = new ResizeObserver(() => {
-        updateHeight();
-      });
+      observer = new ResizeObserver(updateHeight);
       observer.observe(barRef.current);
     }
 
@@ -112,10 +110,10 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`oz-btn-press w-9 h-9 rounded-full border flex items-center justify-center transition-all duration-200 ${
+              className={`oz-btn-press group w-9 h-9 rounded-full border flex items-center justify-center transition-all duration-200 ${
                 isDark
-                  ? 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-500 hover:text-white shadow-black/40'
-                  : 'bg-white border-neutral-200 text-neutral-700 hover:border-black hover:text-black shadow-sm'
+                  ? 'bg-neutral-900/90 border-neutral-800 text-neutral-300 shadow-black/30'
+                  : 'bg-white border-neutral-200 text-neutral-700 shadow-sm'
               } ${link.bg}`}
               title={link.name}
               aria-label={link.name}
@@ -128,7 +126,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
     );
   }
 
-  // Floating responsive bar - positioned safely above bottom nav on mobile, and at bottom on desktop
+  // Minimal floating social rail: separate round controls, consistent with Outfit Zone's monochrome look.
   return (
     <aside
       ref={barRef}
@@ -138,34 +136,26 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
         bottom: 'var(--social-bar-bottom, 74px)',
       }}
     >
-      <div
-        className={`flex flex-col gap-1.5 p-1.5 rounded-2xl border shadow-xl backdrop-blur-md transition-colors ${
-          isDark
-            ? 'bg-[#141417]/95 border-neutral-800 text-neutral-300 shadow-black/80'
-            : 'bg-white/95 border-neutral-200/90 text-neutral-700 shadow-neutral-300/50'
-        }`}
-      >
-        {links.map((link) => {
-          const Icon = link.icon;
-          return (
-            <a
-              key={link.id}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`oz-btn-press group w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${
-                isDark
-                  ? 'text-neutral-300 hover:text-white'
-                  : 'text-neutral-600 hover:text-black'
-              } ${link.bg}`}
-              title={link.name}
-              aria-label={link.name}
-            >
-              <Icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-            </a>
-          );
-        })}
-      </div>
+      {links.map((link) => {
+        const Icon = link.icon;
+        return (
+          <a
+            key={link.id}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`oz-btn-press group flex h-10 w-10 items-center justify-center rounded-full border shadow-lg backdrop-blur-md transition-all duration-200 active:scale-95 sm:h-11 sm:w-11 ${
+              isDark
+                ? 'border-neutral-700/80 bg-[#111113]/90 text-neutral-300 shadow-black/40 hover:bg-[#1b1b1f]'
+                : 'border-neutral-200/90 bg-white/90 text-neutral-600 shadow-neutral-400/20 hover:bg-white'
+            } ${link.bg}`}
+            title={link.name}
+            aria-label={link.name}
+          >
+            <Icon className="h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110" />
+          </a>
+        );
+      })}
     </aside>
   );
 };
