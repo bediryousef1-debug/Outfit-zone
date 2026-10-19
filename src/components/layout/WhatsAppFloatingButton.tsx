@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,11 +14,34 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
   const { t } = useLanguage();
 
   const whatsappUrl = getWhatsAppUrl(customMessage);
+  const [isScrollVisible, setIsScrollVisible] = useState(true);
+
+  // Keep the WhatsApp CTA out of the way while mobile shoppers scroll down.
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY <= 80) {
+        setIsScrollVisible(true);
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (Math.abs(currentScrollY - lastScrollY) >= 8) {
+        setIsScrollVisible(currentScrollY < lastScrollY);
+        lastScrollY = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <aside
       aria-label="تواصل معنا عبر واتساب"
-      className="fixed left-3 sm:left-6 z-50 print:hidden transition-all duration-300 pointer-events-auto max-w-[calc(100vw-24px)]"
+      className={`fixed left-3 sm:left-6 z-50 print:hidden transition-all duration-300 pointer-events-auto max-w-[calc(100vw-24px)] ${isScrollVisible ? 'translate-x-0 opacity-100' : '-translate-x-16 opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto'}`}
       style={{
         bottom: 'var(--whatsapp-btn-bottom, 220px)',
       }}

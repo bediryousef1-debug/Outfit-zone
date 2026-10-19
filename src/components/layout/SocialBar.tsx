@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { MessageCircle, Instagram, Facebook } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,6 +23,31 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
   const { contactSocial, getWhatsAppUrl } = useStore();
   const { isDark } = useTheme();
   const barRef = useRef<HTMLElement>(null);
+  const [isScrollVisible, setIsScrollVisible] = useState(true);
+
+  // On mobile, hide floating controls while scrolling down and reveal them when scrolling up.
+  useEffect(() => {
+    if (variant !== 'floating-mobile') return;
+
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY <= 80) {
+        setIsScrollVisible(true);
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (Math.abs(currentScrollY - lastScrollY) >= 8) {
+        setIsScrollVisible(currentScrollY < lastScrollY);
+        lastScrollY = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [variant]);
 
   const links = [];
 
@@ -131,7 +156,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
     <aside
       ref={barRef}
       aria-label="روابط التواصل الاجتماعي"
-      className="fixed left-3 sm:left-6 z-40 flex flex-col gap-2 transition-all duration-300 print:hidden pointer-events-auto"
+      className={`fixed left-3 sm:left-6 z-40 flex flex-col gap-2 transition-all duration-300 print:hidden pointer-events-auto ${isScrollVisible ? 'translate-x-0 opacity-100' : '-translate-x-16 opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto'}`}
       style={{
         bottom: 'var(--social-bar-bottom, 74px)',
       }}
