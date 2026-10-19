@@ -2718,359 +2718,21 @@ app.post(
           }
 
           console.warn(
-            '[Orders] Supabase RPC notice, falling through to local database:',
+            '[Orders] Supabase RPC failed; order was not saved:',
             error.message
           );
         }
       } catch (rpcErr: any) {
         console.warn(
-          '[Orders] Supabase RPC execution notice, falling through to local database:',
+          '[Orders] Supabase RPC execution failed; order was not saved:',
           rpcErr?.message || rpcErr
         );
       }
     }
-    // ==========================================================================
-// Authoritative server-side stock & price verification
-// ==========================================================================
-
-let subtotal = 0;
-
-const cleanGov = (customer.governorate || '').trim();
-
-const rateRecord = (db.shipping_rates || []).find(
-  (r) => r.governorate === cleanGov
-);
-
-if (!rateRecord) {
-  return res.status(400).json({
-    error:
-      'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
-  });
-}
-
-if (!rateRecord.is_active) {
-  return res.status(400).json({
-    error:
-      'تعذر حساب تكلفة الشحن لهذه المحافظة حاليًا. يرجى المحاولة مرة أخرى.',
-  });
-}
-
-const shippingFee = Number(rateRecord.shipping_fee);
-
-const validatedItems: {
-  variant: ProductVariantRecord;
-  product: ProductRecord;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-}[] = [];
-
-for (const item of items) {
-  const qty = Number(item.quantity);
-
-  if (!qty || qty <= 0) {
-    return res.status(400).json({
-      error:
-        'الكمية المطلوبة غير صحيحة.',
-    });
-  }
-
-  let variant =
-    db.product_variants.find(
-      (v) =>
-        v.id === item.variant_id
-    );
-
-  if (
-    !variant &&
-    item.product_id
-  ) {
-    variant =
-      db.product_variants.find(
-        (v) =>
-          v.product_id ===
-            item.product_id &&
-          v.color === item.color &&
-          v.size === item.size
-      );
-  }
-
-  if (!variant) {
-    return res.status(400).json({
-      error:
-        'القطعة المحددة غير موجودة بالمخزون.',
-    });
-  }
-
-  if (
-    variant.stock_quantity <
-    qty
-  ) {
-    return res.status(400).json({
-      error: `عفوًا، المقاس واللون المطلوبين (${variant.color} - ${variant.size}) غير متوفرين بالكمية المطلوبة (المتاح: ${variant.stock_quantity}).`,
-    });
-  }
-
-  const product =
-    db.products.find(
-      (p) =>
-        p.id === variant.product_id &&
-        p.is_active
-    );
-
-  if (!product) {
-    return res.status(400).json({
-      error:
-        'المنتج غير متاح حاليًا.',
-    });
-  }
-
-  const unitPrice =
-    product.price;
-
-  const lineTotal =
-    unitPrice * qty;
-
-  subtotal += lineTotal;
-
-  validatedItems.push({
-    variant,
-    product,
-    quantity: qty,
-    unit_price: unitPrice,
-    line_total: lineTotal,
-  });
-}
-
-const localDiscount = couponDiscountAmount;
-const total =
-  Math.max(0, subtotal - localDiscount) + shippingFee;
-
-const orderNumber =
-  generateOrderNumber();
-
-const orderId =
-  `ord_${Date.now()}_${Math.random()
-    .toString(36)
-    .substring(2, 7)}`;
-
-const receiptToken =
-  'rec_' + crypto.randomBytes(24).toString('hex');
-
-const newOrder: OrderRecord = {
-  id: orderId,
-  order_number:
-    orderNumber,
-  receipt_token:
-    receiptToken,
-  customer_name:
-    customer.customer_name.trim(),
-  phone: cleanPhone,
-  governorate:
-    customer.governorate,
-  city:
-    customer.city.trim(),
-  address:
-    customer.address.trim(),
-  notes:
-    customer.notes?.trim() ||
-    null,
-  subtotal,
-  discount_amount:
-    localDiscount,
-  coupon_code:
-    localDiscount > 0 ? cleanCouponCode : null,
-  order_source:
-    order_source || 'Direct',
-  shipping_fee:
-    shippingFee,
-  total,
-  status: 'pending',
-  created_at:
-    new Date().toISOString(),
-  updated_at:
-    new Date().toISOString(),
-};
-
-if (authoritativeCoupon && localDiscount > 0) {
-  authoritativeCoupon.used_count = (authoritativeCoupon.used_count || 0) + 1;
-  saveToFile('coupons.json', db.coupons);
-}
-
-db.orders.unshift(
-  newOrder
-);
-    // ==========================================================================
-    // Insert snapshot items + decrement inventory
-    // ==========================================================================
-
-    for (const val of validatedItems) {
-      db.order_items.push({
-        id:
-          `item_${Date.now()}_${Math.random()
-            .toString(36)
-            .substring(2, 7)}`,
-        order_id:
-          orderId,
-        product_id:
-          val.product.id,
-        product_name_snapshot:
-          val.product.name,
-        color:
-          val.variant.color,
-        size:
-          val.variant.size,
-        quantity:
-          val.quantity,
-        unit_price:
-          val.unit_price,
-        line_total:
-          val.line_total,
-      });
-
-      val.variant.stock_quantity -=
-        val.quantity;
-
-      val.variant.updated_at =
-        new Date().toISOString();
-    }
-
-    // ==========================================================================
-    // Audit history
-    // ==========================================================================
-
-    db.order_status_history.push(
-      {
-        id:
-          `hist_${Date.now()}`,
-        order_id:
-          orderId,
-        status: 'pending',
-        created_at:
-          new Date().toISOString(),
-        changed_by:
-          'guest_checkout',
-      }
-    );
-
-    // ==========================================================================
-    // Persist to disk immediately
-    // ==========================================================================
-
-    saveToFile(
-      'orders.json',
-      db.orders
-    );
-
-    saveToFile(
-      'order_items.json',
-      db.order_items
-    );
-
-    saveToFile(
-      'order_status_history.json',
-      db.order_status_history
-    );
-
-    saveToFile(
-      'product_variants.json',
-      db.product_variants
-    );
-
-    // Customer Management: safely link and update customer history without blocking order
-    await recordCustomerFromOrder(
-      {
-        id: orderId,
-        order_number: orderNumber,
-        customer_name: customer.customer_name.trim(),
-        phone: cleanPhone,
-        created_at: newOrder.created_at,
-      },
-      db,
-      saveToFile,
-      supabaseClient
-    );
-
-    // ==========================================================================
-    // Telegram Notification
-    // ==========================================================================
-
-    // IMPORTANT:
-    // Await the request instead of using void.
-    // The Telegram helper catches its own errors, so a Telegram failure
-    // will NOT fail or rollback the customer's order.
-    await sendTelegramOrderNotification(
-      {
-        order_number:
-          orderNumber,
-        customer_name:
-          customer.customer_name.trim(),
-        phone: cleanPhone,
-        governorate:
-          customer.governorate,
-        city:
-          customer.city.trim(),
-        address:
-          customer.address.trim(),
-        notes:
-          customer.notes?.trim() ||
-          null,
-        subtotal,
-        discount_amount: localDiscount,
-        coupon_code: localDiscount > 0 ? cleanCouponCode : null,
-        shipping_fee:
-          shippingFee,
-        total,
-        items:
-          validatedItems.map(
-            (val) => {
-              const cat = val.product.category_id
-                ? db.categories.find(
-                    (c: any) =>
-                      c.id ===
-                      val.product
-                        .category_id
-                  )
-                : null;
-
-              return {
-                product_name:
-                  val.product.name,
-                category_name:
-                  cat?.name ||
-                  'الملابس الرجالي',
-                color:
-                  val.variant.color,
-                size:
-                  val.variant.size,
-                quantity:
-                  val.quantity,
-                unit_price:
-                  val.unit_price,
-                line_total:
-                  val.line_total,
-              };
-            }
-          ),
-      }
-    );
-
-    return res.json({
-      success: true,
-      order_id:
-        orderId,
-      order_number:
-        orderNumber,
-      receipt_token:
-        receiptToken,
-      subtotal,
-      discount_amount:
-        localDiscount,
-      coupon_code:
-        localDiscount > 0 ? cleanCouponCode : null,
-      shipping_fee:
-        shippingFee,
-      total,
+    // Never acknowledge an order when Supabase did not durably save it.
+    // Vercel's local filesystem is ephemeral and must not be used as order storage.
+    return res.status(503).json({
+      error: 'تعذر حفظ الطلب بشكل آمن حاليًا. لم يتم تأكيد الطلب؛ يرجى المحاولة مرة أخرى بعد قليل.',
     });
   }
 );
@@ -4918,7 +4580,6 @@ app.delete('/api/admin/coupons/:id', requireAdmin, async (req: Request, res: Res
 // ==============================================================================
 // Customer Order Tracking
 // ==============================================================================
-
 app.post('/api/orders/track', async (req: Request, res: Response) => {
   try {
     const { order_number, phone } = req.body;
@@ -4927,36 +4588,56 @@ app.post('/api/orders/track', async (req: Request, res: Response) => {
     }
 
     const cleanNum = String(order_number).trim().toUpperCase();
-    const normalizeDigits = (val: string) => String(val || '').replace(/\D/g, '').replace(/^(20|0)/, '');
-    const cleanPhone = normalizeDigits(phone);
+    const normalizeEgyptianMobile = (value: unknown): string | null => {
+      let digits = String(value ?? '').replace(/\D/g, '');
+
+      if (digits.startsWith('20')) {
+        digits = digits.slice(2);
+      } else if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+
+      return /^1[0125]\d{8}$/.test(digits) ? digits : null;
+    };
+    const cleanPhone = normalizeEgyptianMobile(phone);
+
+    if (!cleanPhone) {
+      return res.status(400).json({
+        error: 'يرجى إدخال رقم هاتف مصري صحيح مسجل في الطلب.',
+      });
+    }
 
     let matchedOrder: any = null;
 
     if (supabaseClient) {
       try {
-        const { data } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('orders')
           .select('*, order_items(*)')
-          .ilike('order_number', cleanNum)
+          .eq('order_number', cleanNum)
           .maybeSingle();
 
-        if (data) {
-          const dbPhone = normalizeDigits(data.phone);
-          if (dbPhone.includes(cleanPhone) || cleanPhone.includes(dbPhone)) {
-            matchedOrder = data;
-          }
+        if (error) {
+          console.error('[Order Tracking] Supabase lookup failed:', error.message);
+          return res.status(503).json({
+            error: 'تعذر التحقق من الطلب حاليًا. حاول مرة أخرى بعد قليل.',
+          });
         }
-      } catch {}
-    }
 
-    if (!matchedOrder) {
-      const local = db.orders.find((o) => o.order_number.toUpperCase() === cleanNum);
-      if (local) {
-        const dbPhone = normalizeDigits(local.phone);
-        if (dbPhone.includes(cleanPhone) || cleanPhone.includes(dbPhone)) {
-          const items = db.order_items.filter((it) => it.order_id === local.id);
-          matchedOrder = { ...local, order_items: items };
+        if (data && normalizeEgyptianMobile(data.phone) === cleanPhone) {
+          matchedOrder = data;
         }
+      } catch (lookupError) {
+        console.error('[Order Tracking] Supabase lookup failed:', lookupError);
+        return res.status(503).json({
+          error: 'تعذر التحقق من الطلب حاليًا. حاول مرة أخرى بعد قليل.',
+        });
+      }
+    } else {
+      const local = db.orders.find((o) => o.order_number.toUpperCase() === cleanNum);
+      if (local && normalizeEgyptianMobile(local.phone) === cleanPhone) {
+        const items = db.order_items.filter((it) => it.order_id === local.id);
+        matchedOrder = { ...local, order_items: items };
       }
     }
 
@@ -4964,7 +4645,7 @@ app.post('/api/orders/track', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'لم يتم العثور على طلب مطابق لرقم الطلب ورقم الهاتف المدخلين' });
     }
 
-    res.json({
+    return res.json({
       success: true,
       order: {
         id: matchedOrder.id,
@@ -4982,20 +4663,21 @@ app.post('/api/orders/track', async (req: Request, res: Response) => {
         total: matchedOrder.total,
         items: (matchedOrder.order_items || []).map((it: any) => ({
           id: it.id,
-          product_name: it.product_name,
+          product_name: it.product_name_snapshot || it.product_name,
           color: it.color,
           size: it.size,
           quantity: it.quantity,
           unit_price: it.unit_price,
-          total_price: it.total_price,
+          total_price: it.line_total ?? it.total_price,
         })),
       },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'حدث خطأ أثناء تتبع الطلب' });
+    return res.status(500).json({ error: err.message || 'حدث خطأ أثناء تتبع الطلب' });
   }
 });
 
+// ==============================================================================
 // ==============================================================================
 // System Health
 // ==============================================================================
