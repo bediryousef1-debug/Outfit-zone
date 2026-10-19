@@ -1063,7 +1063,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Product grid appears once real products are active. */}
-      {!isLoading && !error && featuredProducts.length > 0 && (
         {/* =====================================================================
             5. FEATURED PRODUCTS
             ===================================================================== */}
@@ -1150,12 +1149,10 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
-  
-  
-      )}
 
       {/* Reviews appear after real customer reviews are approved. */}
       {!reviewsLoading && reviews.length > 0 && (
+        <>
         {/* =====================================================================
             6. CUSTOMER REVIEWS
             ===================================================================== */}
@@ -1560,6 +1557,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
+        </>
       )}
     </div>
   );

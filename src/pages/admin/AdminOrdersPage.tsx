@@ -217,7 +217,7 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div>
+      <div className="rounded-2xl border border-neutral-800 bg-[#121216] p-4 sm:p-5">
         <h1 className="text-xl sm:text-2xl font-bold text-white">
           طلبات العملاء ومتابعة الشحن
         </h1>
@@ -260,7 +260,7 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
       )}
 
       {/* Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-[#0e0e12] p-3 sm:p-4">
         {/* Search */}
         <div className="relative max-w-sm flex-1">
           <input
@@ -275,7 +275,7 @@ export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onSelectOrder 
         </div>
 
         {/* Status Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 bg-[#121216] border border-neutral-800 rounded-lg p-1 text-xs">
+        <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 bg-[#121216] border border-neutral-800 rounded-lg p-1 text-xs">
           {[
             { id: 'all', label: 'الكل' },
             { id: 'pending', label: 'قيد المراجعة' },

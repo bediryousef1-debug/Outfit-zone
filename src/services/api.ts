@@ -2099,6 +2099,7 @@ export const api = {
     ) {
       try {
         const {
+          data: archivedProduct,
           error,
         } =
           await supabase
@@ -2112,9 +2113,13 @@ export const api = {
             .eq(
               'id',
               id
-            );
+            )
+            .select('id')
+            .maybeSingle();
 
-        if (!error) {
+        // Supabase can return no error when row-level security silently
+        // filters an UPDATE. Only report success when a row was actually changed.
+        if (!error && archivedProduct?.id) {
           invalidateApiCache(
             'product'
           );
