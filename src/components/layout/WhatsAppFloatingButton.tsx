@@ -9,20 +9,11 @@ interface WhatsAppFloatingButtonProps {
 }
 
 export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ customMessage }) => {
-  const { getWhatsAppUrl, contactSocial, settings } = useStore();
+  const { getWhatsAppUrl } = useStore();
   const { isDark } = useTheme();
   const { t } = useLanguage();
 
   const whatsappUrl = getWhatsAppUrl(customMessage);
-
-  const rawPhone =
-    contactSocial?.phone_number ||
-    settings?.phone_number ||
-    contactSocial?.whatsapp_number ||
-    settings?.whatsapp_number ||
-    '01012345678';
-
-  const displayPhone = rawPhone.replace(/^\+2/, '');
 
   return (
     <aside
@@ -36,29 +27,28 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
         href={whatsappUrl}
         target="_blank"
         rel="noreferrer noopener"
-        className={`group oz-btn-press active:scale-95 flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2 rounded-2xl shadow-xl transition-all duration-300 border max-w-full backdrop-blur-md ${
+        className={`group oz-btn-press flex items-center gap-2.5 rounded-full border py-2 pl-2 pr-4 shadow-lg backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] ${
           isDark
-            ? 'bg-[#141417]/95 border-neutral-800 text-white shadow-black/80 hover:border-emerald-500/50 hover:shadow-emerald-950/30'
-            : 'bg-white/95 border-neutral-200/90 text-neutral-900 shadow-neutral-300/60 hover:border-emerald-500/50 hover:shadow-emerald-100'
+            ? 'border-neutral-700/80 bg-[#111113]/95 text-white shadow-black/40 hover:border-emerald-500/50 hover:shadow-emerald-950/30'
+            : 'border-neutral-200/90 bg-white/95 text-neutral-900 shadow-neutral-400/25 hover:border-emerald-500/50 hover:shadow-emerald-100'
         }`}
         aria-label="تواصل معنا عبر واتساب"
       >
-        <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300 pulse-glow">
-          <MessageCircle className="w-4.5 h-4.5 fill-current text-white" />
-        </div>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm transition-transform duration-200 group-hover:scale-105">
+          <MessageCircle className="h-[19px] w-[19px] fill-current" />
+        </span>
 
-        <div className="flex flex-col text-right leading-none">
-          <span className="text-[11px] sm:text-xs font-black tracking-tight flex items-center gap-1.5">
-            <span>{t('footer.contact_us', 'تواصل معنا')}</span>
-            <span className="w-2 h-2 rounded-full bg-[#25D366] shadow-[0_0_8px_#25D366]" />
+        <span className="flex flex-col text-right leading-none">
+          <span className="whitespace-nowrap text-xs font-extrabold tracking-tight">
+            {t('footer.contact_us', 'تواصل معنا')}
           </span>
-
-          {displayPhone && (
-            <span className="text-[9.5px] font-mono font-bold text-neutral-400 group-hover:text-emerald-500 transition-colors dir-ltr text-right mt-1">
-              {displayPhone}
-            </span>
-          )}
-        </div>
+          <span className={`mt-1 text-[9px] font-semibold tracking-[0.14em] uppercase ${
+            isDark ? 'text-neutral-500' : 'text-neutral-400'
+          }`}>
+            WhatsApp
+          </span>
+        </span>
+        <span className="ml-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#25D366]" aria-hidden="true" />
       </a>
     </aside>
   );
