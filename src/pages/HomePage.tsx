@@ -776,6 +776,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   key={currentSlide.image_url}
                   src={resolveImageUrl(currentSlide.image_url)}
                   alt={localizedSubtitle}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    if (image.dataset.fallbackApplied !== 'true') {
+                      image.dataset.fallbackApplied = 'true';
+                      image.src = resolveImageUrl('/images/hero_streetwear_editorial_1790342899745.jpg');
+                    }
+                  }}
                   className="w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
                   draggable={false}
