@@ -1580,11 +1580,12 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                           </label>
 
                           <input
-                            type="number"
-                            min="0"
-                            step="1"
+                            type="text"
                             inputMode="numeric"
+                            pattern="[0-9]*"
+                            dir="ltr"
                             aria-label={`كمية مخزون مقاس ${size} للون ${group.color}`}
+                            onFocus={(e) => e.currentTarget.setSelectionRange(0, 0)}
                             value={
                               stockInputDrafts[`${group.color}___${size}`] ??
                               String(group.sizes[size] ?? 0)
