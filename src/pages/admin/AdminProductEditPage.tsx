@@ -95,6 +95,8 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
   const [existingVariantsMap, setExistingVariantsMap] = useState<
     Record<string, string>
   >({});
+  // Keep the live text separate from the numeric stock value so clearing an input stays visually empty while editing.
+  const [stockInputDrafts, setStockInputDrafts] = useState<Record<string, string>>({});
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [newColorInputAr, setNewColorInputAr] = useState('');
   const [newColorInputEn, setNewColorInputEn] = useState('');
@@ -769,7 +771,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 text-right pb-12">
+    <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 text-right pb-12">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
         <div>
@@ -1217,7 +1219,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
         </div>
 
         {/* 3. Sizes / Colors / Stock */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 space-y-5">
+        <div className="p-4 sm:p-6 rounded-2xl bg-[#121216] border border-neutral-800 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-neutral-800/80 pb-2">
             <div>
               <h2 className="text-sm font-bold text-white">
@@ -1284,7 +1286,7 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
             {variantGroups.map((group) => (
               <div
                 key={group.color}
-                className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3"
+                className="p-3 sm:p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 shadow-sm space-y-4"
               >
                 {/* Color Header */}
                 <div className="flex items-center justify-between">
@@ -1581,19 +1583,48 @@ export const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({
                             type="number"
                             min="0"
                             step="1"
+                            inputMode="numeric"
+                            aria-label={`كمية مخزون مقاس ${size} للون ${group.color}`}
                             value={
-                              group.sizes[size] ?? 0
+                              stockInputDrafts[`${group.color}___${size}`] ??
+                              String(group.sizes[size] ?? 0)
                             }
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const inputKey = `${group.color}___${size}`;
+                              const rawValue = e.target.value;
+
+                              setStockInputDrafts((prev) => ({
+                                ...prev,
+                                [inputKey]: rawValue,
+                              }));
+
                               updateSizeStock(
                                 group.color,
                                 size,
-                                parseInt(
-                                  e.target.value
-                                ) || 0
-                              )
-                            }
-                            className="w-full bg-neutral-950 border border-neutral-800 rounded py-1 px-2 text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-white"
+                                rawValue === ''
+                                  ? 0
+                                  : Math.max(0, Number.parseInt(rawValue, 10) || 0)
+                              );
+                            }}
+                            onBlur={(e) => {
+                              const inputKey = `${group.color}___${size}`;
+                              const normalizedValue = String(
+                                Math.max(0, Number.parseInt(e.target.value, 10) || 0)
+                              );
+
+                              setStockInputDrafts((prev) => {
+                                const next = { ...prev };
+                                delete next[inputKey];
+                                return next;
+                              });
+
+                              updateSizeStock(
+                                group.color,
+                                size,
+                                Number(normalizedValue)
+                              );
+                            }}
+                            className="w-full min-w-0 bg-neutral-950 border border-neutral-700 rounded-lg py-2 px-3 text-center text-sm font-mono font-bold text-white placeholder-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white"
                           />
                         </div>
                       </div>
