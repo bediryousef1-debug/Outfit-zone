@@ -1063,7 +1063,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Product grid appears once real products are active. */}
-      {!isLoading && (
 
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-8">
@@ -1147,12 +1146,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
-  
-  
-      )}
 
       {/* Reviews appear after real customer reviews are approved. */}
-      {!reviewsLoading && reviews.length > 0 && (
 
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
@@ -1554,7 +1549,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </section>
-      )}
     </div>
   );
 };
