@@ -862,20 +862,21 @@ export const HomePage: React.FC<HomePageProps> = ({
           3. REAL CATEGORIES
           ===================================================================== */}
 
-      {activeCategories.length > 0 && (
       <section className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center my-6">
           <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
             <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
-
             <h2 className={isDark ? 'text-white' : 'text-black'}>
               {t('home.categories_title', 'Shop by Category')}
             </h2>
-
             <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
           </div>
+          <p className="mt-3 text-sm text-neutral-500">
+            {language === 'en'
+              ? 'Explore the fits and styles that match your everyday look.'
+              : 'اكتشف القصّات والستايلات اللي تناسب إطلالتك اليومية.'}
+          </p>
         </div>
-
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {activeCategories.map((cat) => {
               const categoryImage = cat.image_url
@@ -969,7 +970,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             })}
           </div>
       </section>
-      )}
 
       {/* =====================================================================
           4. EDITORIAL PROMO BANNER
@@ -1062,397 +1062,131 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* =====================================================================
-          5. FEATURED PRODUCTS
-          ===================================================================== */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-8">
-          <div className="text-right">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
-              {t('home.latest_collection', 'Latest Collection')}
-            </span>
-
-            <h2
-              className={`text-xl sm:text-2xl font-black ${
-                isDark ? 'text-white' : 'text-black'
-              }`}
-            >
-              {t(
-                'home.most_requested',
-                'Most Requested Styles'
-              )}
-            </h2>
-          </div>
-
-          <button
-            onClick={() => onNavigate('/products')}
-            className="text-xs font-bold text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <span>
-              {t(
-                'home.view_all_products',
-                'View All Products'
-              )}
-            </span>
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="aspect-[3/4] bg-neutral-900/10 dark:bg-neutral-900/40 rounded-2xl animate-pulse"
-              />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="p-8 rounded-2xl border text-center space-y-3 bg-neutral-900/10 border-neutral-200 dark:bg-neutral-900/40 dark:border-neutral-800">
-            <AlertCircle className="w-8 h-8 text-neutral-400 mx-auto" />
-
-            <p className="text-sm text-neutral-400">{error}</p>
-
-            <button
-              onClick={loadProducts}
-              className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-
-              <span>{t('home.retry', 'Try Again')}</span>
-            </button>
-          </div>
-        ) : featuredProducts.length === 0 ? (
-          <div
-            className={`p-8 rounded-2xl border text-center ${
-              isDark
-                ? 'bg-neutral-900/40 border-neutral-800 text-neutral-400'
-                : 'bg-neutral-50 border-neutral-200 text-neutral-500'
-            }`}
-          >
-            {t(
-              'home.no_products',
-              'No products available right now.'
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onSelect={(slug) => onSelectProduct(slug)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* =====================================================================
-          6. CUSTOMER REVIEWS
-          ===================================================================== */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
-          <div className="text-right">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
-              {t('home.reviews_title', 'Customer Reviews')}
-            </span>
-
-            <h2
-              className={`text-xl sm:text-2xl font-black ${
-                isDark ? 'text-white' : 'text-black'
-              }`}
-            >
-              {t(
-                'home.reviews_subtitle',
-                'Real Experiences from Our Customers'
-              )}
-            </h2>
-          </div>
-
-          {!showReviewForm && (
-            <button
-              type="button"
-              onClick={openReviewForm}
-              className={`oz-btn-press inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm cursor-pointer ${
-                isDark
-                  ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
-                  : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
-              }`}
-            >
-              <Star className="w-4 h-4" />
-              <span>
-                {t(
-                  'home.share_review',
-                  'Share Your Review'
-                )}
+      {/* Product grid appears once real products are active. */}
+      {!isLoading && !error && featuredProducts.length > 0 && (
+        {/* =====================================================================
+            5. FEATURED PRODUCTS
+            ===================================================================== */}
+  
+        <section className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-end justify-between mb-8">
+            <div className="text-right">
+              <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+                {t('home.latest_collection', 'Latest Collection')}
               </span>
-            </button>
-          )}
-        </div>
-
-        {reviewMessage && (
-          <div
-            className={`mb-6 rounded-2xl border p-4 text-sm text-right ${
-              isDark
-                ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
-                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
-            }`}
-          >
-            {reviewMessage}
-          </div>
-        )}
-
-        {showReviewForm && (
-          <div
-            className={`mb-8 rounded-3xl border p-5 sm:p-7 ${
-              isDark
-                ? 'bg-[#111115] border-neutral-800'
-                : 'bg-white border-neutral-200 shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="text-right">
-                <h3
-                  className={`text-lg font-black ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {t(
-                    'home.review_form_title',
-                    'Share Your Experience'
-                  )}
-                </h3>
-
-                <p className="text-xs text-neutral-400 mt-1">
-                  {t(
-                    'home.review_form_desc',
-                    'Your feedback matters and helps our customers know what to expect.'
-                  )}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeReviewForm}
-                disabled={reviewSubmitting}
-                aria-label={t(
-                  'home.close_review',
-                  'Close review form'
-                )}
-                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
-                  isDark
-                    ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
-                    : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100'
+  
+              <h2
+                className={`text-xl sm:text-2xl font-black ${
+                  isDark ? 'text-white' : 'text-black'
                 }`}
               >
-                <X className="w-4 h-4" />
+                {t(
+                  'home.most_requested',
+                  'Most Requested Styles'
+                )}
+              </h2>
+            </div>
+  
+            <button
+              onClick={() => onNavigate('/products')}
+              className="text-xs font-bold text-neutral-400 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span>
+                {t(
+                  'home.view_all_products',
+                  'View All Products'
+                )}
+              </span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          </div>
+  
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="aspect-[3/4] bg-neutral-900/10 dark:bg-neutral-900/40 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="p-8 rounded-2xl border text-center space-y-3 bg-neutral-900/10 border-neutral-200 dark:bg-neutral-900/40 dark:border-neutral-800">
+              <AlertCircle className="w-8 h-8 text-neutral-400 mx-auto" />
+  
+              <p className="text-sm text-neutral-400">{error}</p>
+  
+              <button
+                onClick={loadProducts}
+                className="inline-flex items-center gap-2 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+  
+                <span>{t('home.retry', 'Try Again')}</span>
               </button>
             </div>
-
-            <form
-              onSubmit={handleSubmitReview}
-              className="space-y-5"
-              dir="rtl"
-            >
-              <div>
-                <label
-                  className={`block text-sm font-bold mb-2 ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {t('home.name', 'Name')}
-                </label>
-
-                <input
-                  type="text"
-                  value={reviewName}
-                  onChange={(e) => setReviewName(e.target.value)}
-                  placeholder={t(
-                    'home.name_placeholder',
-                    'Enter your name'
-                  )}
-                  maxLength={100}
-                  disabled={reviewSubmitting}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
-                    isDark
-                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
-                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
-                  }`}
-                />
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-bold mb-3 ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {t('home.rating', 'Your Rating')}
-                </label>
-
-                <div className="flex items-center gap-1" dir="ltr">
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const selected = star <= reviewRating;
-
-                    return (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        disabled={reviewSubmitting}
-                        aria-label={t(
-                          'home.rating_aria',
-                          'Rating {star} out of 5'
-                        ).replace('{star}', String(star))}
-                        className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
-                      >
-                        <Star
-                          className={`w-7 h-7 transition-colors ${
-                            selected
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : isDark
-                                ? 'text-neutral-700'
-                                : 'text-neutral-300'
-                          }`}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-bold mb-2 ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {t('home.review', 'Your Review')}
-                </label>
-
-                <textarea
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder={t(
-                    'home.review_placeholder',
-                    'Share your experience with Outfit Zone...'
-                  )}
-                  maxLength={1000}
-                  rows={5}
-                  disabled={reviewSubmitting}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none resize-none transition-colors ${
-                    isDark
-                      ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
-                      : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
-                  }`}
-                />
-
-                <div className="text-[10px] text-neutral-400 mt-1 text-left">
-                  {reviewText.length}/1000
-                </div>
-              </div>
-
-              {reviewError && (
-                <div
-                  className={`rounded-xl border px-4 py-3 text-sm ${
-                    isDark
-                      ? 'bg-red-950/20 border-red-900/50 text-red-300'
-                      : 'bg-red-50 border-red-200 text-red-600'
-                  }`}
-                >
-                  {reviewError}
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeReviewForm}
-                  disabled={reviewSubmitting}
-                  className={`py-3 px-6 rounded-xl border font-bold text-sm transition-colors cursor-pointer ${
-                    isDark
-                      ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-900'
-                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
-                  }`}
-                >
-                  {t('home.cancel', 'Cancel')}
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={reviewSubmitting}
-                  className={`py-3 px-7 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
-                    isDark
-                      ? 'bg-white text-black hover:bg-neutral-200'
-                      : 'bg-black text-white hover:bg-neutral-800'
-                  }`}
-                >
-                  <Send className="w-4 h-4" />
-
-                  <span>
-                    {reviewSubmitting
-                      ? t('home.submitting', 'Submitting...')
-                      : t(
-                          'home.submit_review',
-                          'Submit Review'
-                        )}
-                  </span>
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {reviewsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`h-44 rounded-2xl animate-pulse ${
-                  isDark ? 'bg-neutral-900/60' : 'bg-neutral-100'
-                }`}
-              />
-            ))}
-          </div>
-        ) : reviews.length === 0 ? (
-          <div
-            className={`rounded-2xl border p-8 text-center ${
-              isDark
-                ? 'bg-[#111115] border-neutral-800 text-neutral-400'
-                : 'bg-white border-neutral-200 text-neutral-500'
-            }`}
-          >
-            <Star className="w-8 h-8 mx-auto mb-4 text-neutral-400" />
-
-            <h3
-              className={`text-base font-black ${
-                isDark ? 'text-white' : 'text-black'
+          ) : featuredProducts.length === 0 ? (
+            <div
+              className={`p-8 rounded-2xl border text-center ${
+                isDark
+                  ? 'bg-neutral-900/40 border-neutral-800 text-neutral-400'
+                  : 'bg-neutral-50 border-neutral-200 text-neutral-500'
               }`}
             >
               {t(
-                'home.first_review_title',
-                'Be the First to Share Your Experience'
+                'home.no_products',
+                'No products available right now.'
               )}
-            </h3>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onSelect={(slug) => onSelectProduct(slug)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+  
+  
+      )}
 
-            <p className="text-xs mt-2 text-neutral-400">
-              {t(
-                'home.first_review_desc',
-                'Tried Outfit Zone? Share your review and rating. Your review may appear here after approval.'
-              )}
-            </p>
-
+      {/* Reviews appear after real customer reviews are approved. */}
+      {!reviewsLoading && reviews.length > 0 && (
+        {/* =====================================================================
+            6. CUSTOMER REVIEWS
+            ===================================================================== */}
+  
+        <section className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
+            <div className="text-right">
+              <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+                {t('home.reviews_title', 'Customer Reviews')}
+              </span>
+  
+              <h2
+                className={`text-xl sm:text-2xl font-black ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
+                {t(
+                  'home.reviews_subtitle',
+                  'Real Experiences from Our Customers'
+                )}
+              </h2>
+            </div>
+  
             {!showReviewForm && (
               <button
                 type="button"
                 onClick={openReviewForm}
-                className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                className={`oz-btn-press inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm cursor-pointer ${
                   isDark
-                    ? 'bg-white text-black hover:bg-neutral-200'
-                    : 'bg-black text-white hover:bg-neutral-800'
+                    ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
+                    : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
                 }`}
               >
                 <Star className="w-4 h-4" />
@@ -1465,94 +1199,368 @@ export const HomePage: React.FC<HomePageProps> = ({
               </button>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {reviews.map((review) => {
-              const productSlug = review.product?.slug;
-
-              return (
-                <article
-                  key={review.id}
-                  onClick={() =>
-                    handleReviewProduct(productSlug)
-                  }
-                  className={`group oz-card-hover rounded-2xl border p-5 ${
-                    productSlug ? 'cursor-pointer' : ''
-                  } ${
+  
+          {reviewMessage && (
+            <div
+              className={`mb-6 rounded-2xl border p-4 text-sm text-right ${
+                isDark
+                  ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
+                  : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+              }`}
+            >
+              {reviewMessage}
+            </div>
+          )}
+  
+          {showReviewForm && (
+            <div
+              className={`mb-8 rounded-3xl border p-5 sm:p-7 ${
+                isDark
+                  ? 'bg-[#111115] border-neutral-800'
+                  : 'bg-white border-neutral-200 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div className="text-right">
+                  <h3
+                    className={`text-lg font-black ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {t(
+                      'home.review_form_title',
+                      'Share Your Experience'
+                    )}
+                  </h3>
+  
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {t(
+                      'home.review_form_desc',
+                      'Your feedback matters and helps our customers know what to expect.'
+                    )}
+                  </p>
+                </div>
+  
+                <button
+                  type="button"
+                  onClick={closeReviewForm}
+                  disabled={reviewSubmitting}
+                  aria-label={t(
+                    'home.close_review',
+                    'Close review form'
+                  )}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
                     isDark
-                      ? 'bg-[#111115] border-neutral-800 hover:border-neutral-600'
-                      : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                      ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+                      : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100'
                   }`}
                 >
-                  <div
-                    className="flex items-center gap-0.5 mb-4"
-                    dir="ltr"
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+  
+              <form
+                onSubmit={handleSubmitReview}
+                className="space-y-5"
+                dir="rtl"
+              >
+                <div>
+                  <label
+                    className={`block text-sm font-bold mb-2 ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
                   >
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                          star <= Number(review.rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : isDark
-                              ? 'text-neutral-700'
-                              : 'text-neutral-300'
-                        }`}
-                      />
-                    ))}
+                    {t('home.name', 'Name')}
+                  </label>
+  
+                  <input
+                    type="text"
+                    value={reviewName}
+                    onChange={(e) => setReviewName(e.target.value)}
+                    placeholder={t(
+                      'home.name_placeholder',
+                      'Enter your name'
+                    )}
+                    maxLength={100}
+                    disabled={reviewSubmitting}
+                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                        : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                    }`}
+                  />
+                </div>
+  
+                <div>
+                  <label
+                    className={`block text-sm font-bold mb-3 ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
+                    {t('home.rating', 'Your Rating')}
+                  </label>
+  
+                  <div className="flex items-center gap-1" dir="ltr">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const selected = star <= reviewRating;
+  
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          disabled={reviewSubmitting}
+                          aria-label={t(
+                            'home.rating_aria',
+                            'Rating {star} out of 5'
+                          ).replace('{star}', String(star))}
+                          className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                        >
+                          <Star
+                            className={`w-7 h-7 transition-colors ${
+                              selected
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : isDark
+                                  ? 'text-neutral-700'
+                                  : 'text-neutral-300'
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
-
-                  <p
-                    className={`text-sm leading-7 min-h-[84px] ${
-                      isDark
-                        ? 'text-neutral-200'
-                        : 'text-neutral-700'
+                </div>
+  
+                <div>
+                  <label
+                    className={`block text-sm font-bold mb-2 ${
+                      isDark ? 'text-white' : 'text-black'
                     }`}
                   >
-                    "{review.review_text}"
-                  </p>
-
+                    {t('home.review', 'Your Review')}
+                  </label>
+  
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder={t(
+                      'home.review_placeholder',
+                      'Share your experience with Outfit Zone...'
+                    )}
+                    maxLength={1000}
+                    rows={5}
+                    disabled={reviewSubmitting}
+                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none resize-none transition-colors ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-500'
+                        : 'bg-white border-neutral-200 text-black placeholder:text-neutral-400 focus:border-neutral-500'
+                    }`}
+                  />
+  
+                  <div className="text-[10px] text-neutral-400 mt-1 text-left">
+                    {reviewText.length}/1000
+                  </div>
+                </div>
+  
+                {reviewError && (
                   <div
-                    className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
+                    className={`rounded-xl border px-4 py-3 text-sm ${
                       isDark
-                        ? 'border-neutral-800'
-                        : 'border-neutral-200'
+                        ? 'bg-red-950/20 border-red-900/50 text-red-300'
+                        : 'bg-red-50 border-red-200 text-red-600'
                     }`}
                   >
-                    <div className="text-right min-w-0">
-                      <p
-                        className={`text-sm font-bold truncate ${
-                          isDark ? 'text-white' : 'text-black'
-                        }`}
-                      >
-                        {review.customer_name}
-                      </p>
-
-                      {review.product?.name && (
-                        <p className="text-[10px] text-neutral-400 truncate mt-0.5">
-                          {review.product.name}
+                    {reviewError}
+                  </div>
+                )}
+  
+                <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeReviewForm}
+                    disabled={reviewSubmitting}
+                    className={`py-3 px-6 rounded-xl border font-bold text-sm transition-colors cursor-pointer ${
+                      isDark
+                        ? 'border-neutral-800 text-neutral-300 hover:bg-neutral-900'
+                        : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+                    }`}
+                  >
+                    {t('home.cancel', 'Cancel')}
+                  </button>
+  
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className={`py-3 px-7 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                      isDark
+                        ? 'bg-white text-black hover:bg-neutral-200'
+                        : 'bg-black text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    <Send className="w-4 h-4" />
+  
+                    <span>
+                      {reviewSubmitting
+                        ? t('home.submitting', 'Submitting...')
+                        : t(
+                            'home.submit_review',
+                            'Submit Review'
+                          )}
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+  
+          {reviewsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={`h-44 rounded-2xl animate-pulse ${
+                    isDark ? 'bg-neutral-900/60' : 'bg-neutral-100'
+                  }`}
+                />
+              ))}
+            </div>
+          ) : reviews.length === 0 ? (
+            <div
+              className={`rounded-2xl border p-8 text-center ${
+                isDark
+                  ? 'bg-[#111115] border-neutral-800 text-neutral-400'
+                  : 'bg-white border-neutral-200 text-neutral-500'
+              }`}
+            >
+              <Star className="w-8 h-8 mx-auto mb-4 text-neutral-400" />
+  
+              <h3
+                className={`text-base font-black ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
+                {t(
+                  'home.first_review_title',
+                  'Be the First to Share Your Experience'
+                )}
+              </h3>
+  
+              <p className="text-xs mt-2 text-neutral-400">
+                {t(
+                  'home.first_review_desc',
+                  'Tried Outfit Zone? Share your review and rating. Your review may appear here after approval.'
+                )}
+              </p>
+  
+              {!showReviewForm && (
+                <button
+                  type="button"
+                  onClick={openReviewForm}
+                  className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-full font-bold text-sm transition-all hover:scale-[1.02] cursor-pointer ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200'
+                      : 'bg-black text-white hover:bg-neutral-800'
+                  }`}
+                >
+                  <Star className="w-4 h-4" />
+                  <span>
+                    {t(
+                      'home.share_review',
+                      'Share Your Review'
+                    )}
+                  </span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviews.map((review) => {
+                const productSlug = review.product?.slug;
+  
+                return (
+                  <article
+                    key={review.id}
+                    onClick={() =>
+                      handleReviewProduct(productSlug)
+                    }
+                    className={`group oz-card-hover rounded-2xl border p-5 ${
+                      productSlug ? 'cursor-pointer' : ''
+                    } ${
+                      isDark
+                        ? 'bg-[#111115] border-neutral-800 hover:border-neutral-600'
+                        : 'bg-white border-neutral-200 hover:border-neutral-400 hover:shadow-lg'
+                    }`}
+                  >
+                    <div
+                      className="flex items-center gap-0.5 mb-4"
+                      dir="ltr"
+                    >
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= Number(review.rating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : isDark
+                                ? 'text-neutral-700'
+                                : 'text-neutral-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+  
+                    <p
+                      className={`text-sm leading-7 min-h-[84px] ${
+                        isDark
+                          ? 'text-neutral-200'
+                          : 'text-neutral-700'
+                      }`}
+                    >
+                      "{review.review_text}"
+                    </p>
+  
+                    <div
+                      className={`mt-5 pt-4 border-t flex items-center justify-between gap-3 ${
+                        isDark
+                          ? 'border-neutral-800'
+                          : 'border-neutral-200'
+                      }`}
+                    >
+                      <div className="text-right min-w-0">
+                        <p
+                          className={`text-sm font-bold truncate ${
+                            isDark ? 'text-white' : 'text-black'
+                          }`}
+                        >
+                          {review.customer_name}
                         </p>
+  
+                        {review.product?.name && (
+                          <p className="text-[10px] text-neutral-400 truncate mt-0.5">
+                            {review.product.name}
+                          </p>
+                        )}
+                      </div>
+  
+                      {productSlug && (
+                        <div
+                          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
+                            isDark
+                              ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
+                              : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
+                          }`}
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                        </div>
                       )}
                     </div>
-
-                    {productSlug && (
-                      <div
-                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:-translate-x-1 ${
-                          isDark
-                            ? 'bg-neutral-800 text-white group-hover:bg-white group-hover:text-black'
-                            : 'bg-neutral-100 text-black group-hover:bg-black group-hover:text-white'
-                        }`}
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };
