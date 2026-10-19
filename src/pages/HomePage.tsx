@@ -1064,10 +1064,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Product grid appears once real products are active. */}
       {!isLoading && (
-        {/* =====================================================================
-            5. FEATURED PRODUCTS
-            ===================================================================== */}
-  
+
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-8">
             <div className="text-right">
@@ -1156,10 +1153,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Reviews appear after real customer reviews are approved. */}
       {!reviewsLoading && reviews.length > 0 && (
-        {/* =====================================================================
-            6. CUSTOMER REVIEWS
-            ===================================================================== */}
-  
+
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
             <div className="text-right">
