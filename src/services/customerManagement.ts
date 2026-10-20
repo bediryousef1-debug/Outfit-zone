@@ -1948,13 +1948,14 @@ export async function handleTelegramUpdate(
     // 1. Order management callbacks: acknowledge immediately and fall back to a new message if editing fails.
     if (isOrderManagementCallback) {
       await telegramAnswerCallbackQuery(cq.id, 'جارٍ فتح الطلب...');
+      console.log('[Telegram Order Management] Callback received:', action, 'chat:', chatId, 'message:', messageId);
       try {
         const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
         if (action.startsWith('order:list:')) {
           const page = parseInt(action.split(':')[2] || '1', 10) || 1;
           const view = buildOrdersListView(currentOrders, page);
           const editResult = await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-          if (editResult && editResult.ok === false) {
+          if (!editResult || editResult.ok === false) {
             await telegramSendMessage(chatId, view.text, view.replyMarkup);
           }
           return;
@@ -1970,14 +1971,14 @@ export async function handleTelegramUpdate(
         if (targetOrder) {
           const view = buildOrderDetailView(targetOrder, page);
           const editResult = await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-          if (editResult && editResult.ok === false) {
+          if (!editResult || editResult.ok === false) {
             await telegramSendMessage(chatId, view.text, view.replyMarkup);
           }
         } else {
           const notFoundText = `❌ لم يتم العثور على الطلب (${escapeHtml(orderIdentifier)}). حدّث القائمة وحاول مرة أخرى.`;
           const markup = { inline_keyboard: [[{ text: '⬅️ رجوع لقائمة الطلبات', callback_data: `order:list:${page}` }]] };
           const editResult = await telegramEditMessageText(chatId, messageId, notFoundText, markup);
-          if (editResult && editResult.ok === false) await telegramSendMessage(chatId, notFoundText, markup);
+          if (!editResult || editResult.ok === false) await telegramSendMessage(chatId, notFoundText, markup);
         }
       } catch (error: any) {
         console.error('[Telegram Order Management] Callback failed:', error?.message || error);
