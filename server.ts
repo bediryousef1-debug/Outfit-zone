@@ -4770,6 +4770,29 @@ app.post(
 
     try {
       const update = req.body;
+
+      // Repair Telegram's persisted update subscription when the admin opens the orders list.
+      // Telegram keeps the previous allowed_updates value unless setWebhook is called again.
+      const messageText = String(update?.message?.text || '').trim();
+      if (botToken && /^\/(?:طلبات|orders)(?:@\w+)?(?:\s|$)/i.test(messageText)) {
+        try {
+          const webhookUrl = 'https://outfit-zone-orpin.vercel.app/api/telegram-webhook';
+          const webhookResult = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: webhookUrl,
+              secret_token: getTelegramWebhookSecret(),
+              drop_pending_updates: false,
+              allowed_updates: ['message', 'callback_query'],
+            }),
+          }).then((r) => r.json());
+          console.log('[Telegram Webhook] Orders command refreshed callback subscription:', webhookResult?.ok === true);
+        } catch (webhookRepairError: any) {
+          console.error('[Telegram Webhook] Could not refresh callback subscription:', webhookRepairError?.message || webhookRepairError);
+        }
+      }
+
       if (update) {
         await handleTelegramUpdate(update, db, supabaseClient, saveToFile);
       }
