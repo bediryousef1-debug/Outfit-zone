@@ -13,6 +13,8 @@ import {
   getTelegramAdminUserIds,
   getAuthoritativeCustomers,
   getAuthoritativeOrders,
+  buildDailyReport,
+  telegramSendMessage,
   deleteCustomerAuthoritative,
 } from './src/services/customerManagement.ts';
 
@@ -4708,6 +4710,39 @@ app.get(
     });
   }
 );
+
+// ==============================================================================
+// Scheduled Telegram Daily Sales Report (Vercel Cron)
+// ==============================================================================
+app.get('/api/cron/daily-report', async (req: Request, res: Response) => {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const authorization = req.headers.authorization || '';
+  if (!cronSecret || authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+  if (!botToken || !chatId) {
+    return res.status(503).json({ error: 'Telegram bot configuration is missing.' });
+  }
+
+  try {
+    const [orders, customers] = await Promise.all([
+      getAuthoritativeOrders(db, supabaseClient, saveToFile),
+      getAuthoritativeCustomers(db, supabaseClient, saveToFile),
+    ]);
+    const report = buildDailyReport(orders, customers);
+    const result = await telegramSendMessage(chatId, report.text, report.replyMarkup);
+    if (!result?.ok) {
+      return res.status(502).json({ error: 'Telegram could not deliver the daily report.' });
+    }
+    return res.status(200).json({ ok: true, report: 'daily-sales', orderCount: orders.length });
+  } catch (error: any) {
+    console.error('[Telegram Daily Report] Failed:', error?.message || error);
+    return res.status(500).json({ error: 'Could not generate daily report.' });
+  }
+});
 
 // ==============================================================================
 // Telegram Webhook & Customer Management Routes
