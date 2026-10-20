@@ -1,0 +1,48 @@
+name: Build Outfit Zone Store APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '**'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Set up Node
+        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7
+        with:
+          node-version: 22
+      - name: Build web project
+        run: |
+          npm install
+          npm run build
+      - name: Install Capacitor tooling
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+      - name: Add Android wrapper
+        run: |
+          if [ ! -f capacitor.config.ts ] && [ ! -f capacitor.config.json ]; then
+            npx cap init "Outfit Zone" com.outfitzone.store --web-dir=dist
+          fi
+          npx cap add android
+          npx cap sync android
+      - name: Build installable debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@ea9791c4dfe3cc8f8f3a9a4c7a1a4c1a0b1b7b4b
+        with:
+          name: outfit-zone-store-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
