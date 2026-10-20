@@ -217,6 +217,86 @@ export function buildOrderStatusInlineKeyboard(orderNumber: string, currentStatu
 }
 
 
+export function buildOrdersListView(orders: any[], page = 1): { text: string; replyMarkup: any } {
+  const pageSize = 8;
+  const sorted = [...(orders || [])].sort(
+    (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+  );
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const visible = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const statusCounts = {
+    pending: sorted.filter((o) => o.status === 'pending' || !o.status).length,
+    confirmed: sorted.filter((o) => o.status === 'confirmed').length,
+    shipped: sorted.filter((o) => o.status === 'shipped').length,
+  };
+  const lines = [
+    '📦 <b>إدارة الطلبات - Outfit Zone</b>',
+    '',
+    `إجمالي الطلبات: <b>${sorted.length}</b>`,
+    `🆕 جديدة: <b>${statusCounts.pending}</b> · 📦 تجهيز: <b>${statusCounts.confirmed}</b> · 🚚 شحن: <b>${statusCounts.shipped}</b>`,
+    '',
+  ];
+  if (!visible.length) {
+    lines.push('لا توجد طلبات مسجلة حتى الآن.');
+  } else {
+    lines.push(`الصفحة ${safePage} من ${totalPages} — اضغط على الطلب لعرض التفاصيل:`, '');
+    visible.forEach((o, idx) => {
+      const identifier = String(o.order_number || o.id || '');
+      const customer = escapeHtml(o.customer_name || o.name || 'عميل');
+      const total = Number(o.total ?? o.total_amount ?? 0) || 0;
+      lines.push(
+        `${(safePage - 1) * pageSize + idx + 1}. <b>${escapeHtml(identifier || 'طلب بدون رقم')}</b>`,
+        `   ${customer} · ${total.toFixed(2)} جنيه`,
+        `   ${getOrderStatusArabic(o.status)} · ${formatEgyptianDateTime(o.created_at)}`
+      );
+    });
+  }
+  const keyboard: any[] = visible.map((o) => {
+    const identifier = String(o.order_number || o.id || '');
+    return [{ text: `🔎 ${identifier.slice(0, 45)}`, callback_data: `order:view:${identifier}:${safePage}` }];
+  });
+  const nav: any[] = [];
+  if (safePage > 1) nav.push({ text: '⬅️ السابق', callback_data: `order:list:${safePage - 1}` });
+  if (safePage < totalPages) nav.push({ text: 'التالي ➡️', callback_data: `order:list:${safePage + 1}` });
+  if (nav.length) keyboard.push(nav);
+  keyboard.push([{ text: '🔄 تحديث', callback_data: `order:list:${safePage}` }, { text: '🔙 لوحة العملاء', callback_data: 'cust:dash' }]);
+  return { text: lines.join('\n'), replyMarkup: { inline_keyboard: keyboard } };
+}
+
+export function buildOrderDetailView(order: any, page = 1): { text: string; replyMarkup: any } {
+  const identifier = String(order.order_number || order.id || '');
+  const items = Array.isArray(order.order_items) ? order.order_items : Array.isArray(order.items) ? order.items : [];
+  const itemLines = items.length
+    ? items.map((item: any, index: number) => {
+        const name = item.product_name || item.name || item.title || 'منتج';
+        const quantity = Number(item.quantity || item.qty || 1);
+        const price = Number(item.price || item.unit_price || 0);
+        const variant = [item.color, item.size].filter(Boolean).join(' / ');
+        return `${index + 1}. ${escapeHtml(name)}${variant ? ` (${escapeHtml(variant)})` : ''} — ${quantity} × ${price.toFixed(2)} جنيه`;
+      })
+    : ['تفاصيل المنتجات غير متاحة في سجل الطلب.'];
+  const lines = [
+    '🧾 <b>تفاصيل الطلب</b>',
+    '',
+    `• رقم الطلب: <code>${escapeHtml(identifier)}</code>`,
+    `• العميل: <b>${escapeHtml(order.customer_name || order.name || '-')}</b>`,
+    `• الهاتف: <code>${escapeHtml(order.phone || order.customer_phone || '-')}</code>`,
+    `• العنوان: ${escapeHtml(order.address || order.shipping_address || order.location || '-')}</br>`,
+    `• الحالة: ${getOrderStatusArabic(order.status)}`,
+    `• الإجمالي: <b>${(Number(order.total ?? order.total_amount ?? 0) || 0).toFixed(2)} جنيه</b>`,
+    `• الدفع: ${escapeHtml(order.payment_method || 'الدفع عند الاستلام')}`,
+    `• تاريخ الطلب: ${formatEgyptianDateTime(order.created_at)}`,
+    '',
+    '<b>المنتجات:</b>',
+    ...itemLines,
+  ];
+  if (order.notes) lines.push('', `• ملاحظات: ${escapeHtml(order.notes)}`);
+  const keyboard = buildOrderStatusInlineKeyboard(identifier, order.status).inline_keyboard;
+  keyboard.push([{ text: '⬅️ رجوع لقائمة الطلبات', callback_data: `order:list:${page}` }]);
+  return { text: lines.join('\n'), replyMarkup: { inline_keyboard: keyboard } };
+}
+
 // ==============================================================================
 // 4. Telegram API Helpers
 // ==============================================================================
@@ -1017,7 +1097,10 @@ export function buildCustomerDashboardView(
       { text: '⚠️ أسماء متعددة', callback_data: 'cust:multi:1' },
     ],
     [
+      { text: '📦 إدارة الطلبات', callback_data: 'order:list:1' },
       { text: '🔎 البحث عن عميل', callback_data: 'cust:search' },
+    ],
+    [
       { text: '🔄 تحديث الإحصائيات', callback_data: 'cust:dash' },
     ],
   ];
@@ -1677,6 +1760,8 @@ export async function handleTelegramUpdate(
       text === '/report' ||
       text === '/تقرير' ||
       text === '/daily_report' ||
+      text === '/طلبات' ||
+      text === '/orders' ||
       text === '/start';
 
     // If it's a customer or report command or potential phone search
@@ -1687,6 +1772,14 @@ export async function handleTelegramUpdate(
           chatId,
           '⛔ <b>عذرًا، هذا القسم مخصص لمدراء النظام المصرح لهم فقط.</b>'
         );
+        return;
+      }
+
+      // Order management command
+      if (text === '/طلبات' || text === '/orders') {
+        const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
+        const view = buildOrdersListView(currentOrders, 1);
+        await telegramSendMessage(chatId, view.text, view.replyMarkup);
         return;
       }
 
@@ -1806,7 +1899,8 @@ export async function handleTelegramUpdate(
       action = 'cust:' + action.slice('customer:'.length);
     }
 
-    const isOrderCallback = action.startsWith('order:status:');
+    const isOrderStatusCallback = action.startsWith('order:status:');
+    const isOrderManagementCallback = action.startsWith('order:list:') || action.startsWith('order:view:');
     const isReportCallback = action === 'report:refresh' || action === 'report:today';
     const isCustomerCallback =
       action.startsWith('cust:') ||
@@ -1818,7 +1912,7 @@ export async function handleTelegramUpdate(
       action.startsWith('repeat') ||
       action.startsWith('view:');
 
-    if (!isOrderCallback && !isReportCallback && !isCustomerCallback) {
+    if (!isOrderStatusCallback && !isOrderManagementCallback && !isReportCallback && !isCustomerCallback) {
       await telegramAnswerCallbackQuery(cq.id);
       return;
     }
@@ -1839,7 +1933,28 @@ export async function handleTelegramUpdate(
     }
 
     // 1. Order Status Inline Button Click
-    if (isOrderCallback) {
+    if (isOrderManagementCallback) {
+      const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
+      if (action.startsWith('order:list:')) {
+        const page = parseInt(action.split(':')[2] || '1', 10) || 1;
+        const view = buildOrdersListView(currentOrders, page);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+        return;
+      }
+      const parts = action.split(':');
+      const orderIdentifier = parts[2];
+      const page = parseInt(parts[3] || '1', 10) || 1;
+      const targetOrder = currentOrders.find((o: any) => String(o.order_number || o.id || '') === orderIdentifier || String(o.id || '') === orderIdentifier);
+      if (targetOrder) {
+        const view = buildOrderDetailView(targetOrder, page);
+        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+      } else {
+        await telegramEditMessageText(chatId, messageId, '❌ لم يتم العثور على الطلب.', { inline_keyboard: [[{ text: '⬅️ رجوع لقائمة الطلبات', callback_data: `order:list:${page}` }]] });
+      }
+      return;
+    }
+
+    if (isOrderStatusCallback) {
       const parts = action.split(':');
       const orderNumber = parts[2];
       const targetStatus = parts[3];
