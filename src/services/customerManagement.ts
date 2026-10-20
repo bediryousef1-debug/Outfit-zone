@@ -761,11 +761,18 @@ export function buildDailyReport(
   targetDateStr?: string
 ): { text: string; replyMarkup: any } {
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
-  const dateKey = targetDate.toISOString().split('T')[0];
+  const egyptDateParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(targetDate);
+  const dateKey = `${egyptDateParts.find((p) => p.type === 'year')?.value}-${egyptDateParts.find((p) => p.type === 'month')?.value}-${egyptDateParts.find((p) => p.type === 'day')?.value}`;
 
   const todayOrders = (orders || []).filter((o) => {
     if (!o.created_at) return false;
-    return o.created_at.startsWith(dateKey);
+    const orderDateParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date(o.created_at));
+    const orderDateKey = `${orderDateParts.find((p) => p.type === 'year')?.value}-${orderDateParts.find((p) => p.type === 'month')?.value}-${orderDateParts.find((p) => p.type === 'day')?.value}`;
+    return orderDateKey === dateKey;
   });
 
   const totalOrders = todayOrders.length;
@@ -815,6 +822,7 @@ export function buildDailyReport(
       : '  <i>لا توجد مبيعات مسجلة حتى الآن اليوم.</i>';
 
   const dateFormatted = targetDate.toLocaleDateString('ar-EG', {
+    timeZone: 'Africa/Cairo',
     weekday: 'long',
     year: 'numeric',
     month: 'long',
