@@ -27,12 +27,24 @@ jobs:
           npm run build
       - name: Install Capacitor tooling
         run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
-      - name: Add Android wrapper
+      - name: Configure Android wrapper to open the live store
         run: |
-          if [ ! -f capacitor.config.ts ] && [ ! -f capacitor.config.json ]; then
-            npx cap init "Outfit Zone" com.outfitzone.store --web-dir=dist
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.outfitzone.store",
+            "appName": "Outfit Zone",
+            "webDir": "dist",
+            "server": {
+              "url": "https://outfit-zone-orpin.vercel.app",
+              "cleartext": false
+            }
+          }
+          EOF
+      - name: Add Android platform and sync
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
           fi
-          npx cap add android
           npx cap sync android
       - name: Build installable debug APK
         run: |
@@ -40,7 +52,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
       - name: Upload APK
-        uses: actions/upload-artifact@ea9791c4dfe3cc8f8f3a9a4c7a1a4c1a0b1b7b4b
+        uses: actions/upload-artifact@v4
         with:
           name: outfit-zone-store-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
