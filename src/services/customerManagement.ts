@@ -1903,6 +1903,13 @@ export async function handleTelegramUpdate(
     const cq = update.callback_query;
     const fromId = cq.from?.id;
     const rawData = String(cq.data || '').trim();
+    // Acknowledge order buttons immediately, before authorization or database work.
+    const isOrderManagementRaw = rawData.startsWith('order:list:') || rawData.startsWith('order:view:');
+    if (isOrderManagementRaw) {
+      const ack = await telegramAnswerCallbackQuery(cq.id);
+      console.log('[Telegram Order Management] Immediate acknowledgement:', ack?.ok === true);
+    }
+    console.log('[Telegram Callback] Received:', rawData, 'from:', fromId);
     const messageId = cq.message?.message_id;
     const chatId = cq.message?.chat?.id || cq.from?.id;
 
@@ -1947,8 +1954,7 @@ export async function handleTelegramUpdate(
 
     // 1. Order management callbacks: acknowledge immediately and fall back to a new message if editing fails.
     if (isOrderManagementCallback) {
-      await telegramAnswerCallbackQuery(cq.id, 'جارٍ فتح الطلب...');
-      console.log('[Telegram Order Management] Callback received:', action, 'chat:', chatId, 'message:', messageId);
+      console.log('[Telegram Order Management] Processing:', action, 'chat:', chatId, 'message:', messageId);
       try {
         const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
         if (action.startsWith('order:list:')) {
