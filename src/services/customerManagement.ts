@@ -1945,24 +1945,43 @@ export async function handleTelegramUpdate(
       return;
     }
 
-    // 1. Order Status Inline Button Click
+    // 1. Order management callbacks: acknowledge immediately and fall back to a new message if editing fails.
     if (isOrderManagementCallback) {
-      const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
-      if (action.startsWith('order:list:')) {
-        const page = parseInt(action.split(':')[2] || '1', 10) || 1;
-        const view = buildOrdersListView(currentOrders, page);
-        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-        return;
-      }
-      const parts = action.split(':');
-      const orderIdentifier = parts[2];
-      const page = parseInt(parts[3] || '1', 10) || 1;
-      const targetOrder = currentOrders.find((o: any) => String(o.order_number || o.id || '') === orderIdentifier || String(o.id || '') === orderIdentifier);
-      if (targetOrder) {
-        const view = buildOrderDetailView(targetOrder, page);
-        await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
-      } else {
-        await telegramEditMessageText(chatId, messageId, '❌ لم يتم العثور على الطلب.', { inline_keyboard: [[{ text: '⬅️ رجوع لقائمة الطلبات', callback_data: `order:list:${page}` }]] });
+      await telegramAnswerCallbackQuery(cq.id, 'جارٍ فتح الطلب...');
+      try {
+        const currentOrders = await getAuthoritativeOrders(db, supabaseClient, saveToFile);
+        if (action.startsWith('order:list:')) {
+          const page = parseInt(action.split(':')[2] || '1', 10) || 1;
+          const view = buildOrdersListView(currentOrders, page);
+          const editResult = await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+          if (editResult && editResult.ok === false) {
+            await telegramSendMessage(chatId, view.text, view.replyMarkup);
+          }
+          return;
+        }
+
+        const parts = action.split(':');
+        const orderIdentifier = parts.slice(2, -1).join(':');
+        const page = parseInt(parts[parts.length - 1] || '1', 10) || 1;
+        const targetOrder = currentOrders.find((o: any) =>
+          String(o.order_number || '') === orderIdentifier || String(o.id || '') === orderIdentifier
+        );
+
+        if (targetOrder) {
+          const view = buildOrderDetailView(targetOrder, page);
+          const editResult = await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
+          if (editResult && editResult.ok === false) {
+            await telegramSendMessage(chatId, view.text, view.replyMarkup);
+          }
+        } else {
+          const notFoundText = `❌ لم يتم العثور على الطلب (${escapeHtml(orderIdentifier)}). حدّث القائمة وحاول مرة أخرى.`;
+          const markup = { inline_keyboard: [[{ text: '⬅️ رجوع لقائمة الطلبات', callback_data: `order:list:${page}` }]] };
+          const editResult = await telegramEditMessageText(chatId, messageId, notFoundText, markup);
+          if (editResult && editResult.ok === false) await telegramSendMessage(chatId, notFoundText, markup);
+        }
+      } catch (error: any) {
+        console.error('[Telegram Order Management] Callback failed:', error?.message || error);
+        await telegramSendMessage(chatId, `❌ تعذر فتح تفاصيل الطلب: ${escapeHtml(error?.message || 'خطأ غير معروف')}`);
       }
       return;
     }
