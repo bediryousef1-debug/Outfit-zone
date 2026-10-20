@@ -95,10 +95,25 @@ export function normalizePhone(rawPhone: string | undefined | null): string {
  * Example: TELEGRAM_ADMIN_USER_IDS=123456789,987654321
  */
 export function getTelegramAdminUserIds(): string[] {
-  const envVal = process.env.TELEGRAM_ADMIN_USER_IDS || '';
+  const envVal = (process.env.TELEGRAM_ADMIN_USER_IDS || '').trim();
+  if (!envVal) return [];
+
+  // Accept both comma-separated IDs and JSON arrays, e.g. 123,456 or ["123","456"].
+  if (envVal.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(envVal);
+      if (Array.isArray(parsed)) {
+        return parsed.map((id) => String(id).trim()).filter(Boolean);
+      }
+    } catch {
+      // Fall through to the plain-text parser for malformed JSON values.
+    }
+  }
+
   return envVal
+    .replace(/^[\[\]"]+|[\[\]"]+$/g, '')
     .split(/[,;\s]+/)
-    .map((s) => s.trim())
+    .map((s) => s.replace(/^["']|["']$/g, '').trim())
     .filter(Boolean);
 }
 
@@ -2055,6 +2070,11 @@ export async function handleTelegramUpdate(
       }
     } catch (btnErr) {
       console.error('[Telegram Bot] Error processing button callback:', btnErr);
+      // Surface the failure in Telegram instead of silently leaving the admin with a dead button.
+      await telegramSendMessage(
+        chatId,
+        '❌ حصل خطأ أثناء تنفيذ الزر. جرّب مرة أخرى، ولو استمرت المشكلة راجع سجل Vercel.'
+      );
     }
   }
 }
