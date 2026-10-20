@@ -718,6 +718,11 @@ export async function updateOrderStatusAuthoritative(
     }
   }
 
+  // Do not report success unless the authoritative Supabase update returned the order.
+  if (supabaseClient && !updatedOrder) {
+    throw new Error('لم يتم حفظ تغيير الحالة في قاعدة البيانات. تأكد من رقم الطلب وصلاحيات التحديث.');
+  }
+
   // Update in-memory db.orders
   const idx = db.orders.findIndex(
     (o: any) => o.id === orderIdentifier || o.order_number === orderIdentifier
@@ -1966,6 +1971,10 @@ export async function handleTelegramUpdate(
       const parts = action.split(':');
       const orderNumber = parts[2];
       const targetStatus = parts[3];
+      if (!orderNumber || !targetStatus) {
+        await telegramAnswerCallbackQuery(cq.id, '❌ بيانات الطلب غير مكتملة.', true);
+        return;
+      }
 
       try {
         await updateOrderStatusAuthoritative(
