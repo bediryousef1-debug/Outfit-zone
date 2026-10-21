@@ -47,6 +47,74 @@ function AdminLoadingSpinner() {
   );
 }
 
+function StorefrontMotionEffects() {
+  const progressRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const progress = progressRef.current;
+    let ticking = false;
+    const updateProgress = () => {
+      if (!progress || ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const amount = scrollable > 0 ? window.scrollY / scrollable : 0;
+        progress.style.transform = 'scaleX(' + Math.max(0, Math.min(1, amount)) + ')';
+        ticking = false;
+      });
+    };
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress);
+
+    if (!reduceMotion && 'IntersectionObserver' in window) {
+      const sections = main.querySelectorAll<HTMLElement>('.oz-page-motion section, .oz-page-motion [data-oz-scroll-scene]');
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('oz-scroll-visible');
+          else entry.target.classList.remove('oz-scroll-visible');
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -6% 0px' });
+      sections.forEach((section) => { section.classList.add('oz-scroll-reveal'); revealObserver.observe(section); });
+      const mutationObserver = new MutationObserver(() => {
+        main.querySelectorAll<HTMLElement>('.oz-page-motion section:not(.oz-scroll-reveal), .oz-page-motion [data-oz-scroll-scene]:not(.oz-scroll-reveal)').forEach((section) => {
+          section.classList.add('oz-scroll-reveal');
+          revealObserver.observe(section);
+        });
+      });
+      mutationObserver.observe(main, { childList: true, subtree: true });
+      const pointerMove = (event: PointerEvent) => {
+        if (event.pointerType !== 'mouse') return;
+        const card = (event.target as HTMLElement).closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--oz-pointer-x', (event.clientX - rect.left) + 'px');
+        card.style.setProperty('--oz-pointer-y', (event.clientY - rect.top) + 'px');
+        card.classList.add('oz-pointer-active');
+      };
+      const pointerLeave = (event: PointerEvent) => {
+        const card = (event.target as HTMLElement).closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
+        if (card && !card.contains(event.relatedTarget as Node | null)) card.classList.remove('oz-pointer-active');
+      };
+      main.addEventListener('pointermove', pointerMove, { passive: true });
+      main.addEventListener('pointerout', pointerLeave, { passive: true });
+      return () => {
+        window.removeEventListener('scroll', updateProgress);
+        window.removeEventListener('resize', updateProgress);
+        mutationObserver.disconnect(); revealObserver.disconnect();
+        main.removeEventListener('pointermove', pointerMove);
+        main.removeEventListener('pointerout', pointerLeave);
+      };
+    }
+    return () => { window.removeEventListener('scroll', updateProgress); window.removeEventListener('resize', updateProgress); };
+  }, []);
+
+  return <div ref={progressRef} className="oz-scroll-progress" aria-hidden="true" />;
+}
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const { content } = useStore();
@@ -349,6 +417,7 @@ function AppContent() {
 
       {/* Main Storefront Views */}
       <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
+        {pathname !== '/' && <StorefrontMotionEffects />}
         {/* / (Home) */}
         <ErrorBoundary resetKey={currentPath}>
         <div
