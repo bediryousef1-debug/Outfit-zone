@@ -351,6 +351,10 @@ function AppContent() {
       <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
         {/* / (Home) */}
         <ErrorBoundary resetKey={currentPath}>
+        <div
+          key={pathname}
+          className={pathname === '/' ? undefined : 'oz-page-motion'}
+        >
         {pathname === '/' && (
           <HomePage
             onNavigate={(path) => navigate(path)}
@@ -416,6 +420,7 @@ function AppContent() {
         {pathname === '/track' && (
           <OrderTrackingPage onNavigate={(path) => navigate(path)} />
         )}
+        </div>
         </ErrorBoundary>
 
       </main>
