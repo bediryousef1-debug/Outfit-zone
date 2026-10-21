@@ -321,7 +321,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     motionSections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [storeLoading, currentSlides.length]);
 
   /*
    * ==========================================================================
