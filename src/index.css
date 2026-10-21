@@ -846,3 +846,84 @@
     transform: none !important;
   }
 }
+
+
+/* Interactive scroll and pointer effects for non-home storefront pages only. */
+.oz-scroll-progress {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 120;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #737373 0%, #f5f5f5 48%, #a3a3a3 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+  will-change: transform;
+  box-shadow: 0 0 12px rgba(255,255,255,.28);
+}
+html[dir="rtl"] .oz-scroll-progress {
+  transform-origin: right center;
+}
+.oz-page-motion section.oz-scroll-reveal,
+.oz-page-motion [data-oz-scroll-scene].oz-scroll-reveal {
+  opacity: 0;
+  transform: translate3d(0, 34px, 0) scale(.99);
+  filter: blur(3px);
+  transition:
+    opacity .72s cubic-bezier(.16,1,.3,1),
+    transform .82s cubic-bezier(.16,1,.3,1),
+    filter .72s ease;
+}
+.oz-page-motion section.oz-scroll-reveal.oz-scroll-visible,
+.oz-page-motion [data-oz-scroll-scene].oz-scroll-reveal.oz-scroll-visible {
+  opacity: 1;
+  transform: translate3d(0,0,0) scale(1);
+  filter: blur(0);
+}
+.oz-page-motion [data-oz-motion-card] {
+  position: relative;
+  isolation: isolate;
+  --oz-pointer-x: 50%;
+  --oz-pointer-y: 50%;
+}
+.oz-page-motion [data-oz-motion-card]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    240px circle at var(--oz-pointer-x) var(--oz-pointer-y),
+    rgba(255,255,255,.13),
+    rgba(255,255,255,.035) 35%,
+    transparent 72%
+  );
+  transition: opacity .28s ease;
+}
+.oz-page-motion [data-oz-motion-card].oz-pointer-active::after {
+  opacity: 1;
+}
+@media (hover: none) {
+  .oz-page-motion [data-oz-motion-card]::after {
+    display: none;
+  }
+  .oz-page-motion [data-oz-motion-card]:active {
+    transform: scale(.985);
+    transition-duration: .12s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-scroll-progress {
+    display: none;
+  }
+  .oz-page-motion section.oz-scroll-reveal,
+  .oz-page-motion [data-oz-scroll-scene].oz-scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
