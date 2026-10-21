@@ -647,7 +647,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            <div key={currentSlide.id} className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
+            <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-[1px] bg-neutral-500" />
@@ -787,7 +787,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            <div key={currentSlide.id} className="lg:col-span-6 relative order-1 lg:order-2 oz-hero-visual oz-hero-slide-visual">
+            <div key={`visual-${currentSlide.id}`} className="lg:col-span-6 relative order-1 lg:order-2 oz-hero-visual oz-hero-slide-visual">
               <div
                 onClick={() => onNavigate(currentSlide.button_link)}
                 className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
