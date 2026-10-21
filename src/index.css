@@ -218,3 +218,22 @@
     transition: none !important;
   }
 }
+
+/* Outfit Zone: lightweight scroll-reveal motion for homepage sections */
+@media (prefers-reduced-motion: no-preference) {
+  .oz-scroll-reveal {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    transition:
+      opacity 560ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--oz-reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .oz-scroll-reveal.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    will-change: auto;
+  }
+}
