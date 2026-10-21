@@ -290,6 +290,41 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   /*
    * ==========================================================================
+   * VIEWPORT-AWARE MOTION
+   * ==========================================================================
+   */
+
+  useEffect(() => {
+    const motionSections = Array.from(
+      document.querySelectorAll<HTMLElement>('.oz-motion-section')
+    );
+    if (!motionSections.length) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (reduceMotion.matches) return;
+
+    if (!('IntersectionObserver' in window)) {
+      motionSections.forEach((section) => section.classList.add('oz-in-view'));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const section = entry.target as HTMLElement;
+        if (entry.isIntersecting) {
+          section.classList.add('oz-in-view');
+        } else {
+          section.classList.remove('oz-in-view');
+        }
+      });
+    }, { threshold: 0.18, rootMargin: '40px 0px 40px 0px' });
+
+    motionSections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  /*
+   * ==========================================================================
    * LOAD PRODUCTS
    * ==========================================================================
    */
@@ -579,7 +614,8 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {currentSlide && (
       <section
-        className={`oz-hero-stage relative overflow-hidden transition-colors ${
+        data-oz-motion="hero"
+        className={`oz-motion-section oz-hero-stage relative overflow-hidden transition-colors ${
           isDark
             ? 'bg-gradient-to-b from-[#111115] via-[#09090b] to-[#000000]'
             : 'bg-gradient-to-b from-[#f3f4f6] via-[#f9fafb] to-[#ffffff]'
