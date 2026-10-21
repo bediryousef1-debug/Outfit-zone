@@ -116,6 +116,53 @@ function AppContent() {
 
   }, [pathname, language]);
 
+  // Observe product cards as they enter/leave the viewport, including async-loaded grids.
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (reduceMotion.matches) return;
+
+    const observedCards = new WeakSet<Element>();
+
+    if (!('IntersectionObserver' in window)) {
+      main.querySelectorAll<HTMLElement>('[data-oz-motion-card]').forEach((card) => {
+        card.classList.add('oz-card-motion-in-view');
+      });
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const card = entry.target as HTMLElement;
+        if (entry.isIntersecting) {
+          card.classList.add('oz-card-motion-in-view');
+        } else {
+          card.classList.remove('oz-card-motion-in-view');
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '24px 0px 24px 0px' });
+
+    const observeCards = () => {
+      main.querySelectorAll<HTMLElement>('[data-oz-motion-card]').forEach((card) => {
+        if (observedCards.has(card)) return;
+        observedCards.add(card);
+        observer.observe(card);
+      });
+    };
+
+    observeCards();
+
+    const mutationObserver = new MutationObserver(observeCards);
+    mutationObserver.observe(main, { childList: true, subtree: true });
+
+    return () => {
+      mutationObserver.disconnect();
+      observer.disconnect();
+    };
+  }, [pathname]);
+
   // Route Parsers
   // The slug is passed on exactly as it appears in the URL; the API layer decodes it,
   // so refreshing /products/<slug> resolves the same product as clicking a card.
