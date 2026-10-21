@@ -51,6 +51,7 @@ language === 'en'
 
 return (
 <div
+data-oz-motion-card
 onClick={() => onSelect(product.slug)}
 className={`group cursor-pointer oz-card-hover flex flex-col rounded-2xl overflow-hidden border ${
         isDark
