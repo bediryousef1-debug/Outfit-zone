@@ -397,18 +397,18 @@
     animation: ozSectionEnter .72s cubic-bezier(.16, 1, .3, 1) both;
   }
 
-  /* Stagger product/category tiles only while their section is on screen. */
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > * {
+  /* Cards animate individually only while actually visible, across every product grid. */
+  .oz-card-motion-in-view {
     animation: ozCardEnter .58s cubic-bezier(.16, 1, .3, 1) both;
   }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(1) { animation-delay: .03s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(2) { animation-delay: .08s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(3) { animation-delay: .13s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(4) { animation-delay: .18s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(5) { animation-delay: .23s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(6) { animation-delay: .28s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(7) { animation-delay: .33s; }
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(8) { animation-delay: .38s; }
+  .oz-card-motion-in-view:nth-child(1) { animation-delay: .03s; }
+  .oz-card-motion-in-view:nth-child(2) { animation-delay: .08s; }
+  .oz-card-motion-in-view:nth-child(3) { animation-delay: .13s; }
+  .oz-card-motion-in-view:nth-child(4) { animation-delay: .18s; }
+  .oz-card-motion-in-view:nth-child(5) { animation-delay: .23s; }
+  .oz-card-motion-in-view:nth-child(6) { animation-delay: .28s; }
+  .oz-card-motion-in-view:nth-child(7) { animation-delay: .33s; }
+  .oz-card-motion-in-view:nth-child(8) { animation-delay: .38s; }
 
   /* Make the hero artwork itself visibly cinematic, not just its background. */
   .oz-hero-stage::before {
@@ -501,7 +501,7 @@
   main > div,
   .oz-home-page > .oz-motion-section > div:first-child,
   .oz-home-page > .oz-motion-section.oz-in-view > div:first-child,
-  .oz-home-page > .oz-motion-section.oz-in-view .grid > *,
+  .oz-card-motion-in-view,
   .oz-hero-stage.oz-in-view .oz-hero-visual > div,
   .oz-hero-stage.oz-in-view .oz-hero-image,
   .oz-hero-stage.oz-in-view .oz-hero-visual::before,
