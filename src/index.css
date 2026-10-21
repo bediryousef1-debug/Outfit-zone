@@ -514,3 +514,69 @@
     rotate: none;
   }
 }
+
+
+/* Navigation motion and light-theme contrast fixes */
+@keyframes ozMenuPanelEnter {
+  from { opacity: 0; transform: translate3d(0, -12px, 0) scale(.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes ozMenuLinkEnter {
+  from { opacity: 0; transform: translate3d(12px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes ozMenuIconPop {
+  from { opacity: .55; transform: rotate(-35deg) scale(.75); }
+  to { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oz-menu-panel {
+    transform-origin: top right;
+    animation: ozMenuPanelEnter .28s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .oz-menu-link {
+    animation: ozMenuLinkEnter .3s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  header button[aria-controls="oz-navigation-menu"] svg {
+    animation: ozMenuIconPop .22s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .oz-menu-link:hover {
+    transform: translateX(-3px);
+  }
+  .oz-menu-link svg {
+    transition: transform .2s ease, color .2s ease;
+  }
+  .oz-menu-link:hover svg {
+    transform: translateX(-3px);
+  }
+
+  /* In light mode, use dark ink for cinematic lighting so it remains visible. */
+  html.light .oz-hero-stage::before {
+    background: radial-gradient(circle, rgba(15, 23, 42, .16) 0%, rgba(71, 85, 105, .09) 38%, transparent 72%);
+  }
+  html.light .oz-hero-stage::after {
+    background: linear-gradient(90deg, transparent, rgba(15, 23, 42, .2), rgba(255, 255, 255, .65), rgba(15, 23, 42, .12), transparent);
+  }
+  html.light .oz-hero-visual::before {
+    background: radial-gradient(ellipse, rgba(15, 23, 42, .17), rgba(100, 116, 139, .1) 42%, transparent 72%);
+  }
+  html.light .oz-hero-visual::after {
+    border-color: rgba(15, 23, 42, .35);
+  }
+  html.light .oz-hero-visual > div::after {
+    background: linear-gradient(90deg, transparent, rgba(15, 23, 42, .1), rgba(255, 255, 255, .85), rgba(15, 23, 42, .1), transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oz-menu-panel,
+  .oz-menu-link,
+  header button[aria-controls="oz-navigation-menu"] svg {
+    animation: none !important;
+    transform: none !important;
+  }
+  .oz-menu-link {
+    opacity: 1 !important;
+  }
+}
