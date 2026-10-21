@@ -296,7 +296,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   useEffect(() => {
     const motionSections = Array.from(
-      document.querySelectorAll<HTMLElement>('.oz-motion-section')
+      document.querySelectorAll<HTMLElement>('.oz-home-page > .oz-motion-section')
     );
     if (!motionSections.length) return;
 
@@ -321,7 +321,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     motionSections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [storeLoading, currentSlides.length]);
+  }, [storeLoading, currentSlides.length, isLoading, reviewsLoading, products.length, reviews.length, categories.length]);
 
   /*
    * ==========================================================================
@@ -607,7 +607,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const NextArrow = ChevronLeft;
 
   return (
-    <div className="space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
+    <div className="oz-home-page space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
       {/* =====================================================================
           1. HERO SECTION & SLIDER
           ===================================================================== */}
@@ -663,7 +663,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               <div className="space-y-1 min-h-[140px] sm:min-h-[180px] flex flex-col justify-center">
-                <h1 className="font-syne text-[30px] xs:text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
+                <h1 key={currentSlide.id} className="font-syne text-[30px] xs:text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
                   <span
                     className={`block transition-colors duration-300 ${
                       isDark ? 'text-white' : 'text-black'
@@ -812,7 +812,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   key={currentSlide.image_url}
                   src={resolveImageUrl(currentSlide.image_url)}
                   alt={localizedSubtitle}
-                  className="w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="oz-hero-image w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
                   draggable={false}
                 />
@@ -855,7 +855,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           2. TRUST FEATURES
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="oz-motion-section max-w-7xl mx-auto px-4 sm:px-6">
         <div
           className={`rounded-2xl p-6 sm:p-8 border grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-4 text-center divide-y md:divide-y-0 md:divide-x md:divide-x-reverse transition-colors ${
             isDark
@@ -898,7 +898,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           3. REAL CATEGORIES
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="oz-motion-section max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center my-6">
           <div className="inline-flex items-center gap-3 text-lg sm:text-2xl font-black tracking-tight">
             <span className="w-8 sm:w-12 h-[2px] bg-neutral-400 dark:bg-neutral-600" />
@@ -1011,7 +1011,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           4. EDITORIAL PROMO BANNER
           ===================================================================== */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="oz-motion-section max-w-7xl mx-auto px-4 sm:px-6">
         <div
           className={`relative rounded-3xl overflow-hidden border p-6 sm:p-10 lg:p-12 transition-colors ${
             isDark
@@ -1103,7 +1103,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             5. FEATURED PRODUCTS
             ===================================================================== */}
   
-        <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <section className="oz-motion-section max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-8">
             <div className="text-right">
               <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
@@ -1193,7 +1193,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             6. CUSTOMER REVIEWS
             ===================================================================== */}
   
-        <section className="max-w-7xl mx-auto px-4 sm:px-6">
+        <section className="oz-motion-section max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
             <div className="text-right">
               <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block mb-1">
