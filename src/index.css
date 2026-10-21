@@ -324,9 +324,18 @@
   .oz-hero-stage.oz-in-view::before {
     animation: ozHeroOrbit 7s ease-in-out infinite;
   }
-  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy,
+  /* Never let a paused entrance animation leave hero content transparent. */
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
   .oz-hero-stage:not(.oz-in-view) .oz-hero-visual {
     animation-play-state: paused !important;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-copy {
+    animation: ozHeroReveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 @media (prefers-reduced-motion: reduce) {
