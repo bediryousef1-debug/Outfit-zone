@@ -122,6 +122,8 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'hover:bg-neutral-100 text-black'
                 }`}
                 aria-label={t('nav.menu', 'Main Menu')}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="oz-navigation-menu"
               >
                 {mobileMenuOpen ? (
                   <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -311,18 +313,20 @@ export const Header: React.FC<HeaderProps> = ({
         ========================================================= */}
         {mobileMenuOpen && (
           <div
-            className={`lg:hidden border-t px-5 py-6 space-y-4 animate-in fade-in duration-200 ${
+            id="oz-navigation-menu"
+            className={`oz-menu-panel absolute top-full right-0 lg:right-4 z-50 w-full lg:w-[380px] border-t px-5 py-6 space-y-4 shadow-2xl ${
               isDark
-                ? 'bg-black border-neutral-800'
-                : 'bg-white border-neutral-200'
+                ? 'bg-black border-neutral-800 text-white'
+                : 'bg-white border-neutral-200 text-black'
             }`}
           >
             <div className="space-y-2">
-              {navLinks.map((link) => (
+              {navLinks.map((link, index) => (
                 <button
                   key={link.path}
                   onClick={() => handleNav(link.path)}
-                  className={`w-full text-right py-3 px-4 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                  style={{ animationDelay: `${index * 55}ms` }}
+                  className={`oz-menu-link w-full text-right py-3 px-4 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
                     currentPath === link.path
                       ? isDark
                         ? 'bg-neutral-900 text-white'
