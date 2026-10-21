@@ -770,3 +770,12 @@
     opacity: 0 !important;
   }
 }
+
+
+/* Ensure the dark theme uses the bright white glow; light theme is overridden above. */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.light) .oz-hero-stage .oz-hero-slide-copy h1 span:first-child,
+  html:not(.light) .oz-hero-stage .oz-hero-slide-copy h1 span:last-child {
+    animation-name: ozHeroSlideItemEnter, ozHeroTextGlow !important;
+  }
+}
