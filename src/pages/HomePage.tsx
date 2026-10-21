@@ -317,7 +317,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           section.classList.remove('oz-in-view');
         }
       });
-    }, { threshold: 0.18, rootMargin: '40px 0px 40px 0px' });
+    }, { threshold: 0.18, rootMargin: '0px' });
 
     motionSections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
