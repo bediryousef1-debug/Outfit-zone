@@ -661,3 +661,30 @@
     will-change: auto !important;
   }
 }
+
+/* Final hero animation isolation: one entrance animation per changing element.
+   Prevent legacy nested animations from stacking transforms/opacities and
+   producing a ghost/double-image effect during desktop slide changes. */
+@media (prefers-reduced-motion: no-preference) {
+  .oz-hero-stage .oz-hero-slide-copy > div:first-child,
+  .oz-hero-stage .oz-hero-slide-copy h1 span:first-child,
+  .oz-hero-stage .oz-hero-slide-copy h1 span:last-child,
+  .oz-hero-stage .oz-hero-slide-copy h2,
+  .oz-hero-stage .oz-hero-slide-copy > p,
+  .oz-hero-stage .oz-hero-slide-copy > div:last-child {
+    animation: none !important;
+    filter: none !important;
+  }
+
+  .oz-hero-stage.oz-in-view .oz-hero-slide-visual > div {
+    animation: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+    scale: none !important;
+    transform: none !important;
+  }
+
+  .oz-hero-stage.oz-in-view .oz-hero-slide-visual .oz-hero-image {
+    animation: ozHeroSlideImageEnter .82s cubic-bezier(.16, 1, .3, 1) both !important;
+  }
+}
