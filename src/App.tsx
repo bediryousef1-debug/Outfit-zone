@@ -142,7 +142,7 @@ function AppContent() {
           card.classList.remove('oz-card-motion-in-view');
         }
       });
-    }, { threshold: 0.12, rootMargin: '24px 0px 24px 0px' });
+    }, { threshold: 0.12, rootMargin: '0px' });
 
     const observeCards = () => {
       main.querySelectorAll<HTMLElement>('[data-oz-motion-card]').forEach((card) => {
