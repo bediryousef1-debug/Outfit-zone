@@ -393,8 +393,19 @@
     translate: 0 0;
     scale: 1;
   }
-  .oz-home-page > .oz-motion-section.oz-in-view > div:first-child {
+  .oz-home-page > .oz-motion-section:not(.oz-hero-stage).oz-in-view > div:first-child {
     animation: ozSectionEnter .72s cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  /* The hero has its own keyed per-slide animation; do not animate its entire
+     layout wrapper at the same time, which can cause visual ghosting on desktop. */
+  .oz-home-page > .oz-hero-stage > div:first-child,
+  .oz-home-page > .oz-hero-stage.oz-in-view > div:first-child {
+    animation: none !important;
+    opacity: 1;
+    translate: none;
+    scale: none;
+    transform: none;
   }
 
   /* Cards animate individually only while actually visible, across every product grid. */
