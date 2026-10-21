@@ -341,3 +341,176 @@
 @media (prefers-reduced-motion: reduce) {
   .oz-motion-section > .oz-motion-content { opacity: 1; transform: none; }
 }
+
+
+/* ==============================================================================
+   OUTFIT ZONE MOTION SYSTEM — viewport-aware, GPU-friendly, reduced-motion safe
+   ============================================================================== */
+@keyframes ozPageEnter {
+  from { opacity: .7; translate: 0 12px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes ozSectionEnter {
+  0% { opacity: .45; translate: 0 24px; scale: .99; }
+  72% { opacity: 1; translate: 0 -2px; scale: 1.002; }
+  100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes ozCardEnter {
+  from { opacity: .35; translate: 0 18px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes ozHeroCardReveal {
+  from { opacity: .75; scale: .975; translate: 0 10px; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+@keyframes ozHeroImageFade {
+  from { opacity: .55; }
+  to { opacity: 1; }
+}
+@keyframes ozHeroImageSweep {
+  0% { translate: -180% 0; opacity: 0; }
+  12% { opacity: .72; }
+  42%, 100% { translate: 420% 0; opacity: 0; }
+}
+@keyframes ozHeroFrame {
+  0%, 100% { opacity: .28; scale: .985; rotate: -1deg; }
+  50% { opacity: .78; scale: 1.015; rotate: 1deg; }
+}
+@keyframes ozHeroGlow {
+  0%, 100% { opacity: .38; scale: .94; }
+  50% { opacity: .8; scale: 1.08; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A short, restrained entrance for every customer-facing page. */
+  main > div {
+    animation: ozPageEnter .42s cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  /* The content stays visible by default; motion only starts after observation. */
+  .oz-home-page > .oz-motion-section > div:first-child {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  .oz-home-page > .oz-motion-section.oz-in-view > div:first-child {
+    animation: ozSectionEnter .72s cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  /* Stagger product/category tiles only while their section is on screen. */
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > * {
+    animation: ozCardEnter .58s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(1) { animation-delay: .03s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(2) { animation-delay: .08s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(3) { animation-delay: .13s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(4) { animation-delay: .18s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(5) { animation-delay: .23s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(6) { animation-delay: .28s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(7) { animation-delay: .33s; }
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *:nth-child(8) { animation-delay: .38s; }
+
+  /* Make the hero artwork itself visibly cinematic, not just its background. */
+  .oz-hero-stage::before {
+    background: radial-gradient(circle, rgba(255,255,255,.24) 0%, rgba(150,150,150,.11) 38%, transparent 72%);
+  }
+  .oz-hero-stage:not(.oz-in-view)::before,
+  .oz-hero-stage:not(.oz-in-view)::after {
+    animation: none !important;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div {
+    animation: ozHeroCardReveal .78s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-image {
+    animation: ozHeroImageFade .7s ease-out both;
+  }
+  .oz-hero-visual {
+    isolation: isolate;
+  }
+  .oz-hero-visual::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    inset: 10% 5%;
+    border-radius: 35%;
+    background: radial-gradient(ellipse, rgba(255,255,255,.24), rgba(130,130,130,.1) 42%, transparent 72%);
+    opacity: .38;
+  }
+  .oz-hero-visual::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    inset: 5% -3%;
+    border: 1px solid rgba(170,170,170,.48);
+    border-radius: 2rem;
+    opacity: 0;
+    transform-origin: center;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-visual::before {
+    animation: ozHeroGlow 5.2s ease-in-out infinite;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-visual::after {
+    animation: ozHeroFrame 6.4s ease-in-out infinite;
+  }
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-visual::before {
+    animation: none;
+  }
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-visual::after {
+    animation: none;
+    opacity: 0;
+  }
+  .oz-hero-visual > div::after {
+    content: "";
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    top: -18%;
+    bottom: -18%;
+    left: -45%;
+    width: 34%;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), rgba(255,255,255,.48), rgba(255,255,255,.08), transparent);
+    transform: skewX(-18deg);
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+    animation: ozHeroImageSweep 4.8s cubic-bezier(.2, .7, .2, 1) .45s infinite;
+  }
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-visual > div::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* If the observer hasn't attached yet, text remains readable rather than hidden. */
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy > div:first-child,
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy h1 span,
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy h2,
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy > p,
+  .oz-hero-stage:not(.oz-in-view) .oz-hero-copy > div:last-child {
+    animation: none !important;
+    opacity: 1 !important;
+    translate: 0 0 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the decorative layers, but don't animate them or hide any content. */
+  main > div,
+  .oz-home-page > .oz-motion-section > div:first-child,
+  .oz-home-page > .oz-motion-section.oz-in-view > div:first-child,
+  .oz-home-page > .oz-motion-section.oz-in-view .grid > *,
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div,
+  .oz-hero-stage.oz-in-view .oz-hero-image,
+  .oz-hero-stage.oz-in-view .oz-hero-visual::before,
+  .oz-hero-stage.oz-in-view .oz-hero-visual::after,
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+    animation: none !important;
+    opacity: 1;
+    translate: none;
+    scale: none;
+    rotate: none;
+  }
+}
