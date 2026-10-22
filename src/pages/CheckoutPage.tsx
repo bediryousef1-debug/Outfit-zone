@@ -273,7 +273,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     try {
       // Refresh product and variant stock before creating an order.
       // If the cart is stale, update it and ask the customer to review before retrying.
-      let currentProducts;
+      let currentProducts: any[];
       try {
         currentProducts = await api.getProducts({ fresh: true });
       } catch {
