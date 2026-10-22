@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-success/
+Disallow: /track
+
+Sitemap: https://outfit-zone-orpin.vercel.app/sitemap.xml
