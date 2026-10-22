@@ -626,7 +626,7 @@ export const api = {
 
   // 3. Fetch Products
   async getProducts(
-    options?: { admin?: boolean }
+    options?: { admin?: boolean; fresh?: boolean }
   ): Promise<Product[]> {
     const cacheKey = options?.admin
       ? 'products_admin'
@@ -634,7 +634,7 @@ export const api = {
 
     const cached = getCached<Product[]>(cacheKey);
 
-    if (cached) return cached;
+    if (!options?.fresh && cached) return cached;
 
     if (isSupabaseConfigured && supabase) {
       try {
