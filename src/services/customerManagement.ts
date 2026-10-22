@@ -269,9 +269,9 @@ export function buildOrderDetailView(order: any, page = 1): { text: string; repl
   const items = Array.isArray(order.order_items) ? order.order_items : Array.isArray(order.items) ? order.items : [];
   const itemLines = items.length
     ? items.map((item: any, index: number) => {
-        const name = item.product_name || item.name || item.title || 'منتج';
+        const name = item.product_name || item.product_name_snapshot || item.name || item.title || 'منتج';
         const quantity = Number(item.quantity || item.qty || 1);
-        const price = Number(item.price || item.unit_price || 0);
+        const price = Number(item.price ?? item.unit_price ?? (Number(item.line_total || 0) / Math.max(1, quantity)));
         const variant = [item.color, item.size].filter(Boolean).join(' / ');
         return `${index + 1}. ${escapeHtml(name)}${variant ? ` (${escapeHtml(variant)})` : ''} — ${quantity} × ${price.toFixed(2)} جنيه`;
       })
@@ -358,6 +358,15 @@ export async function telegramEditMessageText(
 
   if (res && !res.ok && res.description?.includes('message is not modified')) {
     return { ok: true, not_modified: true };
+  }
+
+  // Several Telegram clients cannot edit a previously sent message in some contexts.
+  // Keep buttons functional by posting the updated view as a new message if editing fails.
+  if (res && !res.ok) {
+    console.warn('[Telegram Bot] editMessageText failed; trying sendMessage fallback:', res.description);
+    const fallback = await telegramSendMessage(chatId, text, replyMarkup);
+    if (fallback?.ok) return { ok: true, fallback_sent: true };
+    console.warn('[Telegram Bot] sendMessage fallback also failed:', fallback?.description || 'no Telegram response');
   }
 
   return res;
@@ -471,7 +480,7 @@ export async function getAuthoritativeCustomers(
         .select('*')
         .order('last_order_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const formatted: CustomerRecord[] = data.map((item: any) => {
           let namesUsed: string[] = [];
           if (Array.isArray(item.names_used)) {
@@ -508,6 +517,9 @@ export async function getAuthoritativeCustomers(
           saveToFile('customers.json', formatted);
         }
         return formatted;
+      }
+      if (error) {
+        console.warn('[Customer Management] Supabase customers select error:', error.message);
       }
     } catch (err) {
       console.warn('[Customer Management] Supabase customers query error:', err);
@@ -702,16 +714,16 @@ export async function updateOrderStatusAuthoritative(
       if (!error && data) {
         updatedOrder = data;
 
-        await supabaseClient
+        const { error: historyError } = await supabaseClient
           .from('order_status_history')
           .insert({
             order_id: data.id,
             status: newStatus,
             changed_by: changedBy,
-          })
-          .catch((hErr: any) => {
-            console.warn('[Status Update] Supabase status history insert notice:', hErr?.message || hErr);
           });
+        if (historyError) {
+          console.warn('[Status Update] Supabase status history insert notice:', historyError.message);
+        }
       }
     } catch (supaErr) {
       console.warn('[Status Update] Supabase update notice:', supaErr);
@@ -894,13 +906,20 @@ export async function recordCustomerFromOrder(
 
     // Check existing customer in authoritative Supabase store if available
     let customer: CustomerRecord | undefined = undefined;
+    let supabaseCustomerLookupSucceeded = false;
     if (supabaseClient) {
       try {
-        const { data: supaCust } = await supabaseClient
+        const { data: supaCust, error: customerLookupError } = await supabaseClient
           .from('customers')
           .select('*')
           .eq('normalized_phone', normalized)
           .maybeSingle();
+
+        if (customerLookupError) {
+          console.warn('[Customer Management] Supabase customer lookup failed:', customerLookupError.message);
+        } else {
+          supabaseCustomerLookupSucceeded = true;
+        }
 
         if (supaCust) {
           customer = {
@@ -918,8 +937,9 @@ export async function recordCustomerFromOrder(
             created_at: supaCust.created_at || now,
             updated_at: supaCust.updated_at || now,
           };
-        } else {
-          // If customer was deleted from Supabase, remove any stale copy from local memory
+        } else if (!customerLookupError) {
+          // Supabase is authoritative. Do not reuse derived/local-only customers here:
+          // derived IDs such as "cust_010..." are not UUIDs and cannot be inserted into customers.id.
           db.customers = db.customers.filter((c) => c.normalized_phone !== normalized);
         }
       } catch (checkErr) {
@@ -927,7 +947,7 @@ export async function recordCustomerFromOrder(
       }
     }
 
-    if (!customer) {
+    if (!customer && (!supabaseClient || !supabaseCustomerLookupSucceeded)) {
       customer = db.customers.find((c) => c.normalized_phone === normalized);
     }
 
