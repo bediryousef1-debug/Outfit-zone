@@ -1034,7 +1034,7 @@ export async function recordCustomerFromOrder(
           }
           const hasMultiple = names.length > 1;
 
-          const { data: updatedCust } = await supabaseClient
+          const { data: updatedCust, error: updateCustomerError } = await supabaseClient
             .from('customers')
             .update({
               current_name: trimmedName || supaCust.current_name,
@@ -1049,14 +1049,20 @@ export async function recordCustomerFromOrder(
             .select()
             .single();
 
+          if (updateCustomerError) {
+            console.warn('[Customer Management] Supabase customer update failed:', updateCustomerError.message);
+          }
           if (updatedCust && order.id) {
-            await supabaseClient
+            const { error: linkError } = await supabaseClient
               .from('orders')
               .update({ customer_id: updatedCust.id })
               .eq('id', order.id);
+            if (linkError) {
+              console.warn('[Customer Management] Could not link order to customer:', linkError.message);
+            }
           }
         } else {
-          const { data: createdCust } = await supabaseClient
+          const { data: createdCust, error: createCustomerError } = await supabaseClient
             .from('customers')
             .insert({
               id: customer.id,
@@ -1074,11 +1080,17 @@ export async function recordCustomerFromOrder(
             .select()
             .single();
 
+          if (createCustomerError) {
+            console.warn('[Customer Management] Supabase customer insert failed:', createCustomerError.message);
+          }
           if (createdCust && order.id) {
-            await supabaseClient
+            const { error: linkError } = await supabaseClient
               .from('orders')
               .update({ customer_id: createdCust.id })
               .eq('id', order.id);
+            if (linkError) {
+              console.warn('[Customer Management] Could not link order to customer:', linkError.message);
+            }
           }
         }
       } catch (supaErr) {
