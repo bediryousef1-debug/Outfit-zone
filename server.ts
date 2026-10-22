@@ -385,6 +385,10 @@ const db = {
 // ==============================================================================
 
 function saveToFile(filename: string, data: any) {
+  // Vercel serverless deployments have a read-only application filesystem.
+  // Supabase is the persistent store in production; JSON files are local-dev fallback only.
+  if (process.env.VERCEL === '1') return;
+
   try {
     fs.writeFileSync(
       path.join(DATA_DIR, filename),
@@ -4375,7 +4379,36 @@ app.post('/api/checkout/start', async (req: Request, res: Response) => {
     if (db.abandoned_checkouts.length > 500) {
       db.abandoned_checkouts = db.abandoned_checkouts.slice(0, 500);
     }
-    saveToFile('abandoned_checkouts.json', db.abandoned_checkouts);
+
+    // Persist abandoned checkouts in Supabase because Vercel's filesystem is read-only.
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('abandoned_checkouts')
+          .insert([{
+            session_id: record.session_id,
+            items_count: record.items_count,
+            subtotal: record.subtotal,
+            customer_name: record.customer_name,
+            phone: record.phone,
+            status: record.status,
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+          }])
+          .select('*')
+          .single();
+
+        if (error) {
+          console.warn('[Checkout] Supabase abandoned-checkout insert failed:', error.message);
+        } else if (data) {
+          record.id = data.id;
+        }
+      } catch (err: any) {
+        console.warn('[Checkout] Supabase abandoned-checkout insert error:', err?.message || err);
+      }
+    } else {
+      saveToFile('abandoned_checkouts.json', db.abandoned_checkouts);
+    }
 
     res.json({ success: true, id: record.id });
   } catch {
@@ -4384,7 +4417,26 @@ app.post('/api/checkout/start', async (req: Request, res: Response) => {
 });
 
 app.get('/api/admin/abandoned-checkouts', requireAdmin, async (_req: Request, res: Response) => {
-  res.json(db.abandoned_checkouts || []);
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('abandoned_checkouts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (!error && Array.isArray(data)) {
+        return res.json(data);
+      }
+      if (error) {
+        console.warn('[Checkout] Supabase abandoned-checkout query failed:', error.message);
+      }
+    } catch (err: any) {
+      console.warn('[Checkout] Supabase abandoned-checkout query error:', err?.message || err);
+    }
+  }
+
+  return res.json(db.abandoned_checkouts || []);
 });
 
 // ==============================================================================
