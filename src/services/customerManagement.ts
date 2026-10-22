@@ -206,11 +206,11 @@ export function buildOrderStatusInlineKeyboard(orderNumber: string, currentStatu
     inline_keyboard: [
       statuses.slice(0, 3).map((s) => ({
         text: currentStatus === s.key ? `• ${s.label} •` : s.label,
-        callback_data: `order:status:${orderNumber}:${s.key}`,
+        callback_data: `os:${orderNumber}:${s.key}`,
       })),
       statuses.slice(3, 6).map((s) => ({
         text: currentStatus === s.key ? `• ${s.label} •` : s.label,
-        callback_data: `order:status:${orderNumber}:${s.key}`,
+        callback_data: `os:${orderNumber}:${s.key}`,
       })),
     ],
   };
@@ -1918,6 +1918,9 @@ export async function handleTelegramUpdate(
     if (action.startsWith('customer:')) {
       action = 'cust:' + action.slice('customer:'.length);
     }
+
+    // Compact callback payload keeps Telegram callback_data below its 64-byte limit.
+    if (action.startsWith('os:')) action = 'order:status:' + action.slice(3);
 
     const isOrderStatusCallback = action.startsWith('order:status:');
     const isOrderManagementCallback = action.startsWith('order:list:') || action.startsWith('order:view:');
