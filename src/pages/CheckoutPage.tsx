@@ -39,7 +39,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 }) => {
   const { t, isRtl, language } = useLanguage();
   const BackIcon = ArrowRight;
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, removeItem, updateQuantity } = useCart();
   const { settings } = useStore();
   const { isDark } = useTheme();
 
@@ -271,6 +271,72 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setIsSubmitting(true);
 
     try {
+      // Refresh product and variant stock before creating an order.
+      // If the cart is stale, update it and ask the customer to review before retrying.
+      let currentProducts;
+      try {
+        currentProducts = await api.getProducts({ fresh: true });
+      } catch {
+        setSubmitError(
+          isRtl
+            ? 'تعذر التحقق من توفر المنتجات الآن. لم يتم إرسال الطلب ولم يتم تغيير السلة. حاول مرة أخرى.'
+            : 'We could not verify product availability. Your order was not submitted and your cart was not changed. Please try again.'
+        );
+        return;
+      }
+
+      if (!Array.isArray(currentProducts) || currentProducts.length === 0) {
+        setSubmitError(
+          isRtl
+            ? 'تعذر التحقق من المخزون حاليًا. لم يتم إرسال الطلب ولم يتم تغيير السلة. حاول مرة أخرى بعد قليل.'
+            : 'Stock could not be verified right now. Your order was not submitted and your cart was not changed. Please try again shortly.'
+        );
+        return;
+      }
+
+      const unavailableItems: string[] = [];
+      let cartWasUpdated = false;
+
+      for (const cartItem of items) {
+        const currentProduct = currentProducts.find(
+          (product: any) => String(product.id) === String(cartItem.productId)
+        );
+        const currentVariant = currentProduct?.variants?.find(
+          (variant: any) => String(variant.id) === String(cartItem.variantId)
+        );
+
+        if (!currentProduct || !currentVariant) {
+          removeItem(cartItem.variantId);
+          unavailableItems.push(
+            getLocalizedProductName(cartItem.product, language) || cartItem.product?.name || 'منتج'
+          );
+          cartWasUpdated = true;
+          continue;
+        }
+
+        const availableStock = Math.max(0, Math.floor(Number(currentVariant.stock_quantity) || 0));
+        if (availableStock < cartItem.quantity) {
+          if (availableStock === 0) {
+            removeItem(cartItem.variantId);
+          } else {
+            updateQuantity(cartItem.variantId, availableStock);
+          }
+          unavailableItems.push(
+            `${getLocalizedProductName(cartItem.product, language) || cartItem.product?.name || 'منتج'} (${cartItem.size} / ${cartItem.color})`
+          );
+          cartWasUpdated = true;
+        }
+      }
+
+      if (cartWasUpdated) {
+        setSubmitError(
+          isRtl
+            ? `حدّثنا سلتك لأن بعض المنتجات لم تعد متاحة أو أن الكمية المتاحة أقل من المطلوبة: ${unavailableItems.join('، ')}. راجع السلة والإجمالي، ثم اضغط إتمام الطلب مرة أخرى لتأكيد الطلب بالمنتجات المتاحة.`
+            : `Your cart was updated because some products are unavailable or have less stock than requested: ${unavailableItems.join(', ')}. Review your cart and total, then submit again to confirm the updated order.`
+        );
+        return;
+      }
+
       const orderPayload = {
         customer: {
           customer_name: formData.customer_name.trim(),
