@@ -670,7 +670,7 @@ export const api = {
             .select('*'),
         ]);
 
-        if (!pRes.error && pRes.data && pRes.data.length > 0) {
+        if (!pRes.error && !varRes.error && pRes.data && pRes.data.length > 0) {
           const allImages = imgRes.data || [];
           const allVariants = varRes.data || [];
           const allCategories = catRes.data || [];
