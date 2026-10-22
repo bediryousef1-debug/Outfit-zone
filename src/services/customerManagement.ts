@@ -609,14 +609,24 @@ export async function getAuthoritativeOrders(
 /**
  * Calculates customer actual orders count from the authoritative orders list.
  */
+function getOrdersForCustomer(customer: CustomerRecord, orders: any[]): any[] {
+  const linkedOrders = (orders || []).filter((o: any) => String(o.customer_id || '') === String(customer.id));
+  // UUID customer records are persisted in Supabase; count only orders explicitly linked
+  // after customer tracking was enabled, so historical orders are not imported implicitly.
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(customer.id))) {
+    return linkedOrders;
+  }
+  // Local-only/derived records have no persistent UUID link; match by normalized phone.
+  return (orders || []).filter(
+    (o: any) =>
+      (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
+      (customer.original_phone && o.phone === customer.original_phone)
+  );
+}
+
 export function getCustomerActualOrderCount(customer: CustomerRecord, orders?: any[]): number {
   if (orders && Array.isArray(orders)) {
-    return orders.filter(
-      (o) =>
-        (o as any).customer_id === customer.id ||
-        (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
-        (customer.original_phone && o.phone === customer.original_phone)
-    ).length;
+    return getOrdersForCustomer(customer, orders).length;
   }
   return customer.order_count || 0;
 }
@@ -1632,12 +1642,7 @@ export function buildCustomerProfileView(
   customer: CustomerRecord,
   orders: any[]
 ): { text: string; replyMarkup: any } {
-  const custOrders = orders.filter(
-    (o) =>
-      (o as any).customer_id === customer.id ||
-      (customer.normalized_phone && normalizePhone(o.phone) === customer.normalized_phone) ||
-      (customer.original_phone && o.phone === customer.original_phone)
-  );
+  const custOrders = getOrdersForCustomer(customer, orders);
 
   custOrders.sort(
     (a, b) =>
@@ -1834,11 +1839,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const report = buildDailyReport(currentOrders, effectiveCustomers);
         await telegramSendMessage(chatId, report.text, report.replyMarkup);
         return;
@@ -1851,11 +1851,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const view = buildCustomerDashboardView(effectiveCustomers, currentOrders);
         await telegramSendMessage(chatId, view.text, view.replyMarkup);
         return;
@@ -1884,11 +1879,6 @@ export async function handleTelegramUpdate(
         getAuthoritativeOrders(db, supabaseClient, saveToFile),
       ]);
       let effectiveCustomers = currentCustomers;
-      if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-        effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-        db.customers = effectiveCustomers;
-        if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-      }
       const targetCustomer = effectiveCustomers.find(
         (c) =>
           c.normalized_phone === normalizedQuery ||
@@ -2065,11 +2055,6 @@ export async function handleTelegramUpdate(
         getAuthoritativeOrders(db, supabaseClient, saveToFile),
       ]);
       let effectiveCustomers = currentCustomers;
-      if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-        effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-        db.customers = effectiveCustomers;
-        if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-      }
       const report = buildDailyReport(currentOrders, effectiveCustomers);
       await telegramEditMessageText(chatId, messageId, report.text, report.replyMarkup);
       return;
@@ -2100,11 +2085,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const view = buildCustomerDashboardView(effectiveCustomers, currentOrders);
         await telegramEditMessageText(chatId, messageId, view.text, view.replyMarkup);
         return;
@@ -2162,11 +2142,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
         const view = buildCustomerListView(effectiveCustomers, page, currentOrders);
@@ -2181,11 +2156,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
         const view = buildCustomerMultiNamesView(effectiveCustomers, page, currentOrders);
@@ -2200,11 +2170,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const parts = action.split(':');
         const page = parseInt(parts[2] || '1', 10) || 1;
         const view = buildCustomerRepeatView(effectiveCustomers, page, currentOrders);
@@ -2219,11 +2184,6 @@ export async function handleTelegramUpdate(
           getAuthoritativeOrders(db, supabaseClient, saveToFile),
         ]);
         let effectiveCustomers = currentCustomers;
-        if (effectiveCustomers.length === 0 && currentOrders.length > 0) {
-          effectiveCustomers = deriveCustomersFromOrders(currentOrders);
-          db.customers = effectiveCustomers;
-          if (saveToFile) saveToFile('customers.json', effectiveCustomers);
-        }
         const targetId = action.slice('cust:view:'.length).trim();
         const targetCustomer = effectiveCustomers.find(
           (c) =>
