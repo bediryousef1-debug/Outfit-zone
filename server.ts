@@ -5168,14 +5168,14 @@ async function sendTelegramOrderNotification(order: {
   const replyMarkup = {
     inline_keyboard: [
       [
-        { text: '🆕 جديد', callback_data: `order:status:${order.order_number}:pending` },
-        { text: '📦 تجهيز', callback_data: `order:status:${order.order_number}:confirmed` },
-        { text: '🚚 شحن', callback_data: `order:status:${order.order_number}:shipped` },
+        { text: '🆕 جديد', callback_data: `os:${order.order_number}:pending` },
+        { text: '📦 تجهيز', callback_data: `os:${order.order_number}:confirmed` },
+        { text: '🚚 شحن', callback_data: `os:${order.order_number}:shipped` },
       ],
       [
-        { text: '✅ تم التسليم', callback_data: `order:status:${order.order_number}:delivered` },
-        { text: '❌ إلغاء', callback_data: `order:status:${order.order_number}:cancelled` },
-        { text: '↩️ مرتجع', callback_data: `order:status:${order.order_number}:returned` },
+        { text: '✅ تم التسليم', callback_data: `os:${order.order_number}:delivered` },
+        { text: '❌ إلغاء', callback_data: `os:${order.order_number}:cancelled` },
+        { text: '↩️ مرتجع', callback_data: `os:${order.order_number}:returned` },
       ],
     ],
   };
