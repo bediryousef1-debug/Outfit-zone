@@ -5026,8 +5026,8 @@ startServer();
 export default app;
 
 // ==============================================================================
-// Telegram Order Notifications
-// ==============================================================================
+ // Telegram Order Notifications
+ // ==============================================================================
 
 async function sendTelegramOrderNotification(order: {
   order_number: string;
@@ -5043,74 +5043,40 @@ async function sendTelegramOrderNotification(order: {
   shipping_fee: number;
   total: number;
   items?: any[];
-}) {
-  const botToken =
-    process.env.TELEGRAM_BOT_TOKEN?.trim();
-
-  const chatId =
-    process.env.TELEGRAM_CHAT_ID?.trim();
+}): Promise<boolean> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
 
   if (!botToken || !chatId) {
-    console.warn(
-      '[Telegram] Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID. Notification skipped.'
+    console.error(
+      '[Telegram] Order notification failed: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing.'
     );
-    return;
+    return false;
   }
 
-  const itemsText =
-    (order.items || [])
-      .map(
-        (
-          item: any,
-          index: number
-        ) => {
-          const productName =
-            item.product_name ||
-            item.product_name_snapshot ||
-            item.name ||
-            'منتج Outfit Zone';
+  const itemsText = (order.items || [])
+    .map((item: any) => {
+      const productName = item.product_name || item.product_name_snapshot || item.name || 'منتج Outfit Zone';
+      const category = item.category_name || item.category || 'ملابس ستريت وير';
+      const color = item.color || '-';
+      const size = item.size || '-';
+      const quantity = Number(item.quantity) || 1;
+      const unitPrice = Number(item.unit_price) || 0;
+      const lineTotal = Number(item.line_total) || unitPrice * quantity;
 
-          const category =
-            item.category_name ||
-            item.category ||
-            'ملابس ستريت وير';
-
-          const color =
-            item.color || '-';
-
-          const size =
-            item.size || '-';
-
-          const quantity =
-            Number(
-              item.quantity
-            ) || 1;
-
-          const unitPrice =
-            Number(
-              item.unit_price
-            ) || 0;
-
-          const lineTotal =
-            Number(
-              item.line_total
-            ) || (unitPrice * quantity);
-
-          return [
-            `• ${productName}`,
-            `  القسم: ${category}`,
-            `  اللون: ${color}`,
-            `  المقاس: ${size}`,
-            `  الكمية: ${quantity}`,
-            `  السعر: ${unitPrice} جنيه`,
-            `  الإجمالي: ${lineTotal} جنيه`,
-          ].join('\n');
-        }
-      )
-      .join('\n\n');
+      return [
+        `• ${productName}`,
+        `  القسم: ${category}`,
+        `  اللون: ${color}`,
+        `  المقاس: ${size}`,
+        `  الكمية: ${quantity}`,
+        `  السعر: ${unitPrice} جنيه`,
+        `  الإجمالي: ${lineTotal} جنيه`,
+      ].join('\n');
+    })
+    .join('\n\n');
 
   const hasCoupon = Boolean(order.coupon_code && Number(order.discount_amount) > 0);
-
   const message = [
     '🔔 طلب جديد - Outfit Zone',
     '',
@@ -5121,13 +5087,10 @@ async function sendTelegramOrderNotification(order: {
     `📍 المحافظة: ${order.governorate}`,
     `🏙️ المدينة: ${order.city}`,
     `🏠 العنوان: ${order.address}`,
-    order.notes
-      ? `📝 ملاحظات: ${order.notes}`
-      : null,
+    order.notes ? `📝 ملاحظات: ${order.notes}` : null,
     '',
     '🛍️ المنتجات:',
-    itemsText ||
-      'لا توجد تفاصيل منتجات متاحة.',
+    itemsText || 'لا توجد تفاصيل منتجات متاحة.',
     '',
     hasCoupon
       ? [
@@ -5148,64 +5111,68 @@ async function sendTelegramOrderNotification(order: {
     '',
     '💳 الدفع: عند الاستلام',
     '⏳ الحالة: قيد المراجعة',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  ].filter(Boolean).join('\n');
+
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        { text: '🆕 جديد', callback_data: `order:status:${order.order_number}:pending` },
+        { text: '📦 تجهيز', callback_data: `order:status:${order.order_number}:confirmed` },
+        { text: '🚚 شحن', callback_data: `order:status:${order.order_number}:shipped` },
+      ],
+      [
+        { text: '✅ تم التسليم', callback_data: `order:status:${order.order_number}:delivered` },
+        { text: '❌ إلغاء', callback_data: `order:status:${order.order_number}:cancelled` },
+        { text: '↩️ مرتجع', callback_data: `order:status:${order.order_number}:returned` },
+      ],
+    ],
+  };
+
+  const chunks: string[] = [];
+  let remaining = message;
+  const maxMessageLength = 3800;
+  while (remaining.length > maxMessageLength) {
+    let splitAt = remaining.lastIndexOf('\n', maxMessageLength);
+    if (splitAt < maxMessageLength * 0.6) splitAt = maxMessageLength;
+    chunks.push(remaining.slice(0, splitAt));
+    remaining = remaining.slice(splitAt).trimStart();
+  }
+  if (remaining) chunks.push(remaining);
 
   try {
-    const telegramUrl =
-      `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
-    const response =
-      await fetch(
-        telegramUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '🆕 جديد', callback_data: `order:status:${order.order_number}:pending` },
-                  { text: '📦 تجهيز', callback_data: `order:status:${order.order_number}:confirmed` },
-                  { text: '🚚 شحن', callback_data: `order:status:${order.order_number}:shipped` },
-                ],
-                [
-                  { text: '✅ تم التسليم', callback_data: `order:status:${order.order_number}:delivered` },
-                  { text: '❌ إلغاء', callback_data: `order:status:${order.order_number}:cancelled` },
-                  { text: '↩️ مرتجع', callback_data: `order:status:${order.order_number}:returned` },
-                ],
-              ],
-            },
-          }),
-        }
-      );
+    for (let index = 0; index < chunks.length; index++) {
+      const response = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: chunks[index],
+          ...(index === 0 ? { reply_markup: replyMarkup } : {}),
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
 
-    if (!response.ok) {
-      const errorText =
-        await response
-          .text()
-          .catch(() => '');
-
-      console.warn(
-        `[Telegram] Failed to send order notification (${response.status}): ${errorText}`
-      );
-
-      return;
+      const result: any = await response.json().catch(() => null);
+      if (!response.ok || result?.ok !== true) {
+        const reason = result?.description || response.statusText || 'Invalid Telegram API response';
+        console.error(
+          `[Telegram] Order notification failed for ${order.order_number} (HTTP ${response.status}): ${reason}`
+        );
+        return false;
+      }
     }
 
     console.log(
-      `[Telegram] Order notification sent for ${order.order_number}`
+      `[Telegram] Order notification delivered for ${order.order_number} (${chunks.length} message(s)).`
     );
-  } catch (error) {
-    console.warn(
-      '[Telegram] Notification error:',
-      error
+    return true;
+  } catch (error: any) {
+    console.error(
+      `[Telegram] Order notification failed for ${order.order_number}:`,
+      error?.message || error
     );
+    return false;
   }
 }
