@@ -2717,9 +2717,29 @@ app.post(
               'OZ_INSUFFICIENT_STOCK'
             )
           ) {
+            return res.status(409).json({
+              error:
+                'عفواً، الكمية المطلوبة من بعض المنتجات لم تعد متاحة. راجع السلة وحاول إتمام الطلب مرة أخرى.',
+            });
+          }
+
+          if (
+            errMsg.includes('OZ_VARIANT_NOT_FOUND') ||
+            errMsg.includes('OZ_PRODUCT_NOT_AVAILABLE')
+          ) {
+            return res.status(409).json({
+              error:
+                'بعض المنتجات أو المقاسات أو الألوان في سلتك لم تعد متاحة. لم يتم تسجيل الطلب؛ حدّث السلة وحاول مرة أخرى.',
+            });
+          }
+
+          if (
+            errMsg.includes('OZ_INVALID_QUANTITY') ||
+            errMsg.includes('OZ_EMPTY_CART')
+          ) {
             return res.status(400).json({
               error:
-                'عفواً، نفدت الكمية المطلوبة من بعض المنتجات في السلة.',
+                'السلة غير صالحة أو فارغة. راجع المنتجات والكميات ثم حاول مرة أخرى.',
             });
           }
 
