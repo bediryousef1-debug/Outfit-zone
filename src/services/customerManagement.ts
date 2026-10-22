@@ -586,7 +586,7 @@ export async function getAuthoritativeOrders(
     try {
       const { data, error } = await supabaseClient
         .from('orders')
-        .select('*')
+        .select('*, order_items(*)')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
@@ -647,10 +647,11 @@ export async function deleteCustomerAuthoritative(
 
   if (supabaseClient) {
     try {
-      const { error } = await supabaseClient
-        .from('customers')
-        .delete()
-        .or(`id.eq.${identifier},normalized_phone.eq.${normalized || identifier},original_phone.eq.${identifier}`);
+      const customerDelete = supabaseClient.from('customers').delete();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+      const { error } = await (isUuid
+        ? customerDelete.eq('id', identifier)
+        : customerDelete.or(`normalized_phone.eq.${normalized || identifier},original_phone.eq.${identifier}`));
 
       if (error) {
         console.warn('[Customer Management] Supabase delete error:', error.message);
@@ -711,13 +712,16 @@ export async function updateOrderStatusAuthoritative(
 
   if (supabaseClient) {
     try {
-      const { data, error } = await supabaseClient
+      const orderUpdate = supabaseClient
         .from('orders')
         .update({
           status: newStatus,
           updated_at: nowIso,
-        })
-        .or(`id.eq.${orderIdentifier},order_number.eq.${orderIdentifier}`)
+        });
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderIdentifier);
+      const { data, error } = await (isUuid
+        ? orderUpdate.eq('id', orderIdentifier)
+        : orderUpdate.eq('order_number', orderIdentifier))
         .select('*, order_items(*)')
         .maybeSingle();
 
@@ -2040,6 +2044,9 @@ export async function handleTelegramUpdate(
         }
 
         const newKeyboard = buildOrderStatusInlineKeyboard(orderNumber, targetStatus);
+        newKeyboard.inline_keyboard.push([
+          { text: '⬅️ رجوع لقائمة الطلبات', callback_data: 'order:list:1' },
+        ]);
         await telegramEditMessageText(chatId, messageId, updatedText, newKeyboard);
       } catch (err: any) {
         await telegramAnswerCallbackQuery(cq.id, `❌ تعذر تحديث الحالة: ${err.message || 'خطأ'}`, true);
