@@ -266,6 +266,8 @@ export function buildOrdersListView(orders: any[], page = 1): { text: string; re
 
 export function buildOrderDetailView(order: any, page = 1): { text: string; replyMarkup: any } {
   const identifier = String(order.order_number || order.id || '');
+  const fullAddress = [order.governorate, order.city, order.address].filter(Boolean).join('، ') ||
+    order.shipping_address || order.location || '-';
   const items = Array.isArray(order.order_items) ? order.order_items : Array.isArray(order.items) ? order.items : [];
   const itemLines = items.length
     ? items.map((item: any, index: number) => {
@@ -282,7 +284,7 @@ export function buildOrderDetailView(order: any, page = 1): { text: string; repl
     `• رقم الطلب: <code>${escapeHtml(identifier)}</code>`,
     `• العميل: <b>${escapeHtml(order.customer_name || order.name || '-')}</b>`,
     `• الهاتف: <code>${escapeHtml(order.phone || order.customer_phone || '-')}</code>`,
-    `• العنوان: ${escapeHtml(order.address || order.shipping_address || order.location || '-')}`,
+    `• العنوان: ${escapeHtml(fullAddress)}`,
     `• الحالة: ${getOrderStatusArabic(order.status)}`,
     `• الإجمالي: <b>${(Number(order.total ?? order.total_amount ?? 0) || 0).toFixed(2)} جنيه</b>`,
     `• الدفع: ${escapeHtml(order.payment_method || 'الدفع عند الاستلام')}`,
