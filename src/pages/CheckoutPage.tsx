@@ -434,6 +434,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center text-start">
+        {submitError && (
+          <p className="text-sm text-red-500 mb-4">{submitError}</p>
+        )}
         <h2
           className={`text-xl font-bold mb-2 ${
             isDark ? 'text-white' : 'text-black'
