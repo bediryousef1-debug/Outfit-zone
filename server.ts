@@ -5060,6 +5060,8 @@ async function startServer() {
       express.static(
         path.join(__dirname, 'dist'),
         {
+          maxAge: '1y',
+          immutable: true,
           etag: true,
           lastModified: true,
           setHeaders: (res, filePath) => {
