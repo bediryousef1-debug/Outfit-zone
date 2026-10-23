@@ -31,6 +31,30 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal + shippingFee;
 
+  const removeCartRow = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
+    const row = event.currentTarget.closest<HTMLElement>('[data-oz-cart-row]');
+    if (!row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      removeItem(variantId);
+      return;
+    }
+    row.style.overflow = 'hidden';
+    const finish = () => removeItem(variantId);
+    import('gsap').then(({ default: gsap }) => {
+      gsap.to(row, {
+        height: 0,
+        opacity: 0,
+        y: -5,
+        paddingTop: 0,
+        paddingBottom: 0,
+        marginTop: 0,
+        marginBottom: 0,
+        duration: 0.18,
+        ease: 'power2.in',
+        onComplete: finish,
+      });
+    }).catch(finish);
+  };
+
   if (items.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-right w-full max-w-full overflow-x-hidden">
@@ -138,7 +162,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
             return (
               <div
                 key={item.variantId}
-                className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors ${
+                data-oz-cart-row className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors ${
                   isDark
                     ? 'bg-[#121216] border-neutral-800/80'
                     : 'bg-white border-neutral-200 shadow-sm'
@@ -252,7 +276,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                     </button>
 
                     <span
-                      className={`px-2.5 sm:px-3 py-1 text-xs font-mono-numbers font-bold min-w-[1.75rem] text-center ${
+                      data-oz-quantity className={`px-2.5 sm:px-3 py-1 text-xs font-mono-numbers font-bold min-w-[1.75rem] text-center ${
                         isDark
                           ? 'text-white'
                           : 'text-neutral-900'
@@ -296,8 +320,8 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   </div>
 
                   <button
-                    onClick={() =>
-                      removeItem(item.variantId)
+                    onClick={(event) =>
+                      removeCartRow(event, item.variantId)
                     }
                     className="p-2 text-neutral-400 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors cursor-pointer"
                     title={t(
