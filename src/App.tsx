@@ -72,7 +72,11 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
 
     const syncScroll = () => ScrollTrigger.update();
     const frame = (time: number) => lenis.raf(time * 1000);
-    const scrollToTop = () => lenis.scrollTo(0, { duration: 0.85, easing: (t) => 1 - Math.pow(1 - t, 4) });
+    // Route changes must reset immediately; a smooth scroll can be interrupted when the route effect reinitializes Lenis.
+    const scrollToTop = () => {
+      lenis.scrollTo(0, { immediate: true });
+      window.scrollTo(0, 0);
+    };
 
     lenis.on('scroll', syncScroll);
     gsap.ticker.add(frame);
@@ -80,6 +84,22 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
     window.addEventListener('oz:scroll-top', scrollToTop);
 
     const motionContext = gsap.context(() => {
+      const routeRoot = main.querySelector<HTMLElement>('.oz-route-motion-root');
+      if (routeRoot) {
+        gsap.fromTo(routeRoot,
+          { autoAlpha: 0, y: 38, scale: 0.985, filter: 'blur(4px)' },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            filter: 'blur(0px)',
+            duration: 0.72,
+            ease: 'power3.out',
+            clearProps: 'filter,transform,opacity,visibility',
+          }
+        );
+      }
+
       const pageSections = main.querySelectorAll<HTMLElement>(
         '.oz-home-page .oz-motion-section:not(.oz-hero-stage), .oz-page-motion section, .oz-page-motion [data-oz-scroll-scene]'
       );
@@ -288,7 +308,8 @@ function AppContent() {
   }, []);
 
   const navigate = (path: string) => {
-
+    // Reset native scroll before React swaps the keyed route root, so the new page never inherits the old page's position.
+    window.scrollTo(0, 0);
     window.history.pushState({}, '', path);
     setCurrentPath(path);
     window.dispatchEvent(new Event('oz:scroll-top'));
@@ -566,7 +587,7 @@ function AppContent() {
         <ErrorBoundary resetKey={currentPath}>
         <div
           key={pathname}
-          className={pathname === '/' ? undefined : 'oz-page-motion'}
+          className={pathname === '/' ? 'oz-route-motion-root' : 'oz-page-motion oz-route-motion-root'}
         >
         {pathname === '/' && (
           <HomePage
