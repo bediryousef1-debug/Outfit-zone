@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 export type Language = 'ar' | 'en';
 
@@ -706,6 +706,22 @@ export const LanguageProvider: React.FC<{
   const direction: 'rtl' | 'ltr' = 'rtl';
 
   const isRtl = language === 'ar';
+
+  const previousLanguage = useRef<Language>(language);
+
+  useEffect(() => {
+    if (previousLanguage.current !== language) {
+      previousLanguage.current = language;
+      document.documentElement.classList.remove('oz-language-transition');
+      // Force a clean restart when users switch back and forth quickly.
+      void document.documentElement.offsetWidth;
+      document.documentElement.classList.add('oz-language-transition');
+      const timeoutId = window.setTimeout(() => {
+        document.documentElement.classList.remove('oz-language-transition');
+      }, 760);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [language]);
 
   useEffect(() => {
     try {
