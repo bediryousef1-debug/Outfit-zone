@@ -462,33 +462,3 @@
     max-width: 100%;
   }
 }
-
-
-/* Unified storefront layout: keep desktop on the same visual structure as mobile. */
-.oz-home-page .oz-hero-stage .oz-hero-content { max-width:52rem; padding:1rem; }
-.oz-home-page .oz-hero-stage .oz-hero-content > .grid { grid-template-columns:minmax(0,1fr)!important; gap:1rem!important; }
-.oz-home-page .oz-hero-stage .oz-hero-copy,
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy { order:2!important; text-align:right; gap:0; padding:.25rem 0 .5rem; }
-.oz-home-page .oz-hero-stage .oz-hero-visual,
-.oz-home-page .oz-hero-stage .oz-hero-slide-visual { order:1!important; width:100%; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-visual > div:first-child { width:100%; max-height:none; aspect-ratio:16/10; border-radius:1rem; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy > * + * { margin-top:.85rem!important; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy h1 { font-size:clamp(1.55rem,4vw,2rem); line-height:1.12; letter-spacing:-.025em; text-wrap:balance; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy h2 { font-size:clamp(1.05rem,2.6vw,1.4rem); line-height:1.35; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy p { display:block; font-size:.875rem; line-height:1.65; -webkit-line-clamp:unset; overflow:visible; }
-.oz-home-page .oz-hero-stage .oz-hero-slide-copy button { min-height:44px; min-width:140px; padding-inline:1.25rem; font-size:.875rem; }
-
-/* Stable slider controls: fixed hit area, no shrinking or distorted circles. */
-.oz-home-page .oz-hero-stage [role="tablist"] { display:flex; align-items:center; gap:.5rem; flex-wrap:nowrap; }
-.oz-home-page .oz-hero-stage [role="tablist"] button[role="tab"] { display:block; flex:0 0 auto; height:.5rem; min-height:.5rem; min-width:.75rem; padding:0; border:0; box-sizing:content-box; }
-.oz-home-page .oz-hero-stage [role="tablist"] button[aria-selected="true"] { min-width:2rem; }
-.oz-home-page .oz-hero-stage [role="tablist"] + div { display:flex; align-items:center; gap:.5rem; flex:0 0 auto; }
-.oz-home-page .oz-hero-stage [role="tablist"] + div button { display:inline-flex; flex:0 0 2.5rem; align-items:center; justify-content:center; width:2.5rem; min-width:2.5rem; height:2.5rem; min-height:2.5rem; padding:0; aspect-ratio:1; border-radius:9999px; line-height:1; }
-.oz-home-page .oz-hero-stage [role="tablist"] + div button svg { display:block; width:1rem; height:1rem; flex:0 0 1rem; }
-
-/* Keep the same compact grid density used by the phone layout on wider screens. */
-.oz-home-page .grid.grid-cols-2[class~="lg:grid-cols-4"],
-.oz-home-page .grid.grid-cols-2[class~="sm:grid-cols-3"][class~="lg:grid-cols-4"] { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
-.oz-home-page .grid.grid-cols-1[class~="md:grid-cols-12"] { grid-template-columns:minmax(0,1fr)!important; }
-.oz-home-page .grid.grid-cols-1[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"] { grid-template-columns:minmax(0,1fr)!important; }
-@media (min-width:768px) { .oz-home-page .oz-hero-stage .oz-hero-content { padding-inline:1.5rem; } }
