@@ -90,3 +90,20 @@ html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
   [data-oz-social-motion]:hover,
   [data-oz-social-motion]:focus-visible { transform: none; }
 }
+
+.oz-page-motion input,
+.oz-page-motion textarea,
+.oz-page-motion select {
+  transition: border-color 160ms ease, outline-color 160ms ease, outline-offset 160ms ease;
+}
+.oz-page-motion input:focus-visible,
+.oz-page-motion textarea:focus-visible,
+.oz-page-motion select:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-motion input,
+  .oz-page-motion textarea,
+  .oz-page-motion select { transition: none; }
+}
