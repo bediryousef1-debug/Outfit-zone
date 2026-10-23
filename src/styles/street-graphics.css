@@ -2,10 +2,10 @@
    Additive CSS only; designed to sit after index.css and cinematic-motion.css. */
 
 @keyframes ozGfxTapeForward {
-  to { background-position-x: 900px; }
+  to { background-position-x: 450px; }
 }
 @keyframes ozGfxTapeReverse {
-  to { background-position-x: -900px; }
+  to { background-position-x: -450px; }
 }
 @keyframes ozGfxZoneDrift {
   0%, 100% { transform: translate3d(-1.5%, 0, 0); }
@@ -72,7 +72,7 @@
   line-height: .8;
   letter-spacing: -.06em;
   color: transparent;
-  -webkit-text-stroke: 1.5px currentColor;
+  -webkit-text-stroke: 1.5px rgb(120 120 120 / 65%);
   opacity: .10;
 }
 @media (prefers-reduced-motion: no-preference) {
