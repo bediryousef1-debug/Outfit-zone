@@ -512,7 +512,7 @@ export function useStorefrontCinema(pathname: string): void {
           const parentRect = navInner.getBoundingClientRect();
           const rect = active.getBoundingClientRect();
           gsap.to(indicator, {
-            x: rect.left - parentRect.left,
+            x: document.documentElement.dir === 'rtl' ? rect.right - parentRect.right : rect.left - parentRect.left,
             width: rect.width,
             duration: 0.3,
             ease: 'power3.out',
@@ -547,7 +547,7 @@ export function useStorefrontCinema(pathname: string): void {
         const parentRect = desktopNav.getBoundingClientRect();
         const rect = active.getBoundingClientRect();
         gsap.to(indicator, {
-          x: rect.left - parentRect.left,
+          x: document.documentElement.dir === 'rtl' ? rect.right - parentRect.right : rect.left - parentRect.left,
           width: rect.width,
           duration: 0.32,
           ease: 'power3.out',
