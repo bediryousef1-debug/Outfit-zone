@@ -33,6 +33,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
       });
     }
     previousTotalRef.current = grandTotal;
+    return () => {
+      if (totalRef.current) gsap.killTweensOf(totalRef.current);
+    };
   }, [grandTotal]);
 
   const removeDrawerItem = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
