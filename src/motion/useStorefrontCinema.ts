@@ -434,18 +434,27 @@ export function useStorefrontCinema(pathname: string): void {
       cleanups.push(() => formObserver.disconnect());
     }
 
-    // Cart rows collapse on remove; the click itself and state update are never delayed.
-    if (pathname === '/cart') {
-      const onRemove = (event: Event) => {
-        const target = event.target as HTMLElement | null;
-        const button = target?.closest('button');
-        if (!button || !button.querySelector('svg.lucide-trash-2')) return;
-        const row = button.closest<HTMLElement>('.rounded-xl');
-        if (row && !reduced) gsap.to(row, { y: -5, scale: 0.985, opacity: 0, duration: 0.16, ease: 'power2.in' });
-      };
-      root.addEventListener('click', onRemove);
-      cleanups.push(() => root.removeEventListener('click', onRemove));
-    }
+    // Cart controls: animate quantity feedback and row removal without delaying state changes.
+    const onCartAction = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest('button');
+      if (!button || reduced) return;
+      const row = button.closest<HTMLElement>('.rounded-xl');
+      if (button.querySelector('svg.lucide-trash-2')) {
+        if (row) gsap.to(row, { y: -5, scale: 0.985, opacity: 0, duration: 0.16, ease: 'power2.in' });
+        return;
+      }
+      if (button.querySelector('svg.lucide-plus, svg.lucide-minus')) {
+        const group = button.parentElement;
+        const quantity = group && Array.from(group.querySelectorAll<HTMLElement>('span, div'))
+          .find((element) => element.children.length === 0 && /^\\d+$/u.test((element.textContent || '').trim()));
+        if (quantity) gsap.fromTo(quantity, { y: 4, scale: 0.82 }, {
+          y: 0, scale: 1, duration: 0.22, ease: 'back.out(2)', clearProps: 'transform',
+        });
+      }
+    };
+    document.addEventListener('click', onCartAction);
+    cleanups.push(() => document.removeEventListener('click', onCartAction));
 
     const refreshAfterContent = () => {
       window.clearTimeout(refreshTimer);
