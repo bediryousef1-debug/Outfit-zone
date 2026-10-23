@@ -10,47 +10,64 @@ export function ZoneMarquee() {
 
   useEffect(() => {
     const band = bandRef.current;
-    const tracks = band?.querySelectorAll<HTMLElement>('.oz-marquee-track');
-    if (!band || !tracks?.length) return;
+    if (!band) return;
+
+    const tracks = Array.from(
+      band.querySelectorAll<HTMLElement>('.oz-marquee-track')
+    );
+    if (!tracks.length) return;
 
     gsap.registerPlugin(ScrollTrigger);
     const media = gsap.matchMedia(band);
 
     media.add('(prefers-reduced-motion: no-preference)', () => {
-      const track = tracks[0];
-      const tween = gsap.to(track, {
-        xPercent: -50,
-        duration: 19,
-        ease: 'none',
-        repeat: -1,
-        paused: true,
-      });
-      const easeSpeed = gsap.quickTo(tween, 'timeScale', {
-        duration: 0.32,
-        ease: 'power2.out',
-      });
+      const tweens = tracks.map((track, index) =>
+        gsap.to(track, {
+          xPercent: index === 0 ? -50 : 50,
+          duration: index === 0 ? 19 : 23,
+          ease: 'none',
+          repeat: -1,
+          paused: true,
+        })
+      );
+      const speedSetters = tweens.map((tween) =>
+        gsap.quickTo(tween, 'timeScale', {
+          duration: 0.32,
+          ease: 'power2.out',
+        })
+      );
+
       const trigger = ScrollTrigger.create({
         trigger: band,
         start: 'top bottom',
         end: 'bottom top',
         onToggle: (self) => {
-          if (self.isActive) tween.play();
-          else {
-            easeSpeed(1);
-            tween.pause();
+          if (self.isActive) {
+            tweens.forEach((tween) => tween.play());
+          } else {
+            speedSetters.forEach((setSpeed) => setSpeed(1));
+            tweens.forEach((tween) => tween.pause());
           }
         },
         onUpdate: (self) => {
-          easeSpeed(gsap.utils.clamp(0.65, 2.15, 1 + Math.abs(self.getVelocity()) / 1800));
+          const timeScale = gsap.utils.clamp(
+            0.65,
+            2.15,
+            1 + Math.abs(self.getVelocity()) / 1800
+          );
+          speedSetters.forEach((setSpeed) => setSpeed(timeScale));
         },
       });
 
-      if (trigger.isActive) tween.play();
+      if (trigger.isActive) tweens.forEach((tween) => tween.play());
 
       return () => {
         trigger.kill();
-        gsap.killTweensOf(tween);
-        tween.kill();
+        speedSetters.forEach((setSpeed) => setSpeed.tween.kill());
+        tweens.forEach((tween) => {
+          gsap.killTweensOf(tween);
+          tween.kill();
+        });
       };
     });
 
