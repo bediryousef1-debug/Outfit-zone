@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './cinematic-home.css';
 
 const MARQUEE_TEXT = 'NEW DROP × WEAR IN THE ZONE × OUTFIT ZONE ×';
@@ -17,56 +16,24 @@ export function ZoneMarquee() {
     );
     if (!tracks.length) return;
 
-    gsap.registerPlugin(ScrollTrigger);
+    // Run the ribbons continuously instead of depending on ScrollTrigger enter/leave
+    // events, which can be missed when the page restores its previous scroll position.
     const media = gsap.matchMedia(band);
-
     media.add('(prefers-reduced-motion: no-preference)', () => {
       const tweens = tracks.map((track, index) =>
         gsap.to(track, {
           xPercent: index === 0 ? -50 : 50,
-          duration: index === 0 ? 19 : 23,
+          duration: index === 0 ? 7 : 9,
           ease: 'none',
           repeat: -1,
-          paused: true,
+          paused: false,
         })
       );
-      const speedSetters = tweens.map((tween) =>
-        gsap.quickTo(tween, 'timeScale', {
-          duration: 0.32,
-          ease: 'power2.out',
-        })
-      );
-
-      const trigger = ScrollTrigger.create({
-        trigger: band,
-        start: 'top bottom',
-        end: 'bottom top',
-        onToggle: (self) => {
-          if (self.isActive) {
-            tweens.forEach((tween) => tween.play());
-          } else {
-            speedSetters.forEach((setSpeed) => setSpeed(1));
-            tweens.forEach((tween) => tween.pause());
-          }
-        },
-        onUpdate: (self) => {
-          const timeScale = gsap.utils.clamp(
-            0.65,
-            2.15,
-            1 + Math.abs(self.getVelocity()) / 1800
-          );
-          speedSetters.forEach((setSpeed) => setSpeed(timeScale));
-        },
-      });
-
-      if (trigger.isActive) tweens.forEach((tween) => tween.play());
 
       return () => {
-        trigger.kill();
-        speedSetters.forEach((setSpeed) => setSpeed.tween.kill());
         tweens.forEach((tween) => {
-          gsap.killTweensOf(tween);
           tween.kill();
+          gsap.set(tween.targets(), { clearProps: 'transform' });
         });
       };
     });
