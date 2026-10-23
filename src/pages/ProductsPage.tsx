@@ -277,7 +277,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     : '';
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
 
       {/* Title */}
       <div className="mb-8 space-y-4">
