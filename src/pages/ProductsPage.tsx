@@ -415,7 +415,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         {/* Categories */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs w-full max-w-full min-w-0">
+        <div data-oz-category-chips className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs w-full max-w-full min-w-0">
 
           <button
             onClick={() => selectCategory('')}
