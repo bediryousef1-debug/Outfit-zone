@@ -90,15 +90,14 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
       const routeRoot = main.querySelector<HTMLElement>('.oz-route-motion-root');
       if (routeRoot) {
         gsap.fromTo(routeRoot,
-          { autoAlpha: 0, y: 38, scale: 0.985, filter: 'blur(4px)' },
+          { autoAlpha: 0, y: 38, scale: 0.985 },
           {
             autoAlpha: 1,
             y: 0,
             scale: 1,
-            filter: 'blur(0px)',
             duration: 0.72,
             ease: 'power3.out',
-            clearProps: 'filter,transform,opacity,visibility',
+            clearProps: 'transform,opacity,visibility',
           }
         );
       }
@@ -148,16 +147,15 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const pageImages = routeRoot?.querySelectorAll<HTMLElement>('img:not(.oz-hero-image)');
         if (pageImages?.length) {
           gsap.fromTo(pageImages,
-            { autoAlpha: 0.55, scale: 1.075, clipPath: 'inset(5% 4% 5% 4% round 10px)', filter: 'saturate(.72)' },
+            { autoAlpha: 0.55, scale: 1.075, clipPath: 'inset(5% 4% 5% 4% round 10px)' },
             {
               autoAlpha: 1,
               scale: 1,
               clipPath: 'inset(0% 0% 0% 0% round 0px)',
-              filter: 'saturate(1.08)',
               duration: 1.05,
               stagger: 0.055,
               ease: 'power3.out',
-              clearProps: 'clipPath,filter,transform,opacity,visibility',
+              clearProps: 'clipPath,transform,opacity,visibility',
               delay: 0.06,
             }
           );
@@ -205,11 +203,10 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         );
         if (editorialImages.length) {
           gsap.fromTo(editorialImages,
-            { clipPath: 'inset(7% 4% 7% 4% round 12px)', scale: 1.055, filter: 'saturate(.78)' },
+            { clipPath: 'inset(7% 4% 7% 4% round 12px)', scale: 1.055 },
             {
               clipPath: 'inset(0% 0% 0% 0% round 0px)',
               scale: 1,
-              filter: 'saturate(1)',
               duration: 1.15,
               stagger: 0.08,
               ease: 'power3.out',
@@ -243,15 +240,14 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const heroDescription = heroCopy.querySelector<HTMLElement>('p');
         const heroCta = heroCopy.querySelector<HTMLElement>('button');
         gsap.fromTo([heroEyebrow, heroHeading, heroSubtitle, heroDescription, heroCta].filter((element): element is HTMLElement => element !== null),
-          { autoAlpha: 0, y: 28, filter: 'blur(5px)' },
+          { autoAlpha: 0, y: 28 },
           {
             autoAlpha: 1,
             y: 0,
-            filter: 'blur(0px)',
             duration: 0.88,
             stagger: 0.11,
             ease: 'power4.out',
-            clearProps: 'filter',
+            clearProps: 'transform',
             delay: 0.12,
           }
         );
