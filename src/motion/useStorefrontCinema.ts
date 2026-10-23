@@ -399,7 +399,7 @@ export function useStorefrontCinema(pathname: string): void {
           const panel = overlay.querySelector<HTMLElement>('.max-w-md');
           if (panel) {
             gsap.fromTo(panel, { x: document.documentElement.dir === 'rtl' ? -34 : 34 }, {
-              x: 0, duration: 0.38, ease: 'power3.out', clearProps: 'transform',
+              x: 0, duration: 0.4, ease: 'back.out(1.12)', clearProps: 'transform',
             });
             const rows = Array.from(panel.querySelectorAll<HTMLElement>('.rounded-xl')).filter((row) => row.querySelector('img')).slice(0, 8);
             if (rows.length) tweens.push(gsap.fromTo(rows, { y: 10 }, {
