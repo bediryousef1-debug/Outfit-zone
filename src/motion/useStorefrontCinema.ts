@@ -233,7 +233,7 @@ export function useStorefrontCinema(pathname: string): void {
           window.clearTimeout(chipTimer);
           chipTimer = window.setTimeout(animateCategoryChips, 55);
         }) : null;
-        chipObserver?.observe(categoryChips!, { childList: true, subtree: true });
+        chipObserver?.observe(categoryChips!, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
         animateCategoryChips();
         let mutationTimer = 0;
         applyProductImageTilts();
