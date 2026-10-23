@@ -1,3 +1,4 @@
+/* Isolated, additive home-page motion graphics. */
 .oz-hero-content {
   position: relative;
   z-index: 10;
@@ -18,64 +19,67 @@
   font-weight: 900;
   line-height: 0.78;
   letter-spacing: -0.09em;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.32);
-  text-stroke: 1px rgba(255, 255, 255, 0.32);
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.18);
+  text-stroke: 1px rgba(255, 255, 255, 0.18);
   translate: -50% 0;
 }
 
 html.light .oz-hero-zone-word {
   opacity: 0.12;
-  -webkit-text-stroke-color: rgba(17, 17, 17, 0.3);
-  text-stroke-color: rgba(17, 17, 17, 0.3);
+  -webkit-text-stroke-color: rgba(17, 17, 17, 0.18);
+  text-stroke-color: rgba(17, 17, 17, 0.18);
 }
 
 .oz-marquee-band {
   position: relative;
-  isolation: isolate;
+  left: 50%;
   width: 100vw;
   max-width: 100vw;
-  height: clamp(88px, 9vw, 116px);
-  margin-inline: calc(50% - 50vw);
-  overflow: hidden;
+  height: clamp(108px, 11vw, 142px);
+  overflow: clip;
+  isolation: isolate;
+  transform: translateX(-50%);
   contain: layout paint;
   color: #111;
 }
 
 .oz-marquee-ribbon {
   position: absolute;
-  inset-inline: -4%;
+  left: -12%;
+  width: 124%;
   top: 50%;
   display: flex;
   align-items: center;
-  width: 108%;
-  height: 46px;
+  height: 43px;
   overflow: hidden;
   font-family: Syne, sans-serif;
   font-size: clamp(0.8rem, 1.45vw, 1.15rem);
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
 }
 
 .oz-marquee-ribbon-primary {
   z-index: 2;
-  background: #111;
+  background: #09090b;
   color: #fff;
-  transform: translateY(-72%) rotate(-2deg);
+  transform: translateY(-72%) rotate(-3.2deg);
 }
 
 .oz-marquee-ribbon-secondary {
   z-index: 1;
-  background: #e5e5e5;
-  color: #111;
-  transform: translateY(-20%) rotate(2deg);
+  background: #f4f4f5;
+  color: #09090b;
+  border-block: 1px solid rgba(9, 9, 11, 0.16);
+  transform: translateY(-20%) rotate(2.6deg);
 }
 
 .oz-marquee-track {
   display: flex;
   flex: 0 0 auto;
   width: max-content;
+  align-items: center;
   white-space: nowrap;
   will-change: transform;
 }
@@ -83,7 +87,12 @@ html.light .oz-hero-zone-word {
 .oz-marquee-track span {
   display: block;
   flex: 0 0 auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1.2rem;
+}
+
+.oz-marquee-ribbon-secondary {
+  font-size: clamp(0.76rem, 1.35vw, 1rem);
+  letter-spacing: 0.12em;
 }
 
 .oz-cinema-word-mask {
@@ -105,14 +114,18 @@ html.light .oz-hero-zone-word {
     opacity: 0.07;
   }
 
+  .oz-marquee-band {
+    height: 108px;
+  }
+
   .oz-marquee-ribbon {
-    height: 42px;
+    height: 36px;
     font-size: 0.76rem;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.055em;
   }
 
   .oz-marquee-track span {
-    padding-inline: 1rem;
+    padding-inline: 0.8rem;
   }
 }
 
@@ -124,6 +137,8 @@ html.light .oz-hero-zone-word {
 
   .oz-cinema-word-mask {
     overflow: visible;
+    padding-block-end: 0;
+    margin-block-end: 0;
   }
 
   .oz-cinema-word {
