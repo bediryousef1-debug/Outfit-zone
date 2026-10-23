@@ -122,8 +122,11 @@ export function useStorefrontCinema(pathname: string): void {
 
     if (!reduced && isInnerPage) {
       // Mark existing editorial sections and major div-based page blocks without replacing markup or layout.
+      const markedScenes = Array.from(root.querySelectorAll<HTMLElement>('[data-oz-scene]'))
+        .filter((scene) => scene.parentElement !== root);
       const scenes = Array.from(new Set([
         ...root.querySelectorAll<HTMLElement>('section, [data-oz-scroll-scene]'),
+        ...markedScenes,
         ...root.querySelectorAll<HTMLElement>(':scope > div > div'),
       ]));
       scenes.forEach((scene) => {
@@ -316,7 +319,7 @@ export function useStorefrontCinema(pathname: string): void {
     }
 
     // Mobile bottom navigation indicator follows the active item in either text direction.
-    const mobileNav = document.querySelector<HTMLElement>('nav[aria-label]');
+    const mobileNav = document.querySelector<HTMLElement>('[data-oz-mobile-nav]');
     if (mobileNav && !reduced && mobileNav.classList.contains('md:hidden')) {
       const navInner = mobileNav.firstElementChild as HTMLElement | null;
       const activeItem = () => Array.from(mobileNav.querySelectorAll<HTMLElement>('button'))
