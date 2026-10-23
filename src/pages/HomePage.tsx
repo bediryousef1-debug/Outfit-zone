@@ -21,6 +21,8 @@ import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { resolveImageUrl } from '../utils/imageHelper';
+import { ZoneMarquee } from '../motion/ZoneMarquee';
+import { useHomeCinema } from '../motion/useHomeCinema';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;
@@ -44,6 +46,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { isRtl, t, language } = useLanguage();
 
   const isRTL = isRtl;
+  const homeRef = useRef<HTMLDivElement>(null);
+  useHomeCinema(homeRef, language);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<HomepageReview[]>([]);
@@ -607,7 +611,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const NextArrow = ChevronLeft;
 
   return (
-    <div className="oz-home-page space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
+    <div ref={homeRef} className="oz-home-page space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
       {/* =====================================================================
           1. HERO SECTION & SLIDER
           ===================================================================== */}
@@ -645,7 +649,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             : 'Outfit Zone offers and collections'
         }
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
+        <div className="oz-hero-zone-word" data-oz-zone-parallax aria-hidden="true">ZONE</div>
+        <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
@@ -850,6 +855,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
       )}
+
+      <ZoneMarquee />
 
       {/* =====================================================================
           2. TRUST FEATURES

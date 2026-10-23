@@ -101,6 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Header */}
       <header
+        data-oz-layout-header
         className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
           isDark
             ? 'bg-black/95 border-neutral-800/80 text-white'
@@ -147,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
+            <nav data-oz-header-nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
               {navLinks.map((link) => {
                 const isActive = currentPath === link.path;
 

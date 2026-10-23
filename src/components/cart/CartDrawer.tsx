@@ -1,4 +1,5 @@
 import React from 'react';
+import gsap from 'gsap';
 import { X, Trash2, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
@@ -15,15 +16,87 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const { settings } = useStore();
   const { t, language } = useLanguage();
   const CheckoutArrow = ArrowLeft;
+  const overlayRef = React.useRef<HTMLDivElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const totalRef = React.useRef<HTMLSpanElement>(null);
+  const closingRef = React.useRef(false);
+  const previousTotalRef = React.useRef<number | null>(null);
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
 
+  React.useEffect(() => {
+    const previousTotal = previousTotalRef.current;
+    if (previousTotal !== null && previousTotal !== grandTotal && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && totalRef.current) {
+      gsap.fromTo(totalRef.current, { y: 4, scale: 0.97 }, {
+        y: 0, scale: 1, duration: 0.24, ease: 'power2.out', clearProps: 'transform',
+      });
+    }
+    previousTotalRef.current = grandTotal;
+    return () => {
+      if (totalRef.current) gsap.killTweensOf(totalRef.current);
+    };
+  }, [grandTotal]);
+
+  const removeDrawerItem = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
+    const row = event.currentTarget.closest<HTMLElement>('[data-oz-cart-row]');
+    if (!row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      removeItem(variantId);
+      return;
+    }
+    row.style.overflow = 'hidden';
+    gsap.to(row, {
+      height: 0,
+      opacity: 0,
+      y: -4,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      duration: 0.18,
+      ease: 'power2.in',
+      onComplete: () => removeItem(variantId),
+    });
+  };
+
+  const closeDrawer = (nextPath?: string) => {
+    if (closingRef.current) return;
+    const finish = () => {
+      closingRef.current = false;
+      setIsCartOpen(false);
+      if (nextPath) onNavigate(nextPath);
+    };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finish();
+      return;
+    }
+    const panel = panelRef.current;
+    const overlay = overlayRef.current;
+    if (!panel || !overlay) {
+      finish();
+      return;
+    }
+    closingRef.current = true;
+    gsap.to(panel, {
+      x: document.documentElement.dir === 'rtl' ? 34 : -34,
+      duration: 0.2,
+      ease: 'power2.in',
+      overwrite: true,
+    });
+    gsap.to(overlay, {
+      opacity: 0,
+      duration: 0.18,
+      ease: 'power1.in',
+      overwrite: true,
+      onComplete: finish,
+    });
+  };
+
   if (!isCartOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#101014] border-l border-neutral-800 w-full max-w-md h-full flex flex-col shadow-2xl text-start">
+    <div data-oz-cart-drawer ref={overlayRef} onClick={(event) => { if (event.target === event.currentTarget) closeDrawer(); }} className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+      <div ref={panelRef} data-oz-scene className="bg-[#101014] border-l border-neutral-800 w-full max-w-md h-full flex flex-col shadow-2xl text-start">
         
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-neutral-800 flex items-center justify-between">
@@ -34,7 +107,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             </h3>
           </div>
           <button
-            onClick={() => setIsCartOpen(false)}
+            onClick={() => closeDrawer()}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
             aria-label={t('cart.close', 'Close cart')}
           >
@@ -54,10 +127,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                 {t('cart.empty_desc', 'You have not added any streetwear pieces to your bag yet.')}
               </p>
               <button
-                onClick={() => {
-                  setIsCartOpen(false);
-                  onNavigate('/products');
-                }}
+                onClick={() => closeDrawer('/products')}
                 className="py-2.5 px-6 bg-white text-black text-xs font-bold rounded-lg hover:bg-neutral-200 transition-colors"
               >
                 {t('checkout.browse_products', 'Browse Products Now')}
@@ -73,7 +143,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={item.variantId}
-                  className="flex gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 items-start"
+                  data-oz-cart-row className="flex gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 items-start"
                 >
                   {/* Item Image */}
                   <img
@@ -90,7 +160,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                           {getLocalizedProductName(item.product, language) || item.product?.name}
                         </h4>
                         <button
-                          onClick={() => removeItem(item.variantId)}
+                          onClick={(event) => removeDrawerItem(event, item.variantId)}
                           className="text-neutral-500 hover:text-red-400 p-1 transition-colors"
                           aria-label={t('cart.remove', 'Remove')}
                         >
@@ -116,7 +186,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                         >
                           -
                         </button>
-                        <span className="px-2 font-mono-numbers font-bold text-white">
+                        <span data-oz-quantity className="px-2 font-mono-numbers font-bold text-white">
                           {item.quantity}
                         </span>
                         <button
@@ -158,7 +228,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               </div>
               <div className="pt-2 border-t border-neutral-800/80 flex justify-between text-sm font-bold text-white">
                 <span>{t('checkout.total_on_delivery', 'Total on Delivery:')}</span>
-                <span className="font-mono-numbers text-base text-white">
+                <span ref={totalRef} className="font-mono-numbers text-base text-white">
                   {formatPrice(grandTotal, language)}
                 </span>
               </div>
@@ -173,10 +243,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             {/* Buttons */}
             <div className="space-y-2">
               <button
-                onClick={() => {
-                  setIsCartOpen(false);
-                  onNavigate('/checkout');
-                }}
+                onClick={() => closeDrawer('/checkout')}
                 className="w-full py-3 px-4 bg-white text-black font-bold rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors shadow-sm"
               >
                 <span>{t('cart.drawer_checkout', 'Proceed to Checkout (Cash on Delivery)')}</span>
@@ -184,7 +251,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               </button>
 
               <button
-                onClick={() => setIsCartOpen(false)}
+                onClick={() => closeDrawer()}
                 className="w-full py-2.5 text-center text-xs text-neutral-400 hover:text-white transition-colors"
               >
                 {t('cart.continue_shopping', 'Continue Shopping')}

@@ -169,6 +169,7 @@ export const SocialBar: React.FC<SocialBarProps> = ({ variant = 'floating-mobile
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
+            data-oz-social-motion
             className={`oz-btn-press group flex h-10 w-10 items-center justify-center rounded-full border shadow-lg backdrop-blur-md transition-all duration-200 active:scale-95 sm:h-11 sm:w-11 ${
               isDark
                 ? 'border-neutral-700/80 bg-[#111113]/90 text-neutral-300 shadow-black/40 hover:bg-[#1b1b1f]'

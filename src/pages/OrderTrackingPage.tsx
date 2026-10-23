@@ -119,7 +119,7 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ onNavigate
       </div>
 
       {/* Header */}
-      <div className="text-center mb-8 sm:mb-10">
+      <div data-oz-scene className="text-center mb-8 sm:mb-10">
         <div className="inline-flex p-3 rounded-2xl bg-neutral-500/10 text-neutral-300 mb-3 border border-neutral-800">
           <Truck className="w-7 h-7 text-white" />
         </div>
@@ -262,7 +262,7 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ onNavigate
             {/* Step Timeline */}
             {statusKey !== 'cancelled' && statusKey !== 'returned' && (
               <div className="mt-8">
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
+                <div data-oz-tracking-timeline className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
                   {steps.map((st, idx) => {
                     const stStatus = getStepStatus(st.key);
                     const isDone = stStatus === 'completed';

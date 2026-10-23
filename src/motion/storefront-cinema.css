@@ -1,0 +1,171 @@
+/* Additive storefront cinema styles. Existing cinematic-motion blocks remain untouched. */
+.oz-page-intro-host {
+  position: relative;
+  isolation: isolate;
+  --oz-page-parallax: 0px;
+}
+.oz-page-intro-host::before {
+  content: attr(data-oz-outline-word);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  z-index: -1;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(127 127 127 / 18%);
+  font-size: clamp(2.75rem, 13vw, 9rem);
+  font-weight: 900;
+  line-height: .9;
+  letter-spacing: -.06em;
+  transform: translate3d(0, calc(-50% + var(--oz-page-parallax)), 0);
+}
+.oz-page-intro-rule {
+  display: block;
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: 0;
+  width: min(100%, 9rem);
+  height: 1px;
+  background: currentColor;
+  opacity: .48;
+  transform-origin: left center;
+  pointer-events: none;
+}
+html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
+.oz-page-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-block: .05em;
+  margin-block: -.05em;
+}
+.oz-page-word { display: inline-block; will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-intro-host::before { transform: translate3d(0, -50%, 0); }
+  .oz-page-word { transform: none !important; }
+}
+@media (max-width: 767px) {
+  .oz-page-intro-host::before { font-size: clamp(2.5rem, 17vw, 5rem); }
+}
+
+.oz-mobile-nav-indicator {
+  position: absolute;
+  inset-block-end: 5px;
+  inset-inline-start: 0;
+  height: 2px;
+  width: 0;
+  border-radius: 999px;
+  background: currentColor;
+  pointer-events: none;
+  will-change: transform, width;
+}
+.oz-success-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #34d399;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-mobile-nav-indicator,
+  .oz-success-particle { display: none; }
+}
+
+[data-oz-social-motion] {
+  transition: transform 180ms ease;
+}
+[data-oz-social-motion]:hover,
+[data-oz-social-motion]:focus-visible {
+  transform: translate3d(0, -2px, 0) scale(1.045);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-oz-social-motion] { transition: none; }
+  [data-oz-social-motion]:hover,
+  [data-oz-social-motion]:focus-visible { transform: none; }
+}
+
+.oz-page-motion input,
+.oz-page-motion textarea,
+.oz-page-motion select {
+  transition: border-color 160ms ease, outline-color 160ms ease, outline-offset 160ms ease;
+}
+.oz-page-motion input:focus-visible,
+.oz-page-motion textarea:focus-visible,
+.oz-page-motion select:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-motion input,
+  .oz-page-motion textarea,
+  .oz-page-motion select { transition: none; }
+}
+
+.oz-header-nav-indicator {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -0.55rem;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: .72;
+  pointer-events: none;
+  will-change: transform, width;
+}
+[data-oz-tracking-timeline] > .oz-track-progress-track {
+  position: absolute;
+  top: 2rem;
+  inset-inline-start: 12.5%;
+  width: 75%;
+  height: 1px;
+  color: #10b981;
+  background: currentColor;
+  opacity: .28;
+  pointer-events: none;
+  z-index: 0;
+}
+[data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: currentColor;
+}
+[data-oz-tracking-timeline] > div:not(.oz-track-progress-track) {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 639px) {
+  [data-oz-tracking-timeline] > .oz-track-progress-track {
+    top: 1.5rem;
+    bottom: 1.5rem;
+    inset-inline-start: 1.7rem;
+    width: 1px;
+    height: auto;
+  }
+  [data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+    width: 100%;
+    height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-header-nav-indicator { display: none; }
+  [data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-motion .animate-pulse,
+  .oz-page-motion .animate-spin,
+  [data-oz-cart-drawer].animate-in {
+    animation: none !important;
+  }
+}

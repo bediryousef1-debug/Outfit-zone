@@ -6,6 +6,7 @@ import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { ProductCard } from '../components/product/ProductCard';
+import { ZoneMarquee } from '../motion/ZoneMarquee';
 import {
   FilterState,
   ProductFilterModal,
@@ -276,7 +277,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     : '';
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full max-w-full overflow-x-hidden">
 
       {/* Title */}
       <div className="mb-8 space-y-4">
@@ -414,7 +415,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         {/* Categories */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs w-full max-w-full min-w-0">
+        <div data-oz-category-chips className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs w-full max-w-full min-w-0">
 
           <button
             onClick={() => selectCategory('')}
@@ -520,6 +521,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           ))}
         </div>
       )}
+
+      <div className="-mx-3.5 sm:-mx-6 my-10" aria-label={language === 'en' ? 'Outfit Zone collection divider' : 'فاصل مجموعة Outfit Zone'}>
+        <ZoneMarquee />
+      </div>
 
       {/* Filter Modal */}
       <ProductFilterModal

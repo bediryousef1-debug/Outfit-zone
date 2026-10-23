@@ -48,6 +48,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <nav
+      data-oz-mobile-nav
       className={`fixed bottom-0 inset-x-0 z-40 md:hidden border-t backdrop-blur-lg transition-colors ${
         isDark
           ? 'bg-black/90 border-neutral-800/90 text-neutral-400'

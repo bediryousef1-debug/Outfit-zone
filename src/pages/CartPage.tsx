@@ -1,4 +1,5 @@
 import React from 'react';
+import gsap from 'gsap';
 import {
   ArrowRight,
   Trash2,
@@ -30,6 +31,52 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal + shippingFee;
+  const totalRef = React.useRef<HTMLSpanElement>(null);
+  const previousTotalRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const previousTotal = previousTotalRef.current;
+    if (
+      previousTotal !== null &&
+      previousTotal !== grandTotal &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      totalRef.current
+    ) {
+      gsap.fromTo(totalRef.current, { y: 4, scale: 0.97 }, {
+        y: 0,
+        scale: 1,
+        duration: 0.24,
+        ease: 'power2.out',
+        clearProps: 'transform',
+      });
+    }
+    previousTotalRef.current = grandTotal;
+    return () => {
+      if (totalRef.current) gsap.killTweensOf(totalRef.current);
+    };
+  }, [grandTotal]);
+
+  const removeCartRow = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
+    const row = event.currentTarget.closest<HTMLElement>('[data-oz-cart-row]');
+    if (!row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      removeItem(variantId);
+      return;
+    }
+    row.style.overflow = 'hidden';
+    const finish = () => removeItem(variantId);
+    gsap.to(row, {
+      height: 0,
+      opacity: 0,
+      y: -5,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      duration: 0.18,
+      ease: 'power2.in',
+      onComplete: finish,
+    });
+  };
 
   if (items.length === 0) {
     return (
@@ -77,7 +124,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 text-right w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 text-right w-full max-w-full overflow-x-hidden">
       {/* Breadcrumb navigation */}
       <button
         onClick={() => onNavigate('/products')}
@@ -138,7 +185,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
             return (
               <div
                 key={item.variantId}
-                className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors ${
+                data-oz-cart-row className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors ${
                   isDark
                     ? 'bg-[#121216] border-neutral-800/80'
                     : 'bg-white border-neutral-200 shadow-sm'
@@ -252,7 +299,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                     </button>
 
                     <span
-                      className={`px-2.5 sm:px-3 py-1 text-xs font-mono-numbers font-bold min-w-[1.75rem] text-center ${
+                      data-oz-quantity className={`px-2.5 sm:px-3 py-1 text-xs font-mono-numbers font-bold min-w-[1.75rem] text-center ${
                         isDark
                           ? 'text-white'
                           : 'text-neutral-900'
@@ -296,8 +343,8 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   </div>
 
                   <button
-                    onClick={() =>
-                      removeItem(item.variantId)
+                    onClick={(event) =>
+                      removeCartRow(event, item.variantId)
                     }
                     className="p-2 text-neutral-400 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg transition-colors cursor-pointer"
                     title={t(
@@ -439,6 +486,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
               <div className="text-left">
                 <span
+                  ref={totalRef}
                   className={`font-mono-numbers font-black text-xl ${
                     isDark
                       ? 'text-white'

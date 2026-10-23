@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, Sparkles, ShieldCheck, Check } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { resolveImageUrl } from '../utils/imageHelper';
+import { ZoneMarquee } from '../motion/ZoneMarquee';
 
 interface AboutPageProps {
   onNavigate: (path: string) => void;
@@ -13,7 +14,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
   const { isDark } = useTheme();
 
   return (
-    <div className="max-w-4xl mx-auto px-3.5 sm:px-6 py-8 sm:py-16 text-right space-y-12 w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-4xl mx-auto px-3.5 sm:px-6 py-8 sm:py-16 text-right space-y-12 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className={`space-y-3 pb-8 border-b ${isDark ? 'border-neutral-800' : 'border-neutral-200'}`}>
         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
@@ -25,6 +26,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
         <p className="text-sm sm:text-base text-neutral-400 max-w-2xl leading-relaxed">
           {t('about.description', 'An Egyptian men’s streetwear brand focused on modern everyday designs with Box Fit and Oversized cuts made for today’s youth.')}
         </p>
+      </div>
+
+      <div className="-mx-3.5 sm:-mx-6" aria-label={t('about.story_divider', 'Outfit Zone story divider')}>
+        <ZoneMarquee />
       </div>
 
       {/* Main Philosophy */}
