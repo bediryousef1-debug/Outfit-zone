@@ -257,21 +257,56 @@ export function useStorefrontCinema(pathname: string): void {
         });
       }
 
-      // Main product image reacts to thumbnail selection without touching the sticky purchase panel.
+      // Main gallery images may arrive asynchronously or remount when a thumbnail is selected.
+      // Observe the stable page root so each actual image gets one mask/cross-fade reveal.
       if (pathname.startsWith('/products/')) {
-        const onThumbnailClick = (event: Event) => {
-          const target = event.target as HTMLElement | null;
-          const button = target?.closest('button');
-          if (!button || !button.querySelector('img')) return;
-          const mainImage = root.querySelector<HTMLImageElement>('[data-oz-product-main-image]');
-          if (mainImage) {
-            gsap.fromTo(mainImage, { opacity: 0.78, scale: 1.018, y: 3 }, {
-              opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform,opacity',
+        let pendingImage: HTMLImageElement | null = null;
+        const revealMainImage = (image: HTMLImageElement) => {
+          if (!image.isConnected || image.dataset.ozGalleryRevealed === 'true') return;
+          image.dataset.ozGalleryRevealed = 'true';
+          if (!reduced) {
+            gsap.fromTo(image, {
+              opacity: 0.76,
+              scale: 1.025,
+              clipPath: 'inset(0 0 8% 0 round 10px)',
+            }, {
+              opacity: 1,
+              scale: 1,
+              clipPath: 'inset(0 0 0% 0 round 0px)',
+              duration: 0.48,
+              ease: 'power2.out',
+              clearProps: 'transform,opacity,clipPath',
             });
           }
+          window.clearTimeout(refreshTimer);
+          refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 220);
         };
-        root.addEventListener('click', onThumbnailClick);
-        cleanups.push(() => root.removeEventListener('click', onThumbnailClick));
+        const onMainImageLoad = () => {
+          if (pendingImage) revealMainImage(pendingImage);
+          pendingImage = null;
+        };
+        const checkMainImage = () => {
+          const image = root.querySelector<HTMLImageElement>('[data-oz-product-main-image]');
+          if (!image) return;
+          if (pendingImage && pendingImage !== image) {
+            pendingImage.removeEventListener('load', onMainImageLoad);
+            pendingImage = null;
+          }
+          if (image.complete && image.naturalWidth > 0) {
+            revealMainImage(image);
+          } else if (!image.complete) {
+            pendingImage = image;
+            image.addEventListener('load', onMainImageLoad, { once: true });
+          }
+        };
+        checkMainImage();
+        const galleryObserver = new MutationObserver(checkMainImage);
+        galleryObserver.observe(root, { childList: true, subtree: true });
+        cleanups.push(() => {
+          galleryObserver.disconnect();
+          pendingImage?.removeEventListener('load', onMainImageLoad);
+          pendingImage = null;
+        });
       }
     }
 
