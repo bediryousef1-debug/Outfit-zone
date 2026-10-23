@@ -104,6 +104,63 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         '.oz-home-page .oz-motion-section:not(.oz-hero-stage), .oz-page-motion section, .oz-page-motion [data-oz-scroll-scene]'
       );
 
+      // Most inner pages are built from div/grid layouts rather than section elements.
+      // Animate their actual content so product listing/detail pages receive the same visible motion.
+      if (pathname !== '/') {
+        const pageHeading = routeRoot?.querySelectorAll<HTMLElement>('h1, h2');
+        if (pageHeading?.length) {
+          gsap.fromTo(pageHeading,
+            { autoAlpha: 0, y: 30, clipPath: 'inset(0 0 22% 0)' },
+            {
+              autoAlpha: 1,
+              y: 0,
+              clipPath: 'inset(0 0 0% 0)',
+              duration: 0.78,
+              stagger: 0.09,
+              ease: 'power4.out',
+              clearProps: 'clipPath',
+              delay: 0.08,
+            }
+          );
+        }
+
+        const productCards = routeRoot?.querySelectorAll<HTMLElement>('.oz-card-hover, [data-oz-motion-card]');
+        if (productCards?.length) {
+          gsap.fromTo(productCards,
+            { autoAlpha: 0, y: 54, scale: 0.94, rotateX: 3, transformPerspective: 1200 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              scale: 1,
+              rotateX: 0,
+              duration: 0.9,
+              stagger: { each: 0.075, from: 'start' },
+              ease: 'power3.out',
+              clearProps: 'transform,opacity,visibility',
+              delay: 0.12,
+            }
+          );
+        }
+
+        const pageImages = routeRoot?.querySelectorAll<HTMLElement>('img:not(.oz-hero-image)');
+        if (pageImages?.length) {
+          gsap.fromTo(pageImages,
+            { autoAlpha: 0.55, scale: 1.075, clipPath: 'inset(5% 4% 5% 4% round 10px)', filter: 'saturate(.72)' },
+            {
+              autoAlpha: 1,
+              scale: 1,
+              clipPath: 'inset(0% 0% 0% 0% round 0px)',
+              filter: 'saturate(1.08)',
+              duration: 1.05,
+              stagger: 0.055,
+              ease: 'power3.out',
+              clearProps: 'clipPath,filter,transform,opacity,visibility',
+              delay: 0.06,
+            }
+          );
+        }
+      }
+
       pageSections.forEach((section) => {
         const headings = section.querySelectorAll<HTMLElement>('h2, h3, [data-oz-motion-heading]');
         if (headings.length) {
