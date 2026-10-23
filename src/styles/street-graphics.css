@@ -1,0 +1,150 @@
+/* Outfit Zone — street graphics layer.
+   Additive CSS only; designed to sit after index.css and cinematic-motion.css. */
+
+@keyframes ozGfxTapeForward {
+  to { background-position-x: 900px; }
+}
+@keyframes ozGfxTapeReverse {
+  to { background-position-x: -900px; }
+}
+@keyframes ozGfxZoneDrift {
+  0%, 100% { transform: translate3d(-1.5%, 0, 0); }
+  50% { transform: translate3d(2%, -3%, 0); }
+}
+@keyframes ozGfxCornerIn {
+  from { opacity: 0; transform: scale(1.07); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Crossing drop tapes sit between the hero and the first home section. */
+.oz-hero-stage + .oz-motion-section {
+  --oz-gfx-tape-height: 2.15rem;
+  position: relative;
+  padding-block-start: 4.6rem;
+}
+.oz-hero-stage + .oz-motion-section::before,
+.oz-hero-stage + .oz-motion-section::after {
+  content: "";
+  position: absolute;
+  z-index: 8;
+  top: .65rem;
+  left: 50%;
+  width: 100vw;
+  height: var(--oz-gfx-tape-height);
+  margin-left: -50vw;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  background-size: 900px 100%;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 18%);
+}
+.oz-hero-stage + .oz-motion-section::before {
+  background-color: #ffd60a;
+  border-block: 2px solid #09090b;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='35' viewBox='0 0 900 35'%3E%3Ctext x='0' y='26' font-family='Arial Black,Arial,sans-serif' font-size='24' font-weight='900' fill='%2309090b'%3ENEW DROP %2B WEAR IN THE ZONE %2B OUTFIT ZONE %2B%3C/text%3E%3C/svg%3E");
+  transform: rotate(-1.5deg);
+}
+.oz-hero-stage + .oz-motion-section::after {
+  top: 1.55rem;
+  background-color: #09090b;
+  border-block: 2px solid #f4f4f5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='35' viewBox='0 0 900 35'%3E%3Ctext x='0' y='26' font-family='Arial Black,Arial,sans-serif' font-size='24' font-weight='900' fill='%23f4f4f5'%3EWEAR IN THE ZONE %2B OUTFIT ZONE %2B NEW DROP %2B%3C/text%3E%3C/svg%3E");
+  transform: rotate(1.25deg);
+}
+
+/* Large outlined wordmark behind the hero copy, contained to its own layer. */
+.oz-hero-stage .oz-hero-slide-copy {
+  position: relative;
+  isolation: isolate;
+}
+.oz-hero-stage .oz-hero-slide-copy::after {
+  content: "ZONE";
+  position: absolute;
+  z-index: -1;
+  inset-inline-start: 0;
+  bottom: 1.5%;
+  max-width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(6rem, 20vw, 15rem);
+  font-weight: 800;
+  line-height: .8;
+  letter-spacing: -.06em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px currentColor;
+  opacity: .10;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .oz-hero-stage .oz-hero-slide-copy::after {
+    animation: ozGfxZoneDrift 16s ease-in-out infinite;
+  }
+  .oz-hero-stage + .oz-motion-section::before {
+    animation: ozGfxTapeForward 26s linear infinite;
+  }
+  .oz-hero-stage + .oz-motion-section::after {
+    animation: ozGfxTapeReverse 32s linear infinite;
+  }
+}
+
+/* Viewfinder corners appear on keyboard focus and mouse hover, not on touch. */
+.oz-home-page .oz-card-hover {
+  position: relative;
+}
+.oz-home-page .oz-card-hover::after {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  inset: .65rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.035);
+  transition: opacity .22s ease, transform .32s cubic-bezier(.16, 1, .3, 1);
+  background:
+    linear-gradient(currentColor, currentColor) top left / 18px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) top left / 2px 18px no-repeat,
+    linear-gradient(currentColor, currentColor) top right / 18px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) top right / 2px 18px no-repeat,
+    linear-gradient(currentColor, currentColor) bottom left / 18px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) bottom left / 2px 18px no-repeat,
+    linear-gradient(currentColor, currentColor) bottom right / 18px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) bottom right / 2px 18px no-repeat;
+  color: #fff;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 65%));
+}
+html.light .oz-home-page .oz-card-hover::after {
+  color: #09090b;
+  filter: drop-shadow(0 0 2px rgb(255 255 255 / 65%));
+}
+.oz-home-page .oz-card-hover:hover::after,
+.oz-home-page .oz-card-hover:focus-visible::after {
+  opacity: .95;
+  transform: scale(1);
+}
+@media (hover: none) {
+  .oz-home-page .oz-card-hover::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-hero-stage + .oz-motion-section::before,
+  .oz-hero-stage + .oz-motion-section::after,
+  .oz-hero-stage .oz-hero-slide-copy::after {
+    animation: none !important;
+  }
+  .oz-home-page .oz-card-hover::after {
+    transition: none;
+  }
+}
+
+/* Smaller tape footprint on phones to protect the first section's content. */
+@media (max-width: 767px) {
+  .oz-hero-stage + .oz-motion-section {
+    --oz-gfx-tape-height: 1.75rem;
+    padding-block-start: 4.1rem;
+  }
+  .oz-hero-stage + .oz-motion-section::before { top: .55rem; }
+  .oz-hero-stage + .oz-motion-section::after { top: 1.3rem; }
+  .oz-hero-stage .oz-hero-slide-copy::after {
+    font-size: clamp(5rem, 23vw, 9rem);
+    -webkit-text-stroke-width: 1px;
+  }
+}
