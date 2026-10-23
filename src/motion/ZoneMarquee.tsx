@@ -10,61 +10,47 @@ export function ZoneMarquee() {
 
   useEffect(() => {
     const band = bandRef.current;
-    if (!band || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
+    const tracks = band?.querySelectorAll<HTMLElement>('.oz-marquee-track');
+    if (!band || !tracks?.length) return;
 
     gsap.registerPlugin(ScrollTrigger);
-    const media = gsap.matchMedia();
+    const media = gsap.matchMedia(band);
 
     media.add('(prefers-reduced-motion: no-preference)', () => {
-      const tracks = Array.from(
-        band.querySelectorAll<HTMLElement>('.oz-marquee-track')
-      );
-      if (!tracks.length) return;
-
-      const tweens = tracks.map((track, index) =>
-        gsap.fromTo(
-          track,
-          { xPercent: 0 },
-          {
-            xPercent: index === 0 ? -50 : 50,
-            duration: index === 0 ? 28 : 34,
-            ease: 'none',
-            repeat: -1,
-            paused: true,
-          }
-        )
-      );
-
-      const timeScaleSetters = tweens.map((tween) =>
-        gsap.quickTo(tween, 'timeScale', { duration: 0.28, ease: 'power2.out' })
-      );
-
-      const scrollTrigger = ScrollTrigger.create({
+      const track = tracks[0];
+      const tween = gsap.to(track, {
+        xPercent: -50,
+        duration: 19,
+        ease: 'none',
+        repeat: -1,
+        paused: true,
+      });
+      const easeSpeed = gsap.quickTo(tween, 'timeScale', {
+        duration: 0.32,
+        ease: 'power2.out',
+      });
+      const trigger = ScrollTrigger.create({
         trigger: band,
         start: 'top bottom',
         end: 'bottom top',
         onToggle: (self) => {
-          tweens.forEach((tween) => {
-            if (self.isActive) tween.play();
-            else tween.pause();
-          });
+          if (self.isActive) tween.play();
+          else {
+            easeSpeed(1);
+            tween.pause();
+          }
         },
         onUpdate: (self) => {
-          const velocity = Math.abs(self.getVelocity());
-          const timeScale = gsap.utils.clamp(0.7, 2.35, 1 + velocity / 1800);
-          timeScaleSetters.forEach((setTimeScale) => setTimeScale(timeScale));
+          easeSpeed(gsap.utils.clamp(0.65, 2.15, 1 + Math.abs(self.getVelocity()) / 1800));
         },
       });
 
+      if (trigger.isActive) tween.play();
+
       return () => {
-        scrollTrigger.kill();
-        tweens.forEach((tween) => {
-          gsap.killTweensOf(tween);
-          tween.kill();
-        });
-        timeScaleSetters.forEach((setTimeScale) => setTimeScale.tween.kill());
+        trigger.kill();
+        gsap.killTweensOf(tween);
+        tween.kill();
       };
     });
 
