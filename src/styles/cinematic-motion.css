@@ -433,8 +433,7 @@
     border-radius: 1rem;
   }
 
-  .oz-home-page .grid.grid-cols-2,
-  .oz-home-page .grid.grid-cols-2.sm\\:grid-cols-3 {
+  .oz-home-page .grid.grid-cols-2 {
     column-gap: 0.625rem;
     row-gap: 0.875rem;
   }
