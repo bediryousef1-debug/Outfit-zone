@@ -20,26 +20,28 @@ import { HomePage } from './pages/HomePage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { OrderSuccessPage } from './pages/OrderSuccessPage';
-import { AboutPage } from './pages/AboutPage';
-import { ContactPage } from './pages/ContactPage';
-import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { initSourceTracker } from './utils/sourceTracker';
-import { AdminLayout } from './pages/admin/AdminLayout';
 import type { AdminTab } from './pages/admin/AdminLayout';
-import { AdminLoginPage } from './pages/admin/AdminLoginPage';
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
-import { AdminProductsPage } from './pages/admin/AdminProductsPage';
-import { AdminProductEditPage } from './pages/admin/AdminProductEditPage';
-import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
-import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
-import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
-import { AdminCouponsPage } from './pages/admin/AdminCouponsPage';
-import { AdminContentPage } from './pages/admin/AdminContentPage';
-import { AdminContactPage } from './pages/admin/AdminContactPage';
-import { AdminHeroSliderPage } from './pages/admin/AdminHeroSliderPage';
-import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+
+const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
+const OrderSuccessPage = React.lazy(() => import('./pages/OrderSuccessPage').then(m => ({ default: m.OrderSuccessPage })));
+const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const ContactPage = React.lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const OrderTrackingPage = React.lazy(() => import('./pages/OrderTrackingPage').then(m => ({ default: m.OrderTrackingPage })));
+
+const AdminLayout = React.lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminLoginPage = React.lazy(() => import('./pages/admin/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const AdminDashboardPage = React.lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminProductsPage = React.lazy(() => import('./pages/admin/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
+const AdminProductEditPage = React.lazy(() => import('./pages/admin/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
+const AdminCategoriesPage = React.lazy(() => import('./pages/admin/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })));
+const AdminOrdersPage = React.lazy(() => import('./pages/admin/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })));
+const AdminOrderDetailPage = React.lazy(() => import('./pages/admin/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
+const AdminCouponsPage = React.lazy(() => import('./pages/admin/AdminCouponsPage').then(m => ({ default: m.AdminCouponsPage })));
+const AdminContentPage = React.lazy(() => import('./pages/admin/AdminContentPage').then(m => ({ default: m.AdminContentPage })));
+const AdminContactPage = React.lazy(() => import('./pages/admin/AdminContactPage').then(m => ({ default: m.AdminContactPage })));
+const AdminHeroSliderPage = React.lazy(() => import('./pages/admin/AdminHeroSliderPage').then(m => ({ default: m.AdminHeroSliderPage })));
+const AdminSettingsPage = React.lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 function AdminLoadingSpinner() {
   return (
@@ -471,10 +473,12 @@ function AppContent() {
     // Unauthenticated admin route handling: redirect to /admin/login
     if (!isAuthenticated) {
       return (
-        <AdminLoginPage
-          onBackToStore={() => navigate('/')}
-          onLoginSuccess={() => navigate('/admin')}
-        />
+        <React.Suspense fallback={<AdminLoadingSpinner />}>
+          <AdminLoginPage
+            onBackToStore={() => navigate('/')}
+            onLoginSuccess={() => navigate('/admin')}
+          />
+        </React.Suspense>
       );
     }
 
@@ -515,6 +519,7 @@ function AppContent() {
     const orderDetailId = isOrderDetail ? pathname.replace('/admin/orders/', '') : null;
 
     return (
+      <React.Suspense fallback={<AdminLoadingSpinner />}>
       <AdminLayout
           currentTab={activeTab}
           onSelectTab={(tab) => {
@@ -608,6 +613,7 @@ function AppContent() {
           {/* /admin/settings */}
           {activeTab === 'settings' && <AdminSettingsPage />}
         </AdminLayout>
+      </React.Suspense>
     );
   }
 
@@ -636,6 +642,7 @@ function AppContent() {
         <StorefrontMotionEffects pathname={pathname} />
         {/* / (Home) */}
         <ErrorBoundary resetKey={currentPath}>
+        <React.Suspense fallback={<AdminLoadingSpinner />}>
         <div
           key={pathname}
           className={pathname === '/' ? 'oz-route-motion-root' : 'oz-page-motion oz-route-motion-root'}
@@ -706,6 +713,7 @@ function AppContent() {
           <OrderTrackingPage onNavigate={(path) => navigate(path)} />
         )}
         </div>
+        </React.Suspense>
         </ErrorBoundary>
 
       </main>
