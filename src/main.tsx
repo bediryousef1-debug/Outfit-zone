@@ -2,6 +2,8 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
 import './index.css';
+import './styles/cinematic-motion.css';
+import './styles/street-graphics.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
