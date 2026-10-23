@@ -923,3 +923,119 @@ html[dir="rtl"] .oz-scroll-progress {
     transition: none !important;
   }
 }
+
+
+/* OUTFIT ZONE CINEMATIC UPGRADE — stronger camera movement and layered interactions. */
+@keyframes ozCinematicCamera {
+  0% {
+    opacity: .72;
+    transform: scale(1.13) translate3d(1.2%, 0, 0);
+    filter: saturate(.82) contrast(.94) blur(2px);
+  }
+  24% {
+    opacity: 1;
+    filter: saturate(1.14) contrast(1.04) blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.045) translate3d(-.6%, 0, 0);
+    filter: saturate(1.04) contrast(1.02) blur(0);
+  }
+}
+@keyframes ozCinematicScan {
+  0% { transform: translate3d(-170%, 0, 0) skewX(-20deg); opacity: 0; }
+  14% { opacity: .7; }
+  48%, 100% { transform: translate3d(360%, 0, 0) skewX(-20deg); opacity: 0; }
+}
+@keyframes ozCinematicRing {
+  0%, 100% { transform: scale(.94) rotate(-5deg); opacity: .18; }
+  50% { transform: scale(1.05) rotate(3deg); opacity: .62; }
+}
+@keyframes ozCinematicSection {
+  0% { opacity: 0; transform: translate3d(0, 42px, 0) scale(.975); filter: blur(5px); }
+  72% { opacity: 1; transform: translate3d(0, -3px, 0) scale(1.006); filter: blur(0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: none; }
+}
+@keyframes ozCinematicTitleGlow {
+  0%, 100% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+  45% { text-shadow: 0 0 18px rgba(255,255,255,.42), 0 0 42px rgba(255,255,255,.16); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* A stronger camera move makes each hero slide feel like a fashion campaign. */
+  .oz-hero-stage.oz-in-view .oz-hero-slide-visual .oz-hero-image {
+    animation: ozCinematicCamera 5.15s cubic-bezier(.16, 1, .3, 1) both !important;
+    will-change: transform, opacity, filter;
+  }
+  .oz-hero-stage .oz-hero-visual::after {
+    border-radius: 2rem;
+    animation: ozCinematicRing 6s ease-in-out infinite;
+  }
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+    animation: ozCinematicScan 4.6s cubic-bezier(.2, .7, .2, 1) .25s infinite;
+  }
+  html:not(.light) .oz-hero-stage .oz-hero-slide-copy h1 span {
+    animation: ozHeroSlideItemEnter .56s cubic-bezier(.16,1,.3,1) both, ozCinematicTitleGlow 1.25s ease-out both !important;
+  }
+  html:not(.light) .oz-hero-stage .oz-hero-slide-copy h1 span:last-child {
+    animation-delay: .15s, .12s !important;
+  }
+
+  /* More tactile depth on category and product tiles without affecting touch scrolling. */
+  .oz-home-page [data-oz-motion-card],
+  .oz-home-page .oz-card-hover {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+  }
+  .oz-home-page [data-oz-motion-card]:hover,
+  .oz-home-page .oz-card-hover:hover {
+    transform: perspective(1000px) translate3d(0, -8px, 0) rotateX(1.2deg) scale(1.012);
+    box-shadow: 0 24px 54px rgba(0, 0, 0, .22);
+  }
+  .oz-home-page [data-oz-motion-card] img,
+  .oz-home-page .oz-card-hover img {
+    transition: transform .8s cubic-bezier(.16,1,.3,1), filter .6s ease;
+  }
+  .oz-home-page [data-oz-motion-card]:hover img,
+  .oz-home-page .oz-card-hover:hover img {
+    transform: scale(1.09);
+    filter: saturate(1.12) contrast(1.025);
+  }
+
+  /* Distinct cinematic entrances as each homepage scene enters the viewport. */
+  .oz-home-page > .oz-motion-section:not(.oz-hero-stage).oz-in-view > div:first-child {
+    animation: ozCinematicSection .9s cubic-bezier(.16,1,.3,1) both;
+  }
+  .oz-page-motion > div > * {
+    animation-duration: .82s;
+  }
+}
+@media (hover: none) {
+  .oz-home-page [data-oz-motion-card]:hover,
+  .oz-home-page .oz-card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .oz-home-page [data-oz-motion-card]:hover img,
+  .oz-home-page .oz-card-hover:hover img {
+    transform: none;
+    filter: none;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  /* Keep the stronger effects on phones, but shorten their workload. */
+  .oz-hero-stage.oz-in-view .oz-hero-slide-visual .oz-hero-image {
+    animation-duration: 4.4s !important;
+  }
+  .oz-hero-stage .oz-hero-visual::after {
+    animation-duration: 7.5s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-hero-stage.oz-in-view .oz-hero-slide-visual .oz-hero-image,
+  .oz-hero-stage .oz-hero-visual::after,
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
