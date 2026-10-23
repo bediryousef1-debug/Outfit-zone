@@ -107,3 +107,57 @@ html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
   .oz-page-motion textarea,
   .oz-page-motion select { transition: none; }
 }
+
+.oz-header-nav-indicator {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -0.55rem;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: .72;
+  pointer-events: none;
+  will-change: transform, width;
+}
+[data-oz-tracking-timeline] > .oz-track-progress-track {
+  position: absolute;
+  top: 2rem;
+  inset-inline-start: 12.5%;
+  width: 75%;
+  height: 1px;
+  color: #10b981;
+  background: currentColor;
+  opacity: .28;
+  pointer-events: none;
+  z-index: 0;
+}
+[data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: currentColor;
+}
+[data-oz-tracking-timeline] > div:not(.oz-track-progress-track) {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 639px) {
+  [data-oz-tracking-timeline] > .oz-track-progress-track {
+    top: 1.5rem;
+    bottom: 1.5rem;
+    inset-inline-start: 1.7rem;
+    width: 1px;
+    height: auto;
+  }
+  [data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+    width: 100%;
+    height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-header-nav-indicator { display: none; }
+  [data-oz-tracking-timeline] > .oz-track-progress-track > .oz-track-progress-fill {
+    width: 100%;
+    height: 100%;
+  }
+}
