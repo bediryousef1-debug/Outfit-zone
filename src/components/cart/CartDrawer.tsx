@@ -95,7 +95,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   if (!isCartOpen) return null;
 
   return (
-    <div ref={overlayRef} onClick={(event) => { if (event.target === event.currentTarget) closeDrawer(); }} className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+    <div data-oz-cart-drawer ref={overlayRef} onClick={(event) => { if (event.target === event.currentTarget) closeDrawer(); }} className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
       <div ref={panelRef} data-oz-scene className="bg-[#101014] border-l border-neutral-800 w-full max-w-md h-full flex flex-col shadow-2xl text-start">
         
         {/* Header */}
