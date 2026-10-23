@@ -191,7 +191,7 @@ html.light .oz-hero-zone-word {
 
 @media (min-width: 1024px) {
   .oz-hero-stage .oz-hero-content > .grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
   .oz-hero-stage .oz-hero-slide-copy,
