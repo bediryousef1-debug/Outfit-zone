@@ -318,17 +318,47 @@ export function useStorefrontCinema(pathname: string): void {
 
     if (pathname === '/track' && !reduced) {
       let timelineObserver: MutationObserver | null = null;
+      let timelineClassObserver: MutationObserver | null = null;
       let progressMedia: gsap.MatchMedia | null = null;
+      let activeTimelineDot: HTMLElement | null = null;
+      const pulseOriginals = new Set<HTMLElement>();
       const setupTimeline = () => {
         const timeline = root.querySelector<HTMLElement>('[data-oz-tracking-timeline]');
-        if (!timeline || timeline.dataset.ozProgressReady) return;
+        if (!timeline) return;
         const steps = Array.from(timeline.querySelectorAll<HTMLElement>(':scope > div'));
         if (steps.length !== 4) return;
-        timeline.dataset.ozProgressReady = 'true';
         const currentIndex = Math.max(0, steps.findIndex((step) =>
           step.className.includes('shadow-lg') || step.className.includes('shadow-md')
         ));
         const progress = Math.max(0, Math.min(100, (currentIndex / (steps.length - 1)) * 100));
+        if (timeline.dataset.ozProgressReady) {
+          const fill = timeline.querySelector<HTMLElement>('.oz-track-progress-fill');
+          if (fill) {
+            gsap.killTweensOf(fill);
+            const isDesktop = window.matchMedia('(min-width: 640px)').matches;
+            gsap.to(fill, isDesktop
+              ? { width: progress + '%', duration: 0.42, ease: 'power2.out', overwrite: true }
+              : { height: progress + '%', duration: 0.42, ease: 'power2.out', overwrite: true });
+          }
+          const nextDot = steps[currentIndex]?.querySelector<HTMLElement>('.rounded-full') || null;
+          if (nextDot !== activeTimelineDot) {
+            if (activeTimelineDot) {
+              gsap.killTweensOf(activeTimelineDot);
+              gsap.set(activeTimelineDot, { clearProps: 'transform' });
+            }
+            if (nextDot) {
+              if (nextDot.classList.contains('animate-pulse')) {
+                pulseOriginals.add(nextDot);
+                nextDot.classList.remove('animate-pulse');
+              }
+              activeTimelineDot = nextDot;
+              tweens.push(gsap.to(nextDot, { scale: 1.1, duration: 0.75, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: 'center center' }));
+            }
+          }
+          timeline.dataset.ozCurrentStep = String(currentIndex);
+          return;
+        }
+        timeline.dataset.ozProgressReady = 'true';
         const track = document.createElement('span');
         track.className = 'oz-track-progress-track';
         track.setAttribute('aria-hidden', 'true');
@@ -337,10 +367,14 @@ export function useStorefrontCinema(pathname: string): void {
         track.append(fill);
         timeline.append(track);
         const currentStep = steps[currentIndex];
-        const dot = currentStep?.querySelector<HTMLElement>('.rounded-full');
-        const hadPulse = dot?.classList.contains('animate-pulse') || false;
+        const dot = currentStep?.querySelector<HTMLElement>('.rounded-full') || null;
         if (dot) {
-          dot.classList.remove('animate-pulse');
+          if (dot.classList.contains('animate-pulse')) {
+            pulseOriginals.add(dot);
+            dot.classList.remove('animate-pulse');
+          }
+          activeTimelineDot = dot;
+          timeline.dataset.ozCurrentStep = String(currentIndex);
           tweens.push(gsap.to(dot, { scale: 1.1, duration: 0.75, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: 'center center' }));
         }
         progressMedia = gsap.matchMedia(timeline);
@@ -358,17 +392,33 @@ export function useStorefrontCinema(pathname: string): void {
           progressMedia?.revert();
           track.remove();
           delete timeline.dataset.ozProgressReady;
-          if (dot && hadPulse) dot.classList.add('animate-pulse');
+          pulseOriginals.forEach((originalDot) => originalDot.classList.add('animate-pulse'));
+          pulseOriginals.clear();
+          activeTimelineDot = null;
+          delete timeline.dataset.ozCurrentStep;
         });
       };
       setupTimeline();
       timelineObserver = new MutationObserver(() => {
         setupTimeline();
+        const timeline = root.querySelector<HTMLElement>('[data-oz-tracking-timeline]');
+        if (timeline && !timelineClassObserver) {
+          timelineClassObserver = new MutationObserver(() => setupTimeline());
+          timelineClassObserver.observe(timeline, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        }
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 220);
       });
       timelineObserver.observe(root, { childList: true, subtree: true });
-      cleanups.push(() => timelineObserver?.disconnect());
+      const existingTimeline = root.querySelector<HTMLElement>('[data-oz-tracking-timeline]');
+      if (existingTimeline) {
+        timelineClassObserver = new MutationObserver(() => setupTimeline());
+        timelineClassObserver.observe(existingTimeline, { attributes: true, subtree: true, attributeFilter: ['class'] });
+      }
+      cleanups.push(() => {
+        timelineObserver?.disconnect();
+        timelineClassObserver?.disconnect();
+      });
     }
 
     // Small purchase feedback; handlers never prevent or delay the original action.
