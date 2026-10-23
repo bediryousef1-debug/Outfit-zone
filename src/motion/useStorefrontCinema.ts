@@ -51,15 +51,16 @@ function splitWords(heading: HTMLElement) {
 export function useStorefrontCinema(pathname: string): void {
   useEffect(() => {
     if (pathname.startsWith('/admin')) return;
-    const root = document.querySelector<HTMLElement>('.oz-page-motion.oz-route-motion-root');
+    const root = document.querySelector<HTMLElement>('.oz-route-motion-root');
     if (!root) return;
+    const isInnerPage = pathname !== '/' && root.classList.contains('oz-page-motion');
 
     gsap.registerPlugin(ScrollTrigger);
     const cleanups: Array<() => void> = [];
     const triggers: ScrollTrigger[] = [];
     const tweens: gsap.core.Tween[] = [];
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const label = pageKey(pathname);
+    const label = isInnerPage ? pageKey(pathname) : '';
     let refreshTimer = 0;
 
     const heading = root.querySelector<HTMLElement>('h1');
@@ -119,9 +120,12 @@ export function useStorefrontCinema(pathname: string): void {
       }
     }
 
-    if (!reduced) {
-      // Mark existing editorial sections without replacing their markup or changing their layout.
-      const scenes = Array.from(root.querySelectorAll<HTMLElement>('section, [data-oz-scroll-scene]'));
+    if (!reduced && isInnerPage) {
+      // Mark existing editorial sections and major div-based page blocks without replacing markup or layout.
+      const scenes = Array.from(new Set([
+        ...root.querySelectorAll<HTMLElement>('section, [data-oz-scroll-scene]'),
+        ...root.querySelectorAll<HTMLElement>(':scope > div > div'),
+      ]));
       scenes.forEach((scene) => {
         if (!scene.hasAttribute('data-oz-scene')) {
           scene.setAttribute('data-oz-scene', '');
@@ -226,6 +230,163 @@ export function useStorefrontCinema(pathname: string): void {
       });
       drawerObserver.observe(document.body, { childList: true, subtree: true });
       cleanups.push(() => drawerObserver.disconnect());
+    }
+
+    // Header: hide while scrolling down, restore while scrolling up. No second scroll engine is created.
+    const header = document.querySelector<HTMLElement>('header');
+    if (header && !reduced) {
+      let previousY = window.scrollY;
+      let hidden = false;
+      const onScrollDirection = () => {
+        const currentY = window.scrollY;
+        const delta = currentY - previousY;
+        previousY = currentY;
+        if (header.querySelector('[aria-expanded="true"]')) return;
+        if (currentY < 72 || delta < -8) {
+          if (hidden) {
+            hidden = false;
+            gsap.to(header, { yPercent: 0, duration: 0.24, ease: 'power2.out', overwrite: true });
+          }
+        } else if (delta > 8 && currentY > 120 && !hidden) {
+          hidden = true;
+          gsap.to(header, { yPercent: -110, duration: 0.24, ease: 'power2.out', overwrite: true });
+        }
+      };
+      window.addEventListener('scroll', onScrollDirection, { passive: true });
+      cleanups.push(() => {
+        window.removeEventListener('scroll', onScrollDirection);
+        gsap.killTweensOf(header);
+        gsap.set(header, { clearProps: 'transform' });
+      });
+    }
+
+    // Mobile bottom navigation indicator follows the active item in either text direction.
+    const mobileNav = document.querySelector<HTMLElement>('nav[aria-label]');
+    if (mobileNav && !reduced && mobileNav.classList.contains('md:hidden')) {
+      const navInner = mobileNav.firstElementChild as HTMLElement | null;
+      const activeItem = () => Array.from(mobileNav.querySelectorAll<HTMLElement>('button'))
+        .find((button) => button.className.includes('font-bold'));
+      if (navInner) {
+        const indicator = document.createElement('span');
+        indicator.className = 'oz-mobile-nav-indicator';
+        indicator.setAttribute('aria-hidden', 'true');
+        navInner.append(indicator);
+        const oldPosition = navInner.style.position;
+        navInner.style.position = 'relative';
+        const moveIndicator = () => {
+          const active = activeItem();
+          if (!active) return;
+          const parentRect = navInner.getBoundingClientRect();
+          const rect = active.getBoundingClientRect();
+          gsap.to(indicator, {
+            x: rect.left - parentRect.left,
+            width: rect.width,
+            duration: 0.3,
+            ease: 'power3.out',
+            overwrite: true,
+          });
+        };
+        moveIndicator();
+        window.addEventListener('resize', moveIndicator);
+        cleanups.push(() => {
+          window.removeEventListener('resize', moveIndicator);
+          indicator.remove();
+          navInner.style.position = oldPosition;
+          gsap.killTweensOf(indicator);
+        });
+      }
+    }
+
+    // Footer columns enter gently as they approach the viewport; cap the animated elements.
+    const footer = document.querySelector<HTMLElement>('footer');
+    if (footer && !reduced) {
+      const columns = Array.from(footer.querySelectorAll<HTMLElement>('.grid > div')).slice(0, 4);
+      columns.forEach((column) => {
+        const tween = gsap.fromTo(column, { y: 12 }, {
+          y: 0,
+          duration: 0.48,
+          ease: 'power2.out',
+          clearProps: 'transform',
+          scrollTrigger: { trigger: column, start: 'top 92%', once: true },
+        });
+        tweens.push(tween);
+        if (tween.scrollTrigger) triggers.push(tween.scrollTrigger as ScrollTrigger);
+      });
+    }
+
+    // Order confirmation: draw the existing check icon and emit a small one-time particle burst.
+    if (pathname.startsWith('/order-success/') && !reduced) {
+      const checkHost = root.querySelector<HTMLElement>('[class*="bg-emerald-500/10"]');
+      const svg = checkHost?.querySelector<SVGSVGElement>('svg');
+      const paths = svg ? Array.from(svg.querySelectorAll<SVGGeometryElement>('path, polyline, line, circle')) : [];
+      paths.forEach((path) => {
+        try {
+          const length = typeof path.getTotalLength === 'function' ? path.getTotalLength() : 0;
+          if (length > 0) {
+            gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+            tweens.push(gsap.to(path, { strokeDashoffset: 0, duration: 0.72, ease: 'power2.out', delay: 0.12 }));
+          }
+        } catch { /* Some SVG primitives do not expose a measurable path length. */ }
+      });
+      if (checkHost) {
+        const previousPosition = checkHost.style.position;
+        checkHost.style.position = 'relative';
+        const particles = Array.from({ length: 8 }, (_, index) => {
+          const particle = document.createElement('span');
+          particle.className = 'oz-success-particle';
+          particle.setAttribute('aria-hidden', 'true');
+          checkHost.append(particle);
+          const angle = (Math.PI * 2 * index) / 8;
+          tweens.push(gsap.fromTo(particle, { x: 0, y: 0, scale: 0.25, opacity: 0.9 }, {
+            x: Math.cos(angle) * 42,
+            y: Math.sin(angle) * 42,
+            scale: 1,
+            opacity: 0,
+            duration: 0.68,
+            delay: 0.18,
+            ease: 'power2.out',
+          }));
+          return particle;
+        });
+        cleanups.push(() => {
+          particles.forEach((particle) => particle.remove());
+          checkHost.style.position = previousPosition;
+        });
+      }
+    }
+
+    // Validation messages enter without intercepting form submission or input events.
+    if ((pathname === '/checkout' || pathname === '/contact') && !reduced) {
+      const animateErrors = (node: Node) => {
+        if (!(node instanceof HTMLElement)) return;
+        const candidates = [
+          ...(node.matches('[role="alert"], .text-red-200, .text-rose-400, .text-red-500') ? [node] : []),
+          ...Array.from(node.querySelectorAll<HTMLElement>('[role="alert"], .text-red-200, .text-rose-400, .text-red-500')),
+        ];
+        candidates.slice(0, 8).forEach((element) => {
+          if (element.dataset.ozErrorAnimated) return;
+          element.dataset.ozErrorAnimated = 'true';
+          gsap.fromTo(element, { y: 8 }, { y: 0, duration: 0.22, ease: 'power2.out', clearProps: 'transform' });
+        });
+      };
+      const formObserver = new MutationObserver((records) => {
+        records.forEach((record) => record.addedNodes.forEach(animateErrors));
+      });
+      formObserver.observe(root, { childList: true, subtree: true });
+      cleanups.push(() => formObserver.disconnect());
+    }
+
+    // Cart rows collapse on remove; the click itself and state update are never delayed.
+    if (pathname === '/cart') {
+      const onRemove = (event: Event) => {
+        const target = event.target as HTMLElement | null;
+        const button = target?.closest('button');
+        if (!button || !button.querySelector('svg.lucide-trash-2')) return;
+        const row = button.closest<HTMLElement>('.rounded-xl');
+        if (row && !reduced) gsap.to(row, { y: -5, scale: 0.985, opacity: 0, duration: 0.16, ease: 'power2.in' });
+      };
+      root.addEventListener('click', onRemove);
+      cleanups.push(() => root.removeEventListener('click', onRemove));
     }
 
     const refreshAfterContent = () => {
