@@ -77,3 +77,16 @@ html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
   .oz-mobile-nav-indicator,
   .oz-success-particle { display: none; }
 }
+
+[data-oz-social-motion] {
+  transition: transform 180ms ease;
+}
+[data-oz-social-motion]:hover,
+[data-oz-social-motion]:focus-visible {
+  transform: translate3d(0, -2px, 0) scale(1.045);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-oz-social-motion] { transition: none; }
+  [data-oz-social-motion]:hover,
+  [data-oz-social-motion]:focus-visible { transform: none; }
+}
