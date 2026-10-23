@@ -6,6 +6,7 @@ import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { ProductCard } from '../components/product/ProductCard';
+import { ZoneMarquee } from '../motion/ZoneMarquee';
 import {
   FilterState,
   ProductFilterModal,
@@ -520,6 +521,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           ))}
         </div>
       )}
+
+      <div className="-mx-3.5 sm:-mx-6 my-10" aria-label={language === 'en' ? 'Outfit Zone collection divider' : 'فاصل مجموعة Outfit Zone'}>
+        <ZoneMarquee />
+      </div>
 
       {/* Filter Modal */}
       <ProductFilterModal
