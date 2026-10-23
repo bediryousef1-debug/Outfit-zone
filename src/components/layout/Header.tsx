@@ -148,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
+            <nav data-oz-header-nav className="hidden lg:flex items-center gap-6 mr-4 text-xs font-semibold uppercase tracking-wider">
               {navLinks.map((link) => {
                 const isActive = currentPath === link.path;
 
