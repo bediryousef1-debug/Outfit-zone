@@ -263,11 +263,7 @@ export function useStorefrontCinema(pathname: string): void {
           const target = event.target as HTMLElement | null;
           const button = target?.closest('button');
           if (!button || !button.querySelector('img')) return;
-          const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
-          const mainImage = images.filter((image) => {
-            const rect = image.getBoundingClientRect();
-            return rect.width > 180 && rect.height > 180;
-          }).sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+          const mainImage = root.querySelector<HTMLImageElement>('[data-oz-product-main-image]');
           if (mainImage) {
             gsap.fromTo(mainImage, { opacity: 0.78, scale: 1.018, y: 3 }, {
               opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform,opacity',
