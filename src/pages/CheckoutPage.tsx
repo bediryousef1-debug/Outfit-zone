@@ -515,7 +515,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
       >
         {/* Left: Customer & Delivery Info */}
-        <div className="lg:col-span-7 space-y-6 min-w-0">
+        <div data-oz-scroll-scene className="lg:col-span-7 space-y-6 min-w-0">
           <div
             className={`p-5 sm:p-6 rounded-2xl border transition-colors ${
               isDark
@@ -882,7 +882,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Right: Order Summary */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 min-w-0">
+        <div data-oz-scroll-scene className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 min-w-0">
           <div
             className={`p-5 sm:p-6 rounded-2xl border space-y-4 transition-colors ${
               isDark
