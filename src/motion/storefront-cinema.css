@@ -50,3 +50,30 @@ html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
 @media (max-width: 767px) {
   .oz-page-intro-host::before { font-size: clamp(2.5rem, 17vw, 5rem); }
 }
+
+.oz-mobile-nav-indicator {
+  position: absolute;
+  inset-block-end: 5px;
+  inset-inline-start: 0;
+  height: 2px;
+  width: 0;
+  border-radius: 999px;
+  background: currentColor;
+  pointer-events: none;
+  will-change: transform, width;
+}
+.oz-success-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #34d399;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oz-mobile-nav-indicator,
+  .oz-success-particle { display: none; }
+}
