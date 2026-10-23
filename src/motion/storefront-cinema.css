@@ -161,3 +161,11 @@ html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
     height: 100%;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-motion .animate-pulse,
+  .oz-page-motion .animate-spin,
+  [data-oz-cart-drawer].animate-in {
+    animation: none !important;
+  }
+}
