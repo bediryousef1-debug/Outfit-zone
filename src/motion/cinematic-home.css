@@ -7,7 +7,7 @@
   position: absolute;
   z-index: 0;
   inset-block-start: 19%;
-  inset-inline-start: 50%;
+  left: 50%;
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
@@ -18,15 +18,15 @@
   font-weight: 900;
   line-height: 0.78;
   letter-spacing: -0.09em;
-  -webkit-text-stroke: 1px currentColor;
-  text-stroke: 1px currentColor;
-  transform: translateX(-50%);
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.32);
+  text-stroke: 1px rgba(255, 255, 255, 0.32);
+  translate: -50% 0;
 }
 
 html.light .oz-hero-zone-word {
   opacity: 0.12;
-  -webkit-text-stroke-color: #111;
-  text-stroke-color: #111;
+  -webkit-text-stroke-color: rgba(17, 17, 17, 0.3);
+  text-stroke-color: rgba(17, 17, 17, 0.3);
 }
 
 .oz-marquee-band {
@@ -120,10 +120,6 @@ html.light .oz-hero-zone-word {
   .oz-marquee-track {
     transform: none !important;
     will-change: auto;
-  }
-
-  .oz-hero-zone-word {
-    transform: translateX(-50%);
   }
 
   .oz-cinema-word-mask {
