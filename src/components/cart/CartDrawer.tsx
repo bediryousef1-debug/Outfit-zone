@@ -248,7 +248,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               </button>
 
               <button
-                onClick={() => setIsCartOpen(false)}
+                onClick={() => closeDrawer()}
                 className="w-full py-2.5 text-center text-xs text-neutral-400 hover:text-white transition-colors"
               >
                 {t('cart.continue_shopping', 'Continue Shopping')}
