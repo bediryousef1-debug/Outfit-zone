@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './styles/cinematic-motion.css';
+import { useStorefrontCinema } from './motion/useStorefrontCinema';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
@@ -53,6 +54,7 @@ function AdminLoadingSpinner() {
 
 function StorefrontMotionEffects({ pathname }: { pathname: string }) {
   const progressRef = React.useRef<HTMLDivElement>(null);
+  useStorefrontCinema(pathname);
 
   useEffect(() => {
     const main = document.querySelector('main');
