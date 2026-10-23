@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import './storefront-cinema.css';
 
 const PAGE_WORDS: Record<string, string> = {
   '/products': 'SHOP',
