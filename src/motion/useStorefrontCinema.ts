@@ -295,11 +295,58 @@ export function useStorefrontCinema(pathname: string): void {
     }
 
     if (pathname === '/track' && !reduced) {
-      const timeline = Array.from(root.querySelectorAll<HTMLElement>('.grid'))
-        .find((grid) => grid.querySelectorAll(':scope > div').length === 4);
-      const currentStep = timeline?.querySelector<HTMLElement>('[class*="shadow-lg"], [class*="shadow-md"]');
-      const dot = currentStep?.querySelector<HTMLElement>('.rounded-full');
-      if (dot) tweens.push(gsap.to(dot, { scale: 1.1, duration: 0.75, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: 'center center' }));
+      let timelineObserver: MutationObserver | null = null;
+      let progressMedia: gsap.MatchMedia | null = null;
+      const setupTimeline = () => {
+        const timeline = root.querySelector<HTMLElement>('[data-oz-tracking-timeline]');
+        if (!timeline || timeline.dataset.ozProgressReady) return;
+        const steps = Array.from(timeline.querySelectorAll<HTMLElement>(':scope > div'));
+        if (steps.length !== 4) return;
+        timeline.dataset.ozProgressReady = 'true';
+        const currentIndex = Math.max(0, steps.findIndex((step) =>
+          step.className.includes('shadow-lg') || step.className.includes('shadow-md')
+        ));
+        const progress = Math.max(0, Math.min(100, (currentIndex / (steps.length - 1)) * 100));
+        const track = document.createElement('span');
+        track.className = 'oz-track-progress-track';
+        track.setAttribute('aria-hidden', 'true');
+        const fill = document.createElement('span');
+        fill.className = 'oz-track-progress-fill';
+        track.append(fill);
+        timeline.append(track);
+        const currentStep = steps[currentIndex];
+        const dot = currentStep?.querySelector<HTMLElement>('.rounded-full');
+        const hadPulse = dot?.classList.contains('animate-pulse') || false;
+        if (dot) {
+          dot.classList.remove('animate-pulse');
+          tweens.push(gsap.to(dot, { scale: 1.1, duration: 0.75, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: 'center center' }));
+        }
+        progressMedia = gsap.matchMedia(timeline);
+        progressMedia.add({
+          desktop: '(min-width: 640px)',
+          mobile: '(max-width: 639px)',
+        }, (context) => {
+          const animation = context.conditions?.desktop
+            ? gsap.fromTo(fill, { width: '0%' }, { width: progress + '%', duration: 0.8, ease: 'power2.out' })
+            : gsap.fromTo(fill, { height: '0%' }, { height: progress + '%', duration: 0.8, ease: 'power2.out' });
+          tweens.push(animation);
+          return () => animation.kill();
+        });
+        cleanups.push(() => {
+          progressMedia?.revert();
+          track.remove();
+          delete timeline.dataset.ozProgressReady;
+          if (dot && hadPulse) dot.classList.add('animate-pulse');
+        });
+      };
+      setupTimeline();
+      timelineObserver = new MutationObserver(() => {
+        setupTimeline();
+        window.clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 220);
+      });
+      timelineObserver.observe(root, { childList: true, subtree: true });
+      cleanups.push(() => timelineObserver?.disconnect());
     }
 
     // Small purchase feedback; handlers never prevent or delay the original action.
@@ -409,6 +456,40 @@ export function useStorefrontCinema(pathname: string): void {
           gsap.killTweensOf(indicator);
         });
       }
+    }
+
+    // Desktop header navigation underline follows the active route in both RTL and LTR.
+    const desktopNav = document.querySelector<HTMLElement>('[data-oz-header-nav]');
+    if (desktopNav && !reduced) {
+      const activeItem = () => Array.from(desktopNav.querySelectorAll<HTMLElement>('button'))
+        .find((button) => button.className.includes('font-bold'));
+      const indicator = document.createElement('span');
+      indicator.className = 'oz-header-nav-indicator';
+      indicator.setAttribute('aria-hidden', 'true');
+      desktopNav.append(indicator);
+      const oldPosition = desktopNav.style.position;
+      desktopNav.style.position = 'relative';
+      const moveIndicator = () => {
+        const active = activeItem();
+        if (!active) return;
+        const parentRect = desktopNav.getBoundingClientRect();
+        const rect = active.getBoundingClientRect();
+        gsap.to(indicator, {
+          x: rect.left - parentRect.left,
+          width: rect.width,
+          duration: 0.32,
+          ease: 'power3.out',
+          overwrite: true,
+        });
+      };
+      moveIndicator();
+      window.addEventListener('resize', moveIndicator);
+      cleanups.push(() => {
+        window.removeEventListener('resize', moveIndicator);
+        indicator.remove();
+        desktopNav.style.position = oldPosition;
+        gsap.killTweensOf(indicator);
+      });
     }
 
     // Footer columns enter gently as they approach the viewport; cap the animated elements.
