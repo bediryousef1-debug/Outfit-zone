@@ -35,7 +35,7 @@ html.light .oz-hero-zone-word {
   left: 50%;
   width: 100vw;
   max-width: 100vw;
-  height: clamp(108px, 11vw, 142px);
+  height: clamp(62px, 6.5vw, 86px);
   overflow: clip;
   isolation: isolate;
   transform: translateX(-50%);
@@ -115,13 +115,13 @@ html.light .oz-hero-zone-word {
   }
 
   .oz-marquee-band {
-    height: 108px;
+    height: 60px;
   }
 
   .oz-marquee-ribbon {
-    height: 36px;
-    font-size: 0.76rem;
-    letter-spacing: 0.055em;
+    height: 30px;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
   }
 
   .oz-marquee-track span {

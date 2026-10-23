@@ -629,7 +629,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const NextArrow = ChevronLeft;
 
   return (
-    <div ref={homeRef} className="oz-home-page space-y-12 sm:space-y-16 w-full max-w-full overflow-x-hidden">
+    <div ref={homeRef} className="oz-home-page space-y-8 sm:space-y-12 w-full max-w-full overflow-x-hidden">
       {/* =====================================================================
           1. HERO SECTION & SLIDER
           ===================================================================== */}
@@ -668,9 +668,9 @@ export const HomePage: React.FC<HomePageProps> = ({
         }
       >
         <div className="oz-hero-zone-word" data-oz-zone-parallax aria-hidden="true"><span>OUTFIT ZONE</span></div>
-        <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-8 sm:py-6 lg:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-4 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy min-h-[110px] sm:min-h-[140px]">
+        <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 lg:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-10 items-center">
+            <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-2.5 sm:space-y-3.5 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-[1px] bg-neutral-500" />
@@ -685,8 +685,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-1 min-h-[110px] sm:min-h-[140px] flex flex-col justify-center">
-                <h1 key={currentSlide.id} className="font-syne text-[28px] xs:text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
+              <div className="space-y-0.5 sm:space-y-1 flex flex-col justify-center">
+                <h1 key={currentSlide.id} className="font-syne text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight leading-[0.98] break-words hyphens-auto">
                   <span
                     className={`block transition-colors duration-300 ${
                       isDark ? 'text-white' : 'text-black'
@@ -705,7 +705,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </h1>
 
                 <h2
-                  className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold pt-2 transition-colors duration-300 ${
+                  className={`text-lg sm:text-2xl lg:text-3xl font-extrabold pt-1 sm:pt-2 transition-colors duration-300 ${
                     isDark ? 'text-neutral-100' : 'text-neutral-900'
                   }`}
                 >
@@ -714,28 +714,28 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               <p
-                className={`text-sm sm:text-base leading-relaxed max-w-md min-h-[48px] transition-colors duration-300 ${
+                className={`text-xs sm:text-sm sm:leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none transition-colors duration-300 ${
                   isDark ? 'text-neutral-300' : 'text-neutral-600'
                 }`}
               >
                 {localizedDescription}
               </p>
 
-              <div className="pt-2 flex flex-wrap items-center gap-4">
+              <div className="pt-1 sm:pt-2 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => onNavigate(currentSlide.button_link)}
-                  className={`oz-btn-press py-3.5 px-8 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-lg cursor-pointer ${
+                  className={`oz-btn-press py-2.5 px-6 sm:py-3 sm:px-8 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer ${
                     isDark
                       ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
                       : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
                   }`}
                 >
                   <span>{localizedCta}</span>
-                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                  <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-neutral-200/40 dark:border-neutral-800/60 max-w-md">
+              <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-neutral-200/40 dark:border-neutral-800/60 max-w-md">
                 <div
                   className="flex items-center gap-2"
                   role="tablist"
@@ -813,7 +813,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div key={`visual-${currentSlide.id}`} className="lg:col-span-6 relative order-1 lg:order-2 oz-hero-visual oz-hero-slide-visual">
               <div
                 onClick={() => onNavigate(currentSlide.button_link)}
-                className={`group relative max-h-[380px] sm:max-h-[420px] lg:max-h-[460px] aspect-[4/4.8] sm:aspect-[4/4.2] lg:aspect-[4/3.8] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
+                className={`group relative max-h-[260px] xs:max-h-[300px] sm:max-h-[360px] lg:max-h-[410px] aspect-[16/10] sm:aspect-[4/3.8] lg:aspect-[4/3.4] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl transition-all duration-500 border cursor-pointer ${
                   isDark
                     ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
                     : 'bg-neutral-100 border-neutral-200 hover:border-neutral-300'
