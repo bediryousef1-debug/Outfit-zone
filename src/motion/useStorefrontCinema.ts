@@ -604,6 +604,8 @@ export function useStorefrontCinema(pathname: string): void {
       if (!button || reduced) return;
       const row = button.closest<HTMLElement>('.rounded-xl');
       if (button.querySelector('svg.lucide-trash-2')) {
+        // Cart page and drawer own their row-collapse sequence to avoid competing tweens.
+        if (row?.hasAttribute('data-oz-cart-row')) return;
         if (row) gsap.to(row, { y: -5, scale: 0.985, opacity: 0, duration: 0.16, ease: 'power2.in' });
         return;
       }
