@@ -382,9 +382,10 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* A short, restrained entrance for every customer-facing page. */
-  main > div {
-    animation: ozPageEnter .42s cubic-bezier(.16, 1, .3, 1) both;
+  /* Route entrances are driven by GSAP on the keyed route root.
+     Avoid animating every direct child of main (including the scroll-progress element). */
+  .oz-route-motion-root {
+    will-change: transform, opacity;
   }
 
   /* The content stays visible by default; motion only starts after observation. */
