@@ -682,6 +682,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             }`}
           >
             <img
+              data-oz-product-main-image
               key={displayedImageUrl}
               src={resolveImageUrl(
                 displayedImageUrl
