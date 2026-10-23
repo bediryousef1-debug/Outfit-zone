@@ -724,7 +724,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="pt-1 sm:pt-2 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => onNavigate(currentSlide.button_link)}
-                  className={`oz-btn-press py-2.5 px-6 sm:py-3 sm:px-8 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer ${
+                  className={`oz-hero-cta oz-btn-press py-2.5 px-6 sm:py-3 sm:px-8 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer ${
                     isDark
                       ? 'bg-white text-black hover:bg-neutral-200 shadow-white/10'
                       : 'bg-black text-white hover:bg-neutral-800 shadow-black/20'
@@ -784,7 +784,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     aria-label={
                       isRTL ? 'الشريحة السابقة' : 'Previous slide'
                     }
-                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                    className={`oz-hero-nav-button w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
                       isDark
                         ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
                         : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'
@@ -798,7 +798,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     aria-label={
                       isRTL ? 'الشريحة التالية' : 'Next slide'
                     }
-                    className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                    className={`oz-hero-nav-button w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer ${
                       isDark
                         ? 'border-neutral-800 bg-neutral-900/80 text-white hover:bg-white hover:text-black hover:border-white'
                         : 'border-neutral-300 bg-white text-black hover:bg-black hover:text-white hover:border-black shadow-xs'

@@ -421,11 +421,26 @@
     min-height: 0 !important;
   }
 
-  .oz-hero-stage .oz-hero-slide-copy button {
+  .oz-hero-stage .oz-hero-slide-copy .oz-hero-cta {
     min-height: 44px;
     min-width: 140px;
     padding-inline: 1.25rem;
     font-size: 0.875rem;
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy .oz-hero-nav-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    flex: 0 0 44px;
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy .oz-hero-nav-button svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
   }
 
   .oz-hero-stage .oz-hero-slide-visual > div:first-child {
