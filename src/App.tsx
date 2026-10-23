@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
 import { CartProvider, useCart } from './context/CartContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
@@ -49,6 +52,147 @@ function AdminLoadingSpinner() {
 
 function StorefrontMotionEffects() {
   const progressRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (motionPreference.matches) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const lenis = new Lenis({
+      duration: 1.05,
+      smoothWheel: true,
+      syncTouch: false,
+      wheelMultiplier: 0.92,
+      touchMultiplier: 1.05,
+    });
+
+    const syncScroll = () => ScrollTrigger.update();
+    const frame = (time: number) => lenis.raf(time * 1000);
+    const scrollToTop = () => lenis.scrollTo(0, { duration: 0.85, easing: (t) => 1 - Math.pow(1 - t, 4) });
+
+    lenis.on('scroll', syncScroll);
+    gsap.ticker.add(frame);
+    gsap.ticker.lagSmoothing(0);
+    window.addEventListener('oz:scroll-top', scrollToTop);
+
+    const motionContext = gsap.context(() => {
+      const pageSections = main.querySelectorAll<HTMLElement>(
+        '.oz-home-page .oz-motion-section:not(.oz-hero-stage), .oz-page-motion section, .oz-page-motion [data-oz-scroll-scene]'
+      );
+
+      pageSections.forEach((section) => {
+        const headings = section.querySelectorAll<HTMLElement>('h2, h3, [data-oz-motion-heading]');
+        if (headings.length) {
+          gsap.fromTo(headings,
+            { autoAlpha: 0, y: 34, clipPath: 'inset(0 0 16% 0)' },
+            {
+              autoAlpha: 1,
+              y: 0,
+              clipPath: 'inset(0 0 0% 0)',
+              duration: 0.9,
+              stagger: 0.1,
+              ease: 'power4.out',
+              clearProps: 'clipPath',
+              scrollTrigger: { trigger: section, start: 'top 84%', once: true },
+            }
+          );
+        }
+
+        const cards = section.querySelectorAll<HTMLElement>('[data-oz-motion-card], .oz-card-hover');
+        if (cards.length) {
+          gsap.fromTo(cards,
+            { autoAlpha: 0, y: 38, scale: 0.965, rotateX: 2, transformPerspective: 1100 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              scale: 1,
+              rotateX: 0,
+              duration: 0.82,
+              stagger: { each: 0.065, from: 'start' },
+              ease: 'power3.out',
+              clearProps: 'transform,opacity,visibility',
+              scrollTrigger: { trigger: section, start: 'top 88%', once: true },
+            }
+          );
+        }
+
+        const editorialImages = section.querySelectorAll<HTMLElement>(
+          ':scope > div img:not(.oz-hero-image), [data-oz-cinematic-image]'
+        );
+        if (editorialImages.length) {
+          gsap.fromTo(editorialImages,
+            { clipPath: 'inset(7% 4% 7% 4% round 12px)', scale: 1.055, filter: 'saturate(.78)' },
+            {
+              clipPath: 'inset(0% 0% 0% 0% round 0px)',
+              scale: 1,
+              filter: 'saturate(1)',
+              duration: 1.15,
+              stagger: 0.08,
+              ease: 'power3.out',
+              clearProps: 'clipPath,filter,transform',
+              scrollTrigger: { trigger: section, start: 'top 82%', once: true },
+            }
+          );
+        }
+      });
+
+      const hero = main.querySelector<HTMLElement>('.oz-hero-stage');
+      const heroVisual = hero?.querySelector<HTMLElement>('.oz-hero-slide-visual');
+      if (hero && heroVisual && window.matchMedia('(min-width: 768px)').matches) {
+        gsap.to(heroVisual, {
+          yPercent: 10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: hero,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.1,
+          },
+        });
+      }
+
+      const heroCopy = main.querySelector<HTMLElement>('.oz-hero-slide-copy');
+      if (heroCopy) {
+        const heroEyebrow = heroCopy.querySelector<HTMLElement>('.font-mono');
+        const heroHeading = heroCopy.querySelector<HTMLElement>('h1');
+        const heroSubtitle = heroCopy.querySelector<HTMLElement>('h2');
+        const heroDescription = heroCopy.querySelector<HTMLElement>('p');
+        const heroCta = heroCopy.querySelector<HTMLElement>('button');
+        gsap.fromTo([heroEyebrow, heroHeading, heroSubtitle, heroDescription, heroCta].filter(Boolean),
+          { autoAlpha: 0, y: 28, filter: 'blur(5px)' },
+          {
+            autoAlpha: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 0.88,
+            stagger: 0.11,
+            ease: 'power4.out',
+            clearProps: 'filter',
+            delay: 0.12,
+          }
+        );
+      }
+    }, main);
+
+    const refreshTriggers = () => ScrollTrigger.refresh();
+    const refreshTimer = window.setTimeout(refreshTriggers, 250);
+
+    return () => {
+      window.clearTimeout(refreshTimer);
+      window.removeEventListener('oz:scroll-top', scrollToTop);
+      lenis.off('scroll', syncScroll);
+      lenis.destroy();
+      gsap.ticker.remove(frame);
+      motionContext.revert();
+      ScrollTrigger.getAll().forEach((trigger) => {
+        if (trigger.trigger && main.contains(trigger.trigger as Node)) trigger.kill();
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const main = document.querySelector('main');
@@ -147,7 +291,7 @@ function AppContent() {
 
     window.history.pushState({}, '', path);
     setCurrentPath(path);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.dispatchEvent(new Event('oz:scroll-top'));
   };
 
   const pathname = currentPath.split('?')[0].replace(/(.)\/+$/, '$1') || '/';
@@ -417,7 +561,7 @@ function AppContent() {
 
       {/* Main Storefront Views */}
       <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
-        {pathname !== '/' && <StorefrontMotionEffects />}
+        <StorefrontMotionEffects />
         {/* / (Home) */}
         <ErrorBoundary resetKey={currentPath}>
         <div
