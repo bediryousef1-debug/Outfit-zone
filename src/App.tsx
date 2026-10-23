@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './styles/cinematic-motion.css';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
