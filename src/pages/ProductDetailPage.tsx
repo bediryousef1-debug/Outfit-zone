@@ -650,7 +650,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const BackIcon = ArrowRight;
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
       {/* Back button */}
       <button
         onClick={onBack}
