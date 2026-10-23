@@ -204,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Language Toggle */}
               <button
                 onClick={toggleLanguage}
-                className={`h-8 w-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1 rounded-full border transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 motion-reduce:transition-none ${
+                className={`oz-language-toggle h-8 w-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1 rounded-full border transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 motion-reduce:transition-none ${
                   isDark
                     ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-200'
                     : 'border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
@@ -216,9 +216,9 @@ export const Header: React.FC<HeaderProps> = ({
                 }
                 aria-label={language === 'ar' ? 'تبديل اللغة' : 'Switch language'}
               >
-                <Globe className="w-3.5 h-3.5 shrink-0" />
+                <Globe className="oz-language-globe w-3.5 h-3.5 shrink-0" />
 
-                <span className="hidden sm:inline text-[10px] sm:text-xs whitespace-nowrap">
+                <span key={language} className="oz-language-label hidden sm:inline text-[10px] sm:text-xs whitespace-nowrap">
                   {language === 'ar' ? 'EN' : 'عربي'}
                 </span>
               </button>
