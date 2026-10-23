@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const isRTL = isRtl;
   const homeRef = useRef<HTMLDivElement>(null);
-  useHomeCinema(homeRef);
+  useHomeCinema(homeRef, language);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<HomepageReview[]>([]);
