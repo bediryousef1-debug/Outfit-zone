@@ -649,7 +649,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             : 'Outfit Zone offers and collections'
         }
       >
-        <div className="oz-hero-zone-word" data-oz-zone-parallax aria-hidden="true">ZONE</div>
+        <div className="oz-hero-zone-word" data-oz-zone-parallax aria-hidden="true"><span>OUTFIT ZONE</span></div>
         <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
