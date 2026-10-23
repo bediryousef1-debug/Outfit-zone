@@ -232,7 +232,20 @@ html.light .oz-hero-zone-word {
 }
 
 .oz-hero-stage .oz-hero-content {
-  padding-block: clamp(1rem, 2.4vh, 1.6rem) !important;
+  padding-block-start: .75rem !important;
+  padding-block-end: 2rem !important;
+}
+
+@media (min-width: 640px) {
+  .oz-hero-stage .oz-hero-content {
+    padding-block: 1.5rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .oz-hero-stage .oz-hero-content {
+    padding-block: 2rem !important;
+  }
 }
 
 .oz-hero-stage .oz-hero-content > .grid {
@@ -248,7 +261,13 @@ html.light .oz-hero-zone-word {
 }
 
 .oz-hero-stage .oz-hero-slide-copy > div:nth-child(2) {
-  min-height: 132px !important;
+  min-height: 110px !important;
+}
+
+@media (min-width: 640px) {
+  .oz-hero-stage .oz-hero-slide-copy > div:nth-child(2) {
+    min-height: 140px !important;
+  }
 }
 
 @media (max-width: 767px) {
@@ -256,10 +275,6 @@ html.light .oz-hero-zone-word {
     inset-block-start: 21%;
     font-size: clamp(5.25rem, 24vw, 9rem);
     opacity: .075;
-  }
-
-  .oz-hero-stage .oz-hero-content {
-    padding-block: .9rem !important;
   }
 
   .oz-hero-stage .oz-hero-content > .grid {
@@ -270,9 +285,6 @@ html.light .oz-hero-zone-word {
     margin-top: .8rem !important;
   }
 
-  .oz-hero-stage .oz-hero-slide-copy > div:nth-child(2) {
-    min-height: 108px !important;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
