@@ -120,7 +120,7 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
               duration: 0.78,
               stagger: 0.09,
               ease: 'power4.out',
-              clearProps: 'clipPath',
+              clearProps: 'transform,opacity,visibility',
               delay: 0.08,
             }
           );
@@ -150,7 +150,6 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
             { autoAlpha: 0.8 },
             {
               autoAlpha: 1,
-              scale: 1,
               duration: 0.45,
               stagger: 0.025,
               ease: 'power3.out',
@@ -165,13 +164,12 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const headings = section.querySelectorAll<HTMLElement>('h2, h3, [data-oz-motion-heading]');
         if (headings.length) {
           gsap.fromTo(headings,
-            { autoAlpha: 0, y: 34, clipPath: 'inset(0 0 16% 0)' },
+            { autoAlpha: 0, y: 22 },
             {
               autoAlpha: 1,
               y: 0,
-              clipPath: 'inset(0 0 0% 0)',
-              duration: 0.9,
-              stagger: 0.1,
+              duration: 0.5,
+              stagger: 0.04,
               ease: 'power4.out',
               clearProps: 'clipPath',
               scrollTrigger: { trigger: section, start: 'top 84%', once: true },
