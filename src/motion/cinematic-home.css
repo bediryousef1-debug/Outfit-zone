@@ -209,3 +209,76 @@ html.light .oz-hero-zone-word {
     font-size: clamp(1.5rem, 2.6vw, 2.25rem);
   }
 }
+
+
+/* Refined hero: keep the original slide design while trimming excess vertical space. */
+@keyframes ozHeroWordFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  17% { transform: translate3d(1.1vw, -1.4vh, 0) rotate(.45deg); }
+  39% { transform: translate3d(-.7vw, .8vh, 0) rotate(-.3deg); }
+  63% { transform: translate3d(-1.2vw, -1vh, 0) rotate(.35deg); }
+  82% { transform: translate3d(.6vw, 1.2vh, 0) rotate(-.4deg); }
+}
+
+.oz-hero-zone-word {
+  inset-block-start: 17%;
+  font-size: clamp(7rem, 21vw, 21rem);
+}
+
+.oz-hero-zone-word > span {
+  display: inline-block;
+  animation: ozHeroWordFloat 13s ease-in-out infinite;
+  will-change: transform;
+}
+
+.oz-hero-stage .oz-hero-content {
+  padding-block: clamp(1rem, 2.4vh, 1.6rem) !important;
+}
+
+.oz-hero-stage .oz-hero-content > .grid {
+  gap: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+.oz-hero-stage .oz-hero-slide-copy {
+  row-gap: 0;
+}
+
+.oz-hero-stage .oz-hero-slide-copy > * + * {
+  margin-top: 1rem !important;
+}
+
+.oz-hero-stage .oz-hero-slide-copy > div:nth-child(2) {
+  min-height: 132px !important;
+}
+
+@media (max-width: 767px) {
+  .oz-hero-zone-word {
+    inset-block-start: 21%;
+    font-size: clamp(5.25rem, 24vw, 9rem);
+    opacity: .075;
+  }
+
+  .oz-hero-stage .oz-hero-content {
+    padding-block: .9rem !important;
+  }
+
+  .oz-hero-stage .oz-hero-content > .grid {
+    gap: 1.25rem;
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy > * + * {
+    margin-top: .8rem !important;
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy > div:nth-child(2) {
+    min-height: 108px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oz-hero-zone-word > span {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+}
