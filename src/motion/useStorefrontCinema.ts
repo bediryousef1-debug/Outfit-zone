@@ -607,10 +607,17 @@ export function useStorefrontCinema(pathname: string): void {
         if (row) gsap.to(row, { y: -5, scale: 0.985, opacity: 0, duration: 0.16, ease: 'power2.in' });
         return;
       }
-      if (button.querySelector('svg.lucide-plus, svg.lucide-minus')) {
+      const actionLabel = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.toLowerCase().trim();
+      if (
+        button.querySelector('svg.lucide-plus, svg.lucide-minus') ||
+        /increase|decrease|quantity|زيادة|تقليل|الكمية/u.test(actionLabel) ||
+        actionLabel === '+' || actionLabel === '-'
+      ) {
+        const row = button.closest<HTMLElement>('[data-oz-cart-row]');
         const group = button.parentElement;
-        const quantity = group && Array.from(group.querySelectorAll<HTMLElement>('span, div'))
-          .find((element) => element.children.length === 0 && /^\d+$/u.test((element.textContent || '').trim()));
+        const quantity = row?.querySelector<HTMLElement>('[data-oz-quantity]') ||
+          (group && Array.from(group.querySelectorAll<HTMLElement>('span, div'))
+            .find((element) => element.children.length === 0 && /^\d+$/u.test((element.textContent || '').trim())));
         if (quantity) gsap.fromTo(quantity, { y: 4, scale: 0.82 }, {
           y: 0, scale: 1, duration: 0.22, ease: 'back.out(2)', clearProps: 'transform',
         });
