@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, Sparkles, ShieldCheck, Check } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { resolveImageUrl } from '../utils/imageHelper';
+import { ZoneMarquee } from '../motion/ZoneMarquee';
 
 interface AboutPageProps {
   onNavigate: (path: string) => void;
@@ -25,6 +26,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
         <p className="text-sm sm:text-base text-neutral-400 max-w-2xl leading-relaxed">
           {t('about.description', 'An Egyptian men’s streetwear brand focused on modern everyday designs with Box Fit and Oversized cuts made for today’s youth.')}
         </p>
+      </div>
+
+      <div className="-mx-3.5 sm:-mx-6" aria-label={t('about.story_divider', 'Outfit Zone story divider')}>
+        <ZoneMarquee />
       </div>
 
       {/* Main Philosophy */}
