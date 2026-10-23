@@ -19,6 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
   return (
     <footer
+      data-oz-motion-footer
       className={`border-t mt-16 transition-colors ${
         isDark
           ? 'bg-black border-neutral-900 text-neutral-400'
