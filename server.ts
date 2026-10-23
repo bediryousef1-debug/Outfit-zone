@@ -5058,10 +5058,24 @@ async function startServer() {
   } else {
     app.use(
       express.static(
-        path.join(
-          __dirname,
-          'dist'
-        )
+        path.join(__dirname, 'dist'),
+        {
+          maxAge: '1y',
+          immutable: true,
+          etag: true,
+          lastModified: true,
+          setHeaders: (res, filePath) => {
+            const isHashedAsset =
+              filePath.includes(`${path.sep}assets${path.sep}`) &&
+              /-[A-Za-z0-9_-]{8,}\.(?:js|css|woff2?|png|jpe?g|webp|avif|svg)$/i.test(path.basename(filePath));
+
+            if (isHashedAsset) {
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            } else {
+              res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+            }
+          },
+        }
       )
     );
 

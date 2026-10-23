@@ -15,6 +15,21 @@ export default defineConfig(() => {
     optimizeDeps: {
       include: ['react', 'react-dom'],
     },
+    build: {
+      cssCodeSplit: true,
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) return 'vendor-framework';
+            if (id.includes('/node_modules/gsap/') || id.includes('/node_modules/lenis/')) return 'vendor-motion';
+            if (id.includes('/node_modules/lucide-react/')) return 'vendor-icons';
+            if (id.includes('/node_modules/@supabase/supabase-js/')) return 'vendor-supabase';
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.

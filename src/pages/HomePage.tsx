@@ -92,6 +92,24 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const currentSlide = currentSlides[activeSlide] || currentSlides[0];
 
+  useEffect(() => {
+    const firstHeroImage = currentSlides[0]?.image_url;
+    if (!firstHeroImage) return;
+
+    const href = resolveImageUrl(firstHeroImage);
+    let preload = document.querySelector<HTMLLinkElement>('link[data-oz-hero-preload]');
+    if (!preload) {
+      preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'image';
+      preload.setAttribute('data-oz-hero-preload', 'true');
+      document.head.appendChild(preload);
+    }
+    preload.href = href;
+    preload.setAttribute('fetchpriority', 'high');
+  }, [currentSlides[0]?.image_url]);
+
+
   /*
    * ==========================================================================
    * LOCALIZED HERO CONTENT
@@ -650,9 +668,9 @@ export const HomePage: React.FC<HomePageProps> = ({
         }
       >
         <div className="oz-hero-zone-word" data-oz-zone-parallax aria-hidden="true"><span>OUTFIT ZONE</span></div>
-        <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:py-16 lg:py-20">
+        <div className="oz-hero-content max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-8 sm:py-6 lg:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-6 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy">
+            <div key={`copy-${currentSlide.id}`} className="lg:col-span-6 space-y-4 text-right order-2 lg:order-1 transition-all duration-300 oz-hero-copy oz-hero-slide-copy min-h-[110px] sm:min-h-[140px]">
               <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold tracking-widest uppercase text-neutral-400">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-[1px] bg-neutral-500" />
@@ -667,8 +685,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-1 min-h-[140px] sm:min-h-[180px] flex flex-col justify-center">
-                <h1 key={currentSlide.id} className="font-syne text-[30px] xs:text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
+              <div className="space-y-1 min-h-[110px] sm:min-h-[140px] flex flex-col justify-center">
+                <h1 key={currentSlide.id} className="font-syne text-[28px] xs:text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight leading-[0.95] break-words hyphens-auto">
                   <span
                     className={`block transition-colors duration-300 ${
                       isDark ? 'text-white' : 'text-black'
@@ -795,7 +813,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div key={`visual-${currentSlide.id}`} className="lg:col-span-6 relative order-1 lg:order-2 oz-hero-visual oz-hero-slide-visual">
               <div
                 onClick={() => onNavigate(currentSlide.button_link)}
-                className={`group relative aspect-[4/5] sm:aspect-[4/4.5] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
+                className={`group relative max-h-[380px] sm:max-h-[420px] lg:max-h-[460px] aspect-[4/4.8] sm:aspect-[4/4.2] lg:aspect-[4/3.8] rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border cursor-pointer ${
                   isDark
                     ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
                     : 'bg-neutral-100 border-neutral-200 hover:border-neutral-300'
@@ -819,6 +837,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   alt={localizedSubtitle}
                   className="oz-hero-image w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   fetchPriority="high"
+                  decoding="async"
                   draggable={false}
                 />
 
@@ -959,6 +978,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         alt={localizedCategoryName}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div
@@ -1093,6 +1113,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   }
                   className="w-full h-full object-cover object-bottom opacity-80"
                   loading="lazy"
+                  decoding="async"
                 />
 
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] bg-black/95 text-white border-2 border-neutral-700/80 px-4 py-2 rounded shadow-2xl font-syne font-black tracking-[0.2em] text-sm text-center">
