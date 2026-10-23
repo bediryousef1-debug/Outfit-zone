@@ -151,6 +151,54 @@ export function useStorefrontCinema(pathname: string): void {
 
       // Product filters can change without a route remount; only animate image children, never card roots.
       let productGridTween: gsap.core.Tween | null = null;
+      const tiltCleanups = new Map<HTMLElement, () => void>();
+      const applyProductImageTilts = () => {
+        if (!window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches) return;
+        const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-oz-motion-card]')).slice(0, 16);
+        tiltCleanups.forEach((cleanup, card) => {
+          if (!card.isConnected || !cards.includes(card)) {
+            cleanup();
+            tiltCleanups.delete(card);
+          }
+        });
+        cards.forEach((card) => {
+          if (tiltCleanups.has(card)) return;
+          const image = card.querySelector<HTMLElement>('img');
+          if (!image) return;
+          const xTo = gsap.quickTo(image, 'x', { duration: 0.28, ease: 'power3.out' });
+          const yTo = gsap.quickTo(image, 'y', { duration: 0.28, ease: 'power3.out' });
+          const rotateXTo = gsap.quickTo(image, 'rotationX', { duration: 0.28, ease: 'power3.out' });
+          const rotateYTo = gsap.quickTo(image, 'rotationY', { duration: 0.28, ease: 'power3.out' });
+          let bounds: DOMRect | null = null;
+          const onEnter = () => { bounds = card.getBoundingClientRect(); };
+          const onMove = (event: PointerEvent) => {
+            if (!bounds) bounds = card.getBoundingClientRect();
+            const x = (event.clientX - bounds.left) / Math.max(bounds.width, 1) - 0.5;
+            const y = (event.clientY - bounds.top) / Math.max(bounds.height, 1) - 0.5;
+            xTo(x * 3.2);
+            yTo(y * 2.4);
+            rotateXTo(y * -2.2);
+            rotateYTo(x * 2.8);
+          };
+          const onLeave = () => {
+            bounds = null;
+            xTo(0); yTo(0); rotateXTo(0); rotateYTo(0);
+          };
+          gsap.set(image, { transformPerspective: 900, transformOrigin: 'center center' });
+          card.addEventListener('pointerenter', onEnter, { passive: true });
+          card.addEventListener('pointermove', onMove, { passive: true });
+          card.addEventListener('pointerleave', onLeave, { passive: true });
+          card.addEventListener('pointercancel', onLeave, { passive: true });
+          tiltCleanups.set(card, () => {
+            card.removeEventListener('pointerenter', onEnter);
+            card.removeEventListener('pointermove', onMove);
+            card.removeEventListener('pointerleave', onLeave);
+            card.removeEventListener('pointercancel', onLeave);
+            gsap.killTweensOf(image);
+            gsap.set(image, { clearProps: 'transform' });
+          });
+        });
+      };
       const animateProductImages = () => {
         const grid = root.querySelector<HTMLElement>('[class*="grid-cols-2"][class*="sm:grid-cols-3"]');
         if (!grid) return;
@@ -161,9 +209,11 @@ export function useStorefrontCinema(pathname: string): void {
         productGridTween = gsap.fromTo(images, { y: 10, scale: 0.985 }, {
           y: 0, scale: 1, duration: 0.36, stagger: 0.025, ease: 'power2.out', clearProps: 'transform',
         });
+        applyProductImageTilts();
       };
       if (pathname === '/products') {
         let mutationTimer = 0;
+        applyProductImageTilts();
         const gridObserver = new MutationObserver(() => {
           window.clearTimeout(mutationTimer);
           mutationTimer = window.setTimeout(animateProductImages, 90);
@@ -176,6 +226,8 @@ export function useStorefrontCinema(pathname: string): void {
           gridObserver.disconnect();
           productGridTween?.kill();
           productGridTween = null;
+          tiltCleanups.forEach((cleanup) => cleanup());
+          tiltCleanups.clear();
         });
       }
 
