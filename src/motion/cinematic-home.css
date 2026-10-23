@@ -145,3 +145,67 @@ html.light .oz-hero-zone-word {
     transform: none !important;
   }
 }
+
+
+/* Keep hero copy above the slide image at desktop widths.
+   Explicit stacking contexts prevent image/animation layers from covering text. */
+.oz-hero-stage .oz-hero-content {
+  position: relative;
+  z-index: 20;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+}
+
+.oz-hero-stage .oz-hero-content > .grid {
+  min-width: 0;
+}
+
+.oz-hero-stage .oz-hero-slide-copy,
+.oz-hero-stage .oz-hero-slide-visual {
+  position: relative;
+  min-width: 0;
+}
+
+.oz-hero-stage .oz-hero-slide-copy {
+  z-index: 2;
+  overflow-wrap: anywhere;
+}
+
+.oz-hero-stage .oz-hero-slide-visual {
+  z-index: 1;
+}
+
+.oz-hero-stage .oz-hero-slide-copy h1,
+.oz-hero-stage .oz-hero-slide-copy h2,
+.oz-hero-stage .oz-hero-slide-copy p {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+}
+
+.oz-hero-stage .oz-hero-slide-copy h1 {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+@media (min-width: 1024px) {
+  .oz-hero-stage .oz-hero-content > .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy,
+  .oz-hero-stage .oz-hero-slide-visual {
+    grid-column: span 6 / span 6;
+  }
+}
+
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .oz-hero-stage .oz-hero-slide-copy h1 {
+    font-size: clamp(2.25rem, 4.5vw, 4.5rem);
+  }
+
+  .oz-hero-stage .oz-hero-slide-copy h2 {
+    font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  }
+}
