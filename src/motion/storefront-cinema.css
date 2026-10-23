@@ -1,0 +1,52 @@
+/* Additive storefront cinema styles. Existing cinematic-motion blocks remain untouched. */
+.oz-page-intro-host {
+  position: relative;
+  isolation: isolate;
+  --oz-page-parallax: 0px;
+}
+.oz-page-intro-host::before {
+  content: attr(data-oz-outline-word);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  z-index: -1;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(127 127 127 / 18%);
+  font-size: clamp(2.75rem, 13vw, 9rem);
+  font-weight: 900;
+  line-height: .9;
+  letter-spacing: -.06em;
+  transform: translate3d(0, calc(-50% + var(--oz-page-parallax)), 0);
+}
+.oz-page-intro-rule {
+  display: block;
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: 0;
+  width: min(100%, 9rem);
+  height: 1px;
+  background: currentColor;
+  opacity: .48;
+  transform-origin: left center;
+  pointer-events: none;
+}
+html[dir="rtl"] .oz-page-intro-rule { transform-origin: right center; }
+.oz-page-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-block: .05em;
+  margin-block: -.05em;
+}
+.oz-page-word { display: inline-block; will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+  .oz-page-intro-host::before { transform: translate3d(0, -50%, 0); }
+  .oz-page-word { transform: none !important; }
+}
+@media (max-width: 767px) {
+  .oz-page-intro-host::before { font-size: clamp(2.5rem, 17vw, 5rem); }
+}
