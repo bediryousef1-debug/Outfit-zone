@@ -50,7 +50,7 @@ function AdminLoadingSpinner() {
   );
 }
 
-function StorefrontMotionEffects() {
+function StorefrontMotionEffects({ pathname }: { pathname: string }) {
   const progressRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -162,7 +162,7 @@ function StorefrontMotionEffects() {
         const heroSubtitle = heroCopy.querySelector<HTMLElement>('h2');
         const heroDescription = heroCopy.querySelector<HTMLElement>('p');
         const heroCta = heroCopy.querySelector<HTMLElement>('button');
-        gsap.fromTo([heroEyebrow, heroHeading, heroSubtitle, heroDescription, heroCta].filter(Boolean),
+        gsap.fromTo([heroEyebrow, heroHeading, heroSubtitle, heroDescription, heroCta].filter((element): element is HTMLElement => element !== null),
           { autoAlpha: 0, y: 28, filter: 'blur(5px)' },
           {
             autoAlpha: 1,
@@ -192,7 +192,7 @@ function StorefrontMotionEffects() {
         if (trigger.trigger && main.contains(trigger.trigger as Node)) trigger.kill();
       });
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const main = document.querySelector('main');
@@ -561,7 +561,7 @@ function AppContent() {
 
       {/* Main Storefront Views */}
       <main className="flex-1 pb-24 md:pb-16 w-full max-w-full overflow-x-hidden">
-        <StorefrontMotionEffects />
+        <StorefrontMotionEffects pathname={pathname} />
         {/* / (Home) */}
         <ErrorBoundary resetKey={currentPath}>
         <div
