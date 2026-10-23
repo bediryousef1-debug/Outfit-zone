@@ -93,11 +93,11 @@ export function useHomeCinema(rootRef: HomeRootRef) {
 
     gsap.registerPlugin(ScrollTrigger);
     const restores: Array<() => void> = [];
-    const existingTriggers = new Set(ScrollTrigger.getAll());
+    let media: ReturnType<typeof gsap.matchMedia> | null = null;
     const context = gsap.context(() => {
-      const media = gsap.matchMedia();
+      media = gsap.matchMedia();
 
-      media.add(
+      media!.add(
         {
           desktop: '(min-width: 768px)',
           mobile: '(max-width: 767px)',
@@ -162,15 +162,12 @@ export function useHomeCinema(rootRef: HomeRootRef) {
         });
       });
 
-      return () => media.revert();
     }, root);
 
     return () => {
       context.revert();
+      media?.revert();
       restores.forEach((restore) => restore());
-      ScrollTrigger.getAll().forEach((trigger) => {
-        if (!existingTriggers.has(trigger)) trigger.kill();
-      });
     };
   }, [rootRef]);
 }
