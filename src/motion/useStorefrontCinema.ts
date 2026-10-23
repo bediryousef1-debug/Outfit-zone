@@ -184,14 +184,63 @@ export function useStorefrontCinema(pathname: string): void {
             return rect.width > 180 && rect.height > 180;
           }).sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
           if (mainImage) {
-            gsap.fromTo(mainImage, { scale: 1.018, y: 3 }, {
-              scale: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform',
+            gsap.fromTo(mainImage, { opacity: 0.78, scale: 1.018, y: 3 }, {
+              opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform,opacity',
             });
           }
         };
         root.addEventListener('click', onThumbnailClick);
         cleanups.push(() => root.removeEventListener('click', onThumbnailClick));
       }
+    }
+
+    if (pathname.startsWith('/products/') && !reduced) {
+      // Stagger the option controls without touching the sticky purchase panel or card roots.
+      const labels = Array.from(root.querySelectorAll<HTMLElement>('h3, h4, label, p, span'))
+        .filter((element) => /^(size|sizes|color|colors|المقاس|المقاسات|اللون|الألوان)$/iu.test((element.textContent || '').trim()));
+      const controls = Array.from(new Set(labels.flatMap((label) => {
+        const group = label.parentElement?.parentElement || label.parentElement;
+        return group ? Array.from(group.querySelectorAll<HTMLElement>('button')) : [];
+      }))).slice(0, 16);
+      if (controls.length) tweens.push(gsap.fromTo(controls, { y: 8, scale: 0.985 }, {
+        y: 0, scale: 1, duration: 0.3, stagger: 0.025, ease: 'power2.out', clearProps: 'transform', delay: 0.12,
+      }));
+      const price = root.querySelector<HTMLElement>('.text-2xl, .text-3xl');
+      if (price) tweens.push(gsap.fromTo(price, { y: 7 }, {
+        y: 0, duration: 0.36, ease: 'power2.out', clearProps: 'transform', delay: 0.08,
+      }));
+    }
+
+    if (pathname === '/about' && !reduced && window.matchMedia('(min-width: 768px)').matches) {
+      const storyImages = Array.from(root.querySelectorAll<HTMLElement>('img')).slice(0, 4);
+      storyImages.forEach((image) => {
+        const parallax = gsap.to(image, { y: 12, ease: 'none', paused: true });
+        const trigger = ScrollTrigger.create({
+          trigger: image,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 1.2,
+          animation: parallax,
+        });
+        tweens.push(parallax);
+        triggers.push(trigger);
+      });
+    }
+
+    if (pathname.startsWith('/order-success/') && !reduced) {
+      const orderNumber = Array.from(root.querySelectorAll<HTMLElement>('*'))
+        .find((element) => element.children.length === 0 && /^(OZ[-\s]?[A-Z0-9-]{5,}|[A-Z0-9-]{8,})$/iu.test((element.textContent || '').trim()));
+      if (orderNumber) tweens.push(gsap.fromTo(orderNumber, { y: 8, scale: 0.98 }, {
+        y: 0, scale: 1, duration: 0.42, ease: 'power3.out', clearProps: 'transform', delay: 0.32,
+      }));
+    }
+
+    if (pathname === '/track' && !reduced) {
+      const timeline = Array.from(root.querySelectorAll<HTMLElement>('.grid'))
+        .find((grid) => grid.querySelectorAll(':scope > div').length === 4);
+      const currentStep = timeline?.querySelector<HTMLElement>('[class*="shadow-lg"], [class*="shadow-md"]');
+      const dot = currentStep?.querySelector<HTMLElement>('.rounded-full');
+      if (dot) tweens.push(gsap.to(dot, { scale: 1.1, duration: 0.75, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: 'center center' }));
     }
 
     // Small purchase feedback; handlers never prevent or delay the original action.
@@ -218,11 +267,17 @@ export function useStorefrontCinema(pathname: string): void {
         const overlays = [node, ...Array.from(node.querySelectorAll<HTMLElement>('.fixed.inset-0.z-50'))]
           .filter((element) => element.matches('.fixed.inset-0.z-50'));
         overlays.forEach((overlay) => {
-          if (!/shopping bag|your bag|سلة|شنطة/iu.test(overlay.textContent || '')) return;
+          if (!/shopping bag|your bag|سلة|شنطة|حقيبة|التسوق/iu.test(overlay.textContent || '')) return;
           const panel = overlay.querySelector<HTMLElement>('.max-w-md');
-          if (panel) gsap.fromTo(panel, { x: document.documentElement.dir === 'rtl' ? -34 : 34 }, {
-            x: 0, duration: 0.38, ease: 'power3.out', clearProps: 'transform',
-          });
+          if (panel) {
+            gsap.fromTo(panel, { x: document.documentElement.dir === 'rtl' ? -34 : 34 }, {
+              x: 0, duration: 0.38, ease: 'power3.out', clearProps: 'transform',
+            });
+            const rows = Array.from(panel.querySelectorAll<HTMLElement>('.rounded-xl')).filter((row) => row.querySelector('img')).slice(0, 8);
+            if (rows.length) tweens.push(gsap.fromTo(rows, { y: 10 }, {
+              y: 0, duration: 0.32, stagger: 0.045, ease: 'power2.out', clearProps: 'transform', delay: 0.06,
+            }));
+          }
         });
       };
       const drawerObserver = new MutationObserver((records) => {
