@@ -1,4 +1,5 @@
 import React from 'react';
+import gsap from 'gsap';
 import {
   ArrowRight,
   Trash2,
@@ -39,20 +40,18 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
     }
     row.style.overflow = 'hidden';
     const finish = () => removeItem(variantId);
-    import('gsap').then(({ default: gsap }) => {
-      gsap.to(row, {
-        height: 0,
-        opacity: 0,
-        y: -5,
-        paddingTop: 0,
-        paddingBottom: 0,
-        marginTop: 0,
-        marginBottom: 0,
-        duration: 0.18,
-        ease: 'power2.in',
-        onComplete: finish,
-      });
-    }).catch(finish);
+    gsap.to(row, {
+      height: 0,
+      opacity: 0,
+      y: -5,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      duration: 0.18,
+      ease: 'power2.in',
+      onComplete: finish,
+    });
   };
 
   if (items.length === 0) {
