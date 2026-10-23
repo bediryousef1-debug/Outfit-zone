@@ -4,20 +4,23 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 type HomeRootRef = RefObject<HTMLElement | null>;
 
-function splitHeadingWords(heading: HTMLElement) {
-  const originalHtml = heading.innerHTML;
+interface SplitHeadingRecord {
+  heading: HTMLElement;
+  originalText: string;
+  originalAriaLabel: string | null;
+}
+
+function splitHeadingWords(heading: HTMLElement): SplitHeadingRecord | null {
+  const originalText = heading.textContent ?? '';
+  if (!originalText.trim()) return null;
+
   const originalAriaLabel = heading.getAttribute('aria-label');
-  const label = heading.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
-
-  if (!label) return null;
-
-  const pieces = (heading.textContent ?? '').split(/(\s+)/u);
   const fragment = document.createDocumentFragment();
+  const tokens = originalText.match(/\s+|[^\s]+/gu) ?? [originalText];
 
-  pieces.forEach((piece) => {
-    if (!piece) return;
-    if (/^\s+$/u.test(piece)) {
-      fragment.append(document.createTextNode(piece));
+  tokens.forEach((token) => {
+    if (/^\s+$/u.test(token)) {
+      fragment.append(document.createTextNode(token));
       return;
     }
 
@@ -25,30 +28,35 @@ function splitHeadingWords(heading: HTMLElement) {
     mask.className = 'oz-cinema-word-mask';
     const word = document.createElement('span');
     word.className = 'oz-cinema-word';
-    word.textContent = piece;
+    word.textContent = token;
     mask.append(word);
     fragment.append(mask);
   });
 
-  heading.setAttribute('aria-label', label);
+  heading.setAttribute('aria-label', originalText.replace(/\s+/gu, ' ').trim());
   heading.replaceChildren(fragment);
-
-  return () => {
-    heading.innerHTML = originalHtml;
-    if (originalAriaLabel === null) heading.removeAttribute('aria-label');
-    else heading.setAttribute('aria-label', originalAriaLabel);
-  };
+  return { heading, originalText, originalAriaLabel };
 }
 
-function addMagneticHover(card: HTMLElement) {
+function restoreHeading(record: SplitHeadingRecord): void {
+  const { heading, originalText, originalAriaLabel } = record;
+  // React may already have replaced the split spans when the language changed.
+  if (heading.querySelector('.oz-cinema-word-mask')) {
+    heading.textContent = originalText;
+  }
+  if (originalAriaLabel === null) heading.removeAttribute('aria-label');
+  else heading.setAttribute('aria-label', originalAriaLabel);
+}
+
+function addMagneticHover(card: HTMLElement): () => void {
   const inner = card.querySelector<HTMLElement>(':scope > div:first-child');
   if (!inner) return () => undefined;
 
+  const xTo = gsap.quickTo(inner, 'x', { duration: 0.34, ease: 'power3.out' });
+  const yTo = gsap.quickTo(inner, 'y', { duration: 0.34, ease: 'power3.out' });
+  const rotateXTo = gsap.quickTo(inner, 'rotationX', { duration: 0.34, ease: 'power3.out' });
+  const rotateYTo = gsap.quickTo(inner, 'rotationY', { duration: 0.34, ease: 'power3.out' });
   let bounds: DOMRect | null = null;
-  const xTo = gsap.quickTo(inner, 'x', { duration: 0.35, ease: 'power3.out' });
-  const yTo = gsap.quickTo(inner, 'y', { duration: 0.35, ease: 'power3.out' });
-  const rotateXTo = gsap.quickTo(inner, 'rotationX', { duration: 0.35, ease: 'power3.out' });
-  const rotateYTo = gsap.quickTo(inner, 'rotationY', { duration: 0.35, ease: 'power3.out' });
 
   const onEnter = () => {
     bounds = card.getBoundingClientRect();
@@ -57,10 +65,10 @@ function addMagneticHover(card: HTMLElement) {
     if (!bounds) bounds = card.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / Math.max(bounds.width, 1) - 0.5;
     const y = (event.clientY - bounds.top) / Math.max(bounds.height, 1) - 0.5;
-    xTo(x * 3);
-    yTo(y * 2);
-    rotateXTo(y * -2.4);
-    rotateYTo(x * 3);
+    xTo(x * 3.5);
+    yTo(y * 2.5);
+    rotateXTo(y * -2.6);
+    rotateYTo(x * 3.2);
   };
   const onLeave = () => {
     bounds = null;
@@ -70,10 +78,11 @@ function addMagneticHover(card: HTMLElement) {
     rotateYTo(0);
   };
 
-  card.addEventListener('pointerenter', onEnter);
-  card.addEventListener('pointermove', onMove);
-  card.addEventListener('pointerleave', onLeave);
-  card.addEventListener('pointercancel', onLeave);
+  gsap.set(inner, { transformPerspective: 900, transformOrigin: 'center center' });
+  card.addEventListener('pointerenter', onEnter, { passive: true });
+  card.addEventListener('pointermove', onMove, { passive: true });
+  card.addEventListener('pointerleave', onLeave, { passive: true });
+  card.addEventListener('pointercancel', onLeave, { passive: true });
 
   return () => {
     card.removeEventListener('pointerenter', onEnter);
@@ -81,93 +90,117 @@ function addMagneticHover(card: HTMLElement) {
     card.removeEventListener('pointerleave', onLeave);
     card.removeEventListener('pointercancel', onLeave);
     gsap.killTweensOf(inner);
+    gsap.set(inner, { clearProps: 'transform' });
   };
 }
 
-export function useHomeCinema(rootRef: HomeRootRef) {
+export function useHomeCinema(rootRef: HomeRootRef, language: string): void {
   useEffect(() => {
     const root = rootRef.current;
-    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
+    if (!root) return;
 
     gsap.registerPlugin(ScrollTrigger);
-    const restores: Array<() => void> = [];
-    let media: ReturnType<typeof gsap.matchMedia> | null = null;
+    const media = gsap.matchMedia(root);
     const context = gsap.context(() => {
-      media = gsap.matchMedia();
-
-      media!.add(
+      media.add(
         {
-          desktop: '(min-width: 768px)',
-          mobile: '(max-width: 767px)',
-          motion: '(prefers-reduced-motion: no-preference)',
+          reduce: '(prefers-reduced-motion: reduce)',
+          desktop: '(min-width: 768px) and (prefers-reduced-motion: no-preference)',
+          mobile: '(max-width: 767px) and (prefers-reduced-motion: no-preference)',
         },
         (mediaContext) => {
-          if (!mediaContext.conditions?.motion) return;
+          if (mediaContext.conditions?.reduce) return;
 
-          const hero = root.querySelector<HTMLElement>('.oz-hero-stage');
-          const zoneWord = root.querySelector<HTMLElement>('[data-oz-zone-parallax]');
-          if (mediaContext.conditions.desktop && hero && zoneWord) {
-            gsap.to(zoneWord, {
-              yPercent: 28,
-              xPercent: 3,
-              ease: 'none',
-              scrollTrigger: {
-                trigger: hero,
-                start: 'top bottom',
-                end: 'bottom top',
-                scrub: 1,
-              },
+          const ownedTriggers: Array<{ kill: () => void }> = [];
+          const ownedTweens: Array<{ kill: () => void }> = [];
+          const cleanups: Array<() => void> = [];
+          const splitRecords: SplitHeadingRecord[] = [];
+          const sections = Array.from(
+            root.querySelectorAll<HTMLElement>(':scope > section.oz-motion-section')
+          );
+
+          sections.slice(2, 6).forEach((section) => {
+            section.querySelectorAll<HTMLElement>('h2').forEach((heading) => {
+              const record = splitHeadingWords(heading);
+              if (!record) return;
+              splitRecords.push(record);
+              const words = Array.from(
+                heading.querySelectorAll<HTMLElement>('.oz-cinema-word')
+              );
+
+              const trigger = ScrollTrigger.create({
+                trigger: heading,
+                start: 'top 86%',
+                once: true,
+                onEnter: () => {
+                  const tween = gsap.fromTo(
+                    words,
+                    { yPercent: 108, opacity: 0 },
+                    {
+                      yPercent: 0,
+                      opacity: 1,
+                      duration: 0.68,
+                      stagger: 0.045,
+                      ease: 'power3.out',
+                      overwrite: 'auto',
+                    }
+                  );
+                  ownedTweens.push(tween);
+                },
+              });
+              ownedTriggers.push(trigger);
             });
+          });
 
-            const hoverCleanups: Array<() => void> = [];
-            const cards = root.querySelectorAll<HTMLElement>(
-              ':scope > section:nth-of-type(3) .oz-card-hover, :scope > section:nth-of-type(5) [data-oz-motion-card], :scope > section:nth-of-type(5) .oz-card-hover'
-            );
-            if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-              cards.forEach((card) => hoverCleanups.push(addMagneticHover(card)));
+          if (mediaContext.conditions?.desktop) {
+            const hero = root.querySelector<HTMLElement>('.oz-hero-stage');
+            const zoneWord = hero?.querySelector<HTMLElement>('[data-oz-zone-parallax]');
+
+            if (hero && zoneWord) {
+              const zoneTween = gsap.to(zoneWord, {
+                yPercent: 26,
+                ease: 'none',
+                paused: true,
+              });
+              const zoneTrigger = ScrollTrigger.create({
+                trigger: hero,
+                start: 'top top',
+                end: 'bottom top',
+                scrub: 1.1,
+                animation: zoneTween,
+              });
+              ownedTweens.push(zoneTween);
+              ownedTriggers.push(zoneTrigger);
             }
 
-            return () => hoverCleanups.forEach((cleanup) => cleanup());
+            if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+              const categorySection = sections[2];
+              const productSection = sections[4];
+              const cards = [
+                ...(categorySection
+                  ? Array.from(categorySection.querySelectorAll<HTMLElement>('.oz-card-hover'))
+                  : []),
+                ...(productSection
+                  ? Array.from(productSection.querySelectorAll<HTMLElement>('.oz-card-hover, [data-oz-motion-card]'))
+                  : []),
+              ];
+              cards.forEach((card) => cleanups.push(addMagneticHover(card)));
+            }
           }
+
+          return () => {
+            cleanups.forEach((cleanup) => cleanup());
+            ownedTriggers.forEach((trigger) => trigger.kill());
+            ownedTweens.forEach((tween) => tween.kill());
+            splitRecords.forEach(restoreHeading);
+          };
         }
       );
-
-      const sections = Array.from(
-        root.querySelectorAll<HTMLElement>(':scope > section.oz-motion-section')
-      );
-      sections.slice(2, 6).forEach((section) => {
-        section.querySelectorAll<HTMLElement>('h2').forEach((heading) => {
-          const restore = splitHeadingWords(heading);
-          if (restore) restores.push(restore);
-          const words = heading.querySelectorAll<HTMLElement>('.oz-cinema-word');
-          if (!words.length) return;
-
-          gsap.fromTo(
-            words,
-            { yPercent: 110 },
-            {
-              yPercent: 0,
-              duration: 0.62,
-              stagger: 0.045,
-              ease: 'power3.out',
-              scrollTrigger: {
-                trigger: section,
-                start: 'top 84%',
-                once: true,
-              },
-            }
-          );
-        });
-      });
-
     }, root);
 
     return () => {
+      media.revert();
       context.revert();
-      media?.revert();
-      restores.forEach((restore) => restore());
     };
-  }, [rootRef]);
+  }, [rootRef, language]);
 }
