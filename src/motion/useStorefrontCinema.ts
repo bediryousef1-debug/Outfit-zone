@@ -310,7 +310,7 @@ export function useStorefrontCinema(pathname: string): void {
 
     if (pathname.startsWith('/order-success/') && !reduced) {
       const orderNumber = Array.from(root.querySelectorAll<HTMLElement>('*'))
-        .find((element) => element.children.length === 0 && /^(OZ[-\s]?[A-Z0-9-]{5,}|[A-Z0-9-]{8,})$/iu.test((element.textContent || '').trim()));
+        .find((element) => element.children.length === 0 && /^#?(OZ[-\s]?[A-Z0-9-]{5,}|[A-Z0-9-]{8,})$/iu.test((element.textContent || '').trim()));
       if (orderNumber) tweens.push(gsap.fromTo(orderNumber, { y: 8, scale: 0.98 }, {
         y: 0, scale: 1, duration: 0.42, ease: 'power3.out', clearProps: 'transform', delay: 0.32,
       }));
