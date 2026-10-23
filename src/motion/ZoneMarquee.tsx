@@ -37,6 +37,10 @@ export function ZoneMarquee() {
         )
       );
 
+      const timeScaleSetters = tweens.map((tween) =>
+        gsap.quickTo(tween, 'timeScale', { duration: 0.28, ease: 'power2.out' })
+      );
+
       const scrollTrigger = ScrollTrigger.create({
         trigger: band,
         start: 'top bottom',
@@ -49,15 +53,8 @@ export function ZoneMarquee() {
         },
         onUpdate: (self) => {
           const velocity = Math.abs(self.getVelocity());
-          const timeScale = gsap.utils.clamp(0.7, 2.35, 0.7 + velocity / 1800);
-          tweens.forEach((tween) => {
-            gsap.to(tween, {
-              timeScale,
-              duration: 0.24,
-              ease: 'power2.out',
-              overwrite: true,
-            });
-          });
+          const timeScale = gsap.utils.clamp(0.7, 2.35, 1 + velocity / 1800);
+          timeScaleSetters.forEach((setTimeScale) => setTimeScale(timeScale));
         },
       });
 
@@ -67,6 +64,7 @@ export function ZoneMarquee() {
           gsap.killTweensOf(tween);
           tween.kill();
         });
+        timeScaleSetters.forEach((setTimeScale) => setTimeScale.tween.kill());
       };
     });
 
