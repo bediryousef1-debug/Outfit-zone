@@ -150,15 +150,17 @@ export function useStorefrontCinema(pathname: string): void {
       });
 
       // Product filters can change without a route remount; only animate image children, never card roots.
+      let productGridTween: gsap.core.Tween | null = null;
       const animateProductImages = () => {
         const grid = root.querySelector<HTMLElement>('[class*="grid-cols-2"][class*="sm:grid-cols-3"]');
         if (!grid) return;
         const images = Array.from(grid.querySelectorAll<HTMLElement>('img')).slice(0, 16);
         if (!images.length) return;
+        productGridTween?.kill();
         gsap.killTweensOf(images);
-        tweens.push(gsap.fromTo(images, { y: 10, scale: 0.985 }, {
+        productGridTween = gsap.fromTo(images, { y: 10, scale: 0.985 }, {
           y: 0, scale: 1, duration: 0.36, stagger: 0.025, ease: 'power2.out', clearProps: 'transform',
-        }));
+        });
       };
       if (pathname === '/products') {
         let mutationTimer = 0;
@@ -172,6 +174,8 @@ export function useStorefrontCinema(pathname: string): void {
         cleanups.push(() => {
           window.clearTimeout(mutationTimer);
           gridObserver.disconnect();
+          productGridTween?.kill();
+          productGridTween = null;
         });
       }
 
@@ -460,12 +464,13 @@ export function useStorefrontCinema(pathname: string): void {
       window.clearTimeout(refreshTimer);
       refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 260);
     };
-    root.querySelectorAll('img').forEach((image) => {
+    const observedImages = Array.from(root.querySelectorAll('img'));
+    observedImages.forEach((image) => {
       if (!image.complete) image.addEventListener('load', refreshAfterContent, { once: true });
     });
     cleanups.push(() => {
       window.clearTimeout(refreshTimer);
-      root.querySelectorAll('img').forEach((image) => image.removeEventListener('load', refreshAfterContent));
+      observedImages.forEach((image) => image.removeEventListener('load', refreshAfterContent));
     });
 
     return () => {
