@@ -212,6 +212,29 @@ export function useStorefrontCinema(pathname: string): void {
         applyProductImageTilts();
       };
       if (pathname === '/products') {
+        const categoryChips = root.querySelector<HTMLElement>('[data-oz-category-chips]');
+        let chipTimer = 0;
+        const animateCategoryChips = () => {
+          if (reduced || !categoryChips?.isConnected) return;
+          const chips = Array.from(categoryChips.querySelectorAll<HTMLElement>('button')).slice(0, 12);
+          if (!chips.length) return;
+          gsap.killTweensOf(chips);
+          gsap.fromTo(chips, { y: 7, scale: 0.97 }, {
+            y: 0, scale: 1, duration: 0.24, stagger: 0.025, ease: 'power2.out', clearProps: 'transform',
+          });
+        };
+        const onCategoryClick = (event: Event) => {
+          if (!(event.target instanceof Element) || !event.target.closest('button')) return;
+          window.clearTimeout(chipTimer);
+          chipTimer = window.setTimeout(animateCategoryChips, 45);
+        };
+        categoryChips?.addEventListener('click', onCategoryClick);
+        const chipObserver = categoryChips ? new MutationObserver(() => {
+          window.clearTimeout(chipTimer);
+          chipTimer = window.setTimeout(animateCategoryChips, 55);
+        }) : null;
+        chipObserver?.observe(categoryChips!, { childList: true, subtree: true });
+        animateCategoryChips();
         let mutationTimer = 0;
         applyProductImageTilts();
         const gridObserver = new MutationObserver(() => {
@@ -222,6 +245,9 @@ export function useStorefrontCinema(pathname: string): void {
         });
         gridObserver.observe(root, { childList: true, subtree: true });
         cleanups.push(() => {
+          window.clearTimeout(chipTimer);
+          categoryChips?.removeEventListener('click', onCategoryClick);
+          chipObserver?.disconnect();
           window.clearTimeout(mutationTimer);
           gridObserver.disconnect();
           productGridTween?.kill();
