@@ -35,6 +35,27 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
     previousTotalRef.current = grandTotal;
   }, [grandTotal]);
 
+  const removeDrawerItem = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
+    const row = event.currentTarget.closest<HTMLElement>('[data-oz-cart-row]');
+    if (!row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      removeItem(variantId);
+      return;
+    }
+    row.style.overflow = 'hidden';
+    gsap.to(row, {
+      height: 0,
+      opacity: 0,
+      y: -4,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      duration: 0.18,
+      ease: 'power2.in',
+      onComplete: () => removeItem(variantId),
+    });
+  };
+
   const closeDrawer = (nextPath?: string) => {
     if (closingRef.current) return;
     const finish = () => {
@@ -119,7 +140,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={item.variantId}
-                  className="flex gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 items-start"
+                  data-oz-cart-row className="flex gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 items-start"
                 >
                   {/* Item Image */}
                   <img
@@ -136,7 +157,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                           {getLocalizedProductName(item.product, language) || item.product?.name}
                         </h4>
                         <button
-                          onClick={() => removeItem(item.variantId)}
+                          onClick={(event) => removeDrawerItem(event, item.variantId)}
                           className="text-neutral-500 hover:text-red-400 p-1 transition-colors"
                           aria-label={t('cart.remove', 'Remove')}
                         >
@@ -162,7 +183,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                         >
                           -
                         </button>
-                        <span className="px-2 font-mono-numbers font-bold text-white">
+                        <span data-oz-quantity className="px-2 font-mono-numbers font-bold text-white">
                           {item.quantity}
                         </span>
                         <button
