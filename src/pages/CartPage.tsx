@@ -31,6 +31,30 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
   const shippingFee = settings?.shipping_fee || 65;
   const grandTotal = subtotal + shippingFee;
+  const totalRef = React.useRef<HTMLSpanElement>(null);
+  const previousTotalRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const previousTotal = previousTotalRef.current;
+    if (
+      previousTotal !== null &&
+      previousTotal !== grandTotal &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      totalRef.current
+    ) {
+      gsap.fromTo(totalRef.current, { y: 4, scale: 0.97 }, {
+        y: 0,
+        scale: 1,
+        duration: 0.24,
+        ease: 'power2.out',
+        clearProps: 'transform',
+      });
+    }
+    previousTotalRef.current = grandTotal;
+    return () => {
+      if (totalRef.current) gsap.killTweensOf(totalRef.current);
+    };
+  }, [grandTotal]);
 
   const removeCartRow = (event: React.MouseEvent<HTMLButtonElement>, variantId: string) => {
     const row = event.currentTarget.closest<HTMLElement>('[data-oz-cart-row]');
@@ -462,6 +486,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
 
               <div className="text-left">
                 <span
+                  ref={totalRef}
                   className={`font-mono-numbers font-black text-xl ${
                     isDark
                       ? 'text-white'
