@@ -56,7 +56,7 @@ export const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({ orderNumber,
   const hasFullDetails = Boolean(order && (order.has_full_access || (order.customer_name && order.phone)));
 
   return (
-    <div className="max-w-3xl mx-auto px-3.5 sm:px-6 py-8 sm:py-16 text-right w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-3xl mx-auto px-3.5 sm:px-6 py-8 sm:py-16 text-right w-full max-w-full overflow-x-hidden">
       <div className="p-5 sm:p-10 rounded-3xl bg-[#121216] border border-neutral-800 shadow-2xl space-y-8 min-w-0">
         
         {/* Success Icon & Header */}
