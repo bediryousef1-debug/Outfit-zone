@@ -77,7 +77,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 text-right w-full max-w-full overflow-x-hidden">
+    <div data-oz-scene className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 text-right w-full max-w-full overflow-x-hidden">
       {/* Breadcrumb navigation */}
       <button
         onClick={() => onNavigate('/products')}
