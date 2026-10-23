@@ -66,10 +66,10 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
     gsap.registerPlugin(ScrollTrigger);
 
     const lenis = new Lenis({
-      duration: 1.05,
+      duration: 0.7,
       smoothWheel: true,
       syncTouch: false,
-      wheelMultiplier: 0.92,
+      wheelMultiplier: 1,
       touchMultiplier: 1.05,
     });
 
@@ -83,7 +83,7 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
 
     lenis.on('scroll', syncScroll);
     gsap.ticker.add(frame);
-    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.lagSmoothing(500, 33);
     window.addEventListener('oz:scroll-top', scrollToTop);
 
     const motionContext = gsap.context(() => {
@@ -129,14 +129,14 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const productCards = routeRoot?.querySelectorAll<HTMLElement>('.oz-card-hover, [data-oz-motion-card]');
         if (productCards?.length) {
           gsap.fromTo(productCards,
-            { autoAlpha: 0, y: 54, scale: 0.94, rotateX: 3, transformPerspective: 1200 },
+            { autoAlpha: 0, y: 24, scale: 0.99 },
             {
               autoAlpha: 1,
               y: 0,
               scale: 1,
               rotateX: 0,
-              duration: 0.9,
-              stagger: { each: 0.075, from: 'start' },
+              duration: 0.48,
+              stagger: { each: 0.035, from: 'start' },
               ease: 'power3.out',
               clearProps: 'transform,opacity,visibility',
               delay: 0.12,
@@ -147,13 +147,12 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const pageImages = routeRoot?.querySelectorAll<HTMLElement>('img:not(.oz-hero-image)');
         if (pageImages?.length) {
           gsap.fromTo(pageImages,
-            { autoAlpha: 0.55, scale: 1.075, clipPath: 'inset(5% 4% 5% 4% round 10px)' },
+            { autoAlpha: 0.8 },
             {
               autoAlpha: 1,
               scale: 1,
-              clipPath: 'inset(0% 0% 0% 0% round 0px)',
-              duration: 1.05,
-              stagger: 0.055,
+              duration: 0.45,
+              stagger: 0.025,
               ease: 'power3.out',
               clearProps: 'clipPath,transform,opacity,visibility',
               delay: 0.06,
@@ -183,14 +182,14 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const cards = section.querySelectorAll<HTMLElement>('[data-oz-motion-card], .oz-card-hover');
         if (cards.length) {
           gsap.fromTo(cards,
-            { autoAlpha: 0, y: 38, scale: 0.965, rotateX: 2, transformPerspective: 1100 },
+            { autoAlpha: 0, y: 20 },
             {
               autoAlpha: 1,
               y: 0,
               scale: 1,
               rotateX: 0,
-              duration: 0.82,
-              stagger: { each: 0.065, from: 'start' },
+              duration: 0.45,
+              stagger: { each: 0.03, from: 'start' },
               ease: 'power3.out',
               clearProps: 'transform,opacity,visibility',
               scrollTrigger: { trigger: section, start: 'top 88%', once: true },
@@ -203,12 +202,10 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         );
         if (editorialImages.length) {
           gsap.fromTo(editorialImages,
-            { clipPath: 'inset(7% 4% 7% 4% round 12px)', scale: 1.055 },
+            { autoAlpha: 0.82 },
             {
-              clipPath: 'inset(0% 0% 0% 0% round 0px)',
-              scale: 1,
-              duration: 1.15,
-              stagger: 0.08,
+              duration: 0.5,
+              stagger: 0.03,
               ease: 'power3.out',
               clearProps: 'clipPath,filter,transform',
               scrollTrigger: { trigger: section, start: 'top 82%', once: true },
