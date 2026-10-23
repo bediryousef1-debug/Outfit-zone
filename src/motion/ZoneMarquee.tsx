@@ -23,7 +23,7 @@ export function ZoneMarquee() {
       const tweens = tracks.map((track, index) =>
         gsap.to(track, {
           xPercent: index === 0 ? -50 : 50,
-          duration: index === 0 ? 19 : 23,
+          duration: index === 0 ? 7 : 9,
           ease: 'none',
           repeat: -1,
           paused: false,
