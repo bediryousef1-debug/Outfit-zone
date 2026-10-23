@@ -25,8 +25,8 @@ function splitWords(heading: HTMLElement) {
   const originalLabel = heading.getAttribute('aria-label');
   const text = heading.textContent || '';
   const fragment = document.createDocumentFragment();
-  text.match(/\\s+|[^\\s]+/gu)?.forEach((token) => {
-    if (/^\\s+$/u.test(token)) {
+  text.match(/\s+|[^\s]+/gu)?.forEach((token) => {
+    if (/^\s+$/u.test(token)) {
       fragment.append(document.createTextNode(token));
       return;
     }
@@ -38,7 +38,7 @@ function splitWords(heading: HTMLElement) {
     mask.append(word);
     fragment.append(mask);
   });
-  heading.setAttribute('aria-label', text.replace(/\\s+/gu, ' ').trim());
+  heading.setAttribute('aria-label', text.replace(/\s+/gu, ' ').trim());
   heading.replaceChildren(fragment);
   return () => {
     heading.replaceChildren(...originalNodes.map((node) => node.cloneNode(true)));
@@ -584,7 +584,7 @@ export function useStorefrontCinema(pathname: string): void {
       if (button.querySelector('svg.lucide-plus, svg.lucide-minus')) {
         const group = button.parentElement;
         const quantity = group && Array.from(group.querySelectorAll<HTMLElement>('span, div'))
-          .find((element) => element.children.length === 0 && /^\\d+$/u.test((element.textContent || '').trim()));
+          .find((element) => element.children.length === 0 && /^\d+$/u.test((element.textContent || '').trim()));
         if (quantity) gsap.fromTo(quantity, { y: 4, scale: 0.82 }, {
           y: 0, scale: 1, duration: 0.22, ease: 'back.out(2)', clearProps: 'transform',
         });
