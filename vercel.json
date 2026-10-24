@@ -23,6 +23,10 @@
       "dest": "server.ts"
     },
     {
+      "src": "/products/([^/]+)",
+      "dest": "server.ts"
+    },
+    {
       "handle": "filesystem"
     },
     {
