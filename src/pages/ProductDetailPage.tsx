@@ -174,6 +174,47 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     if (ogDescription) ogDescription.content = description.content;
   }, [product, language]);
 
+  // Add product structured data using the actual public catalog record.
+  useEffect(() => {
+    const scriptId = 'oz-product-jsonld';
+    document.getElementById(scriptId)?.remove();
+    if (!product || isLoading || loadError) return;
+
+    const productName = getLocalizedProductName(product, language);
+    const productUrl = 'https://outfit-zone-orpin.vercel.app/products/' + encodeURIComponent(product.slug);
+    const productImages = (product.images || [])
+      .map((image) => image.image_url)
+      .filter((url): url is string => typeof url === 'string' && /^https?:\/\//i.test(url));
+    const hasStock = (product.variants || []).some((variant) => Number(variant.stock_quantity) > 0);
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productName,
+      description: String(product.description || '').replace(/\s+/g, ' ').trim().slice(0, 5000),
+      sku: product.id,
+      url: productUrl,
+      ...(productImages.length ? { image: productImages } : {}),
+      brand: { '@type': 'Brand', name: 'Outfit Zone' },
+      offers: {
+        '@type': 'Offer',
+        url: productUrl,
+        priceCurrency: 'EGP',
+        price: Number(product.price).toFixed(2),
+        availability: hasStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        itemCondition: 'https://schema.org/NewCondition',
+      },
+    };
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+
+    return () => {
+      document.getElementById(scriptId)?.remove();
+    };
+  }, [product, language, isLoading, loadError]);
+
   // Load approved reviews/comments
   useEffect(() => {
     if (!product?.id) return;
