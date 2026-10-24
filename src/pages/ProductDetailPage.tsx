@@ -150,6 +150,30 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     };
   }, [slug]);
 
+  // Update the product-specific title and description once real product data is loaded.
+  useEffect(() => {
+    if (!product) return;
+
+    const productName = getLocalizedProductName(product, language);
+    const descriptionText = String(product.description || '').replace(/\\s+/g, ' ').trim();
+    document.title = `${productName} | Outfit Zone`;
+
+    let description = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!description) {
+      description = document.createElement('meta');
+      description.name = 'description';
+      document.head.appendChild(description);
+    }
+    description.content = (descriptionText || (language === 'ar'
+      ? `اكتشف ${productName} من Outfit Zone.`
+      : `Discover ${productName} from Outfit Zone.`)).slice(0, 300);
+
+    const ogTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = document.title;
+    const ogDescription = document.head.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = description.content;
+  }, [product, language]);
+
   // Load approved reviews/comments
   useEffect(() => {
     if (!product?.id) return;
