@@ -1532,6 +1532,125 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
       entries.join('\n') + '\n</urlset>');
 });
 
+// Server-render product metadata into the initial HTML so search crawlers and social previews
+// receive product-specific content without changing the React application architecture.
+app.get('/products/:slug', async (req: Request, res: Response) => {
+  const slug = String(req.params.slug || '');
+  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  let product: any = null;
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('id, name, slug, description, price, compare_at_price, is_active, category:categories(name), images:product_images(image_url, sort_order, is_primary)')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[SEO product metadata] Supabase query failed:', error.message);
+      return res.status(503).type('text/plain').send('Product temporarily unavailable');
+    }
+    product = data;
+  } else {
+    const found = db.products.find((item: any) => item.slug === slug && item.is_active !== false);
+    if (found) {
+      const category = db.categories.find((item: any) => item.id === found.category_id);
+      const images = db.product_images
+        .filter((item: any) => item.product_id === found.id)
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      product = { ...found, category, images };
+    }
+  }
+
+  if (!product) {
+    return res.status(404).type('text/plain').send('Product not found');
+  }
+
+  const escapeHtml = (value: unknown) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const name = String(product.name || 'Outfit Zone').trim();
+  const rawDescription = String(product.description || '').trim();
+  const description = rawDescription || `${name} من Outfit Zone. اكتشف تفاصيل المنتج والسعر واطلب أونلاين مع الدفع عند الاستلام داخل مصر.`;
+  const canonical = siteUrl + '/products/' + encodeURIComponent(String(product.slug || slug));
+  const title = `${name} | Outfit Zone`;
+  const imageRows = Array.isArray(product.images) ? [...product.images].sort((a: any, b: any) => {
+    if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  }) : [];
+  const rawImage = imageRows.map((item: any) => item.image_url).find((value: any) =>
+    typeof value === 'string' && value.trim() && !value.trim().startsWith('data:')
+  );
+  const image = rawImage
+    ? (/^https?:\/\//i.test(rawImage) ? rawImage : new URL(rawImage, siteUrl).toString())
+    : '';
+  const price = Number(product.price);
+  const jsonLd: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    url: canonical,
+    description,
+    brand: { '@type': 'Brand', name: 'Outfit Zone' },
+    offers: {
+      '@type': 'Offer',
+      url: canonical,
+      priceCurrency: 'EGP',
+      price: Number.isFinite(price) && price >= 0 ? price : undefined,
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition'
+    }
+  };
+  if (image) jsonLd.image = [image];
+  if (Number.isFinite(Number(product.compare_at_price)) && Number(product.compare_at_price) > price) {
+    jsonLd.offers.priceValidUntil = undefined;
+  }
+  const jsonLdText = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+
+  try {
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    let html = fs.readFileSync(indexPath, 'utf8');
+    const replaceMeta = (attribute: string, key: string, value: string) => {
+      const escapedValue = escapeHtml(value);
+      const pattern = new RegExp('<meta\\s+' + attribute + '=["\\']' + key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\// Categories
+// ==============================================================================
+') + '["\\'][^>]*>', 'i');
+      const tag = '<meta ' + attribute + '="' + key + '" content="' + escapedValue + '" />';
+      if (pattern.test(html)) html = html.replace(pattern, tag);
+      else html = html.replace('</head>', '    ' + tag + '\\n  </head>');
+    };
+    html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeHtml(title) + '</title>');
+    replaceMeta('name', 'description', description);
+    replaceMeta('property', 'og:title', title);
+    replaceMeta('property', 'og:description', description);
+    replaceMeta('property', 'og:type', 'product');
+    replaceMeta('property', 'og:url', canonical);
+    replaceMeta('name', 'twitter:title', title);
+    replaceMeta('name', 'twitter:description', description);
+    if (image) {
+      replaceMeta('property', 'og:image', image);
+      replaceMeta('name', 'twitter:image', image);
+    }
+    const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
+    if (/<link\\s+rel=["\\']canonical["\\'][^>]*>/i.test(html)) {
+      html = html.replace(/<link\\s+rel=["\\']canonical["\\'][^>]*>/i, canonicalTag);
+    } else {
+      html = html.replace('</head>', '    ' + canonicalTag + '\\n  </head>');
+    }
+    html = html.replace(/<script\\s+type=["\\']application\\/ld\\+json["\\'][^>]*>[\\s\\S]*?<\\/script>/gi, '');
+    html = html.replace('</head>', '    <script type="application/ld+json">' + jsonLdText + '</script>\\n  </head>');
+    res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
+    return res.status(200).type('html').send(html);
+  } catch (error) {
+    console.error('[SEO product metadata] Could not read built HTML:', error);
+    return res.status(500).type('text/plain').send('Page temporarily unavailable');
+  }
+});
+
 // Categories
 // ==============================================================================
 
