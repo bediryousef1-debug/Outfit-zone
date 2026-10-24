@@ -1,0 +1,22 @@
+name: SEO branch validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/technical-seo-basics]
+
+jobs:
+  build-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript check
+        run: npm run lint
+      - name: Production build
+        run: npm run build

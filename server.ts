@@ -1481,6 +1481,175 @@ app.post(
   }
 );
 
+// Dynamic XML sitemap: include only public, active product URLs and real static routes.
+app.get('/sitemap.xml', async (_req: Request, res: Response) => {
+  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  const staticPaths = ['/', '/products', '/about', '/contact'];
+  let productSlugs: Array<{ slug: string; updated_at?: string | null }> = [];
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('slug, updated_at')
+      .eq('is_active', true)
+      .not('slug', 'is', null);
+
+    if (error) {
+      console.error('[SEO sitemap] Supabase query failed:', error.message);
+      return res.status(503).type('text/plain').send('Sitemap temporarily unavailable');
+    }
+    productSlugs = (data || []).filter((p: any) => typeof p.slug === 'string' && p.slug.trim());
+  } else {
+    productSlugs = db.products
+      .filter((p: any) => p.is_active !== false && typeof p.slug === 'string' && p.slug.trim())
+      .map((p: any) => ({ slug: p.slug, updated_at: p.updated_at || p.created_at || null }));
+  }
+
+  const xmlEscape = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+  const urls: Array<{ loc: string; lastmod?: string | null }> = [
+    ...staticPaths.map((pathname) => ({ loc: siteUrl + pathname })),
+    ...productSlugs.map((product) => ({
+      loc: siteUrl + '/products/' + encodeURIComponent(product.slug.trim()),
+      lastmod: product.updated_at || undefined,
+    })),
+  ];
+  const entries = urls.map(({ loc, lastmod }) =>
+    '  <url><loc>' + xmlEscape(loc) + '</loc>' +
+    (lastmod && !Number.isNaN(Date.parse(lastmod))
+      ? '<lastmod>' + new Date(lastmod).toISOString().slice(0, 10) + '</lastmod>'
+      : '') +
+    '</url>'
+  );
+  res.status(200).set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+    .type('application/xml')
+    .send('<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      entries.join('\n') + '\n</urlset>');
+});
+
+// Server-render product-specific SEO metadata for crawlers and social previews.
+app.get('/products/:slug', async (req: Request, res: Response) => {
+  const slug = String(req.params.slug || '');
+  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  let product: any = null;
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('id, name, slug, description, price, is_active, images:product_images(image_url, sort_order, is_primary)')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) {
+      console.error('[SEO product metadata] Supabase query failed:', error.message);
+      return res.status(503).type('text/plain').send('Product temporarily unavailable');
+    }
+    product = data;
+  } else {
+    const found = db.products.find((item: any) => item.slug === slug && item.is_active !== false);
+    if (found) {
+      product = {
+        ...found,
+        images: db.product_images
+          .filter((item: any) => item.product_id === found.id)
+          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      };
+    }
+  }
+
+  if (!product) return res.status(404).type('text/plain').send('Product not found');
+
+  const escapeHtml = (value: unknown) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const name = String(product.name || 'Outfit Zone').trim();
+  const description = String(product.description || '').trim() ||
+    (name + ' من Outfit Zone. اكتشف تفاصيل المنتج واطلب أونلاين مع الدفع عند الاستلام داخل مصر.');
+  const canonical = siteUrl + '/products/' + encodeURIComponent(String(product.slug || slug));
+  const title = name + ' | Outfit Zone';
+  const imageRows = Array.isArray(product.images) ? [...product.images].sort((a: any, b: any) => {
+    if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  }) : [];
+  const imageValue = imageRows.map((item: any) => item.image_url).find((value: any) =>
+    typeof value === 'string' && value.trim() && !value.trim().startsWith('data:')
+  );
+  const image = imageValue ? (/^https?:\/\//i.test(imageValue) ? imageValue : new URL(imageValue, siteUrl).toString()) : '';
+  const price = Number(product.price);
+  const offer: Record<string, any> = {
+    '@type': 'Offer',
+    url: canonical,
+    priceCurrency: 'EGP',
+    availability: 'https://schema.org/InStock',
+    itemCondition: 'https://schema.org/NewCondition'
+  };
+  if (Number.isFinite(price) && price >= 0) offer.price = price;
+  const jsonLd: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description,
+    url: canonical,
+    brand: { '@type': 'Brand', name: 'Outfit Zone' },
+    offers: offer
+  };
+  if (image) jsonLd.image = [image];
+
+  try {
+    let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    const replaceMeta = (attribute: string, key: string, value: string) => {
+      const prefix = '<meta ' + attribute + '="' + key + '"';
+      const start = html.indexOf(prefix);
+      const tag = '<meta ' + attribute + '="' + key + '" content="' + escapeHtml(value) + '" />';
+      if (start >= 0) {
+        const end = html.indexOf('>', start);
+        if (end >= 0) html = html.slice(0, start) + tag + html.slice(end + 1);
+      } else {
+        html = html.replace('</head>', '    ' + tag + '\n  </head>');
+      }
+    };
+    const titleStart = html.indexOf('<title>');
+    const titleEnd = html.indexOf('</title>');
+    if (titleStart >= 0 && titleEnd > titleStart) {
+      html = html.slice(0, titleStart) + '<title>' + escapeHtml(title) + '</title>' + html.slice(titleEnd + 8);
+    }
+    replaceMeta('name', 'description', description);
+    replaceMeta('property', 'og:title', title);
+    replaceMeta('property', 'og:description', description);
+    replaceMeta('property', 'og:type', 'product');
+    replaceMeta('property', 'og:url', canonical);
+    replaceMeta('name', 'twitter:title', title);
+    replaceMeta('name', 'twitter:description', description);
+    if (image) {
+      replaceMeta('property', 'og:image', image);
+      replaceMeta('name', 'twitter:image', image);
+    }
+    const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
+    const canonicalStart = html.indexOf('<link rel="canonical"');
+    if (canonicalStart >= 0) {
+      const canonicalEnd = html.indexOf('>', canonicalStart);
+      if (canonicalEnd >= 0) html = html.slice(0, canonicalStart) + canonicalTag + html.slice(canonicalEnd + 1);
+    } else {
+      html = html.replace('</head>', '    ' + canonicalTag + '\n  </head>');
+    }
+    html = html.replace('</head>', '    <script type="application/ld+json">' +
+      JSON.stringify(jsonLd).replace(/</g, '\\u003c') + '</script>\n  </head>');
+    res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
+    return res.status(200).type('html').send(html);
+  } catch (error) {
+    console.error('[SEO product metadata] Could not read built HTML:', error);
+    return res.status(500).type('text/plain').send('Page temporarily unavailable');
+  }
+});
+
 // Categories
 // ==============================================================================
 

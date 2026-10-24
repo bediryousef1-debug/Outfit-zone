@@ -150,6 +150,81 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     };
   }, [slug]);
 
+  // Update the product-specific title and description once real product data is loaded.
+  useEffect(() => {
+    if (!product) return;
+
+    const productName = getLocalizedProductName(product, language);
+    const descriptionText = String(product.description || '').replace(/\s+/g, ' ').trim();
+    document.title = `${productName} | Outfit Zone`;
+
+    let description = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!description) {
+      description = document.createElement('meta');
+      description.name = 'description';
+      document.head.appendChild(description);
+    }
+    description.content = (descriptionText || (language === 'ar'
+      ? `اكتشف ${productName} من Outfit Zone.`
+      : `Discover ${productName} from Outfit Zone.`)).slice(0, 300);
+
+    const ogTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = document.title;
+    const ogDescription = document.head.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = description.content;
+  }, [product, language]);
+
+  // Add product structured data using the actual public catalog record.
+  useEffect(() => {
+    const scriptId = 'oz-product-jsonld';
+    document.getElementById(scriptId)?.remove();
+    if (!product || isLoading || loadError) return;
+
+    const productName = getLocalizedProductName(product, language);
+    const productUrl = 'https://outfit-zone-orpin.vercel.app/products/' + encodeURIComponent(product.slug);
+    const productImages = (product.images || [])
+      .map((image) => {
+        const imageUrl = String(image.image_url || '').trim();
+        if (!imageUrl || imageUrl.startsWith('data:')) return null;
+        try {
+          const absoluteUrl = new URL(imageUrl, window.location.origin).href;
+          return /^https?:\/\//i.test(absoluteUrl) ? absoluteUrl : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter((url): url is string => Boolean(url));
+    const productDescription = String(product.description || '').replace(/\s+/g, ' ').trim().slice(0, 5000);
+    const hasStock = (product.variants || []).some((variant) => Number(variant.stock_quantity) > 0);
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productName,
+      ...(productDescription ? { description: productDescription } : {}),
+      sku: product.id,
+      url: productUrl,
+      ...(productImages.length ? { image: productImages } : {}),
+      brand: { '@type': 'Brand', name: 'Outfit Zone' },
+      offers: {
+        '@type': 'Offer',
+        url: productUrl,
+        priceCurrency: 'EGP',
+        price: Number(product.price).toFixed(2),
+        availability: hasStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        itemCondition: 'https://schema.org/NewCondition',
+      },
+    };
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+
+    return () => {
+      document.getElementById(scriptId)?.remove();
+    };
+  }, [product, language, isLoading, loadError]);
+
   // Load approved reviews/comments
   useEffect(() => {
     if (!product?.id) return;

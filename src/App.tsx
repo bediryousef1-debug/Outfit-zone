@@ -371,9 +371,16 @@ function AppContent() {
   const pathname = currentPath.split('?')[0].replace(/(.)\/+$/, '$1') || '/';
   const search = currentPath.includes('?') ? currentPath.slice(currentPath.indexOf('?')) : '';
 
-  // SEO document title sync per page (follows the selected language)
+  // Keep SEO metadata aligned with the active public route and language.
   useEffect(() => {
     const isAr = language === 'ar';
+    const privateRoute =
+      pathname === '/cart' ||
+      pathname === '/checkout' ||
+      pathname.startsWith('/order-success/') ||
+      pathname === '/track' ||
+      pathname.startsWith('/admin');
+
     if (pathname === '/') {
       document.title = isAr
         ? 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري'
@@ -400,6 +407,53 @@ function AppContent() {
       document.title = 'لوحة التحكم | Outfit Zone Admin';
     }
 
+    const setMeta = (selector: string, attribute: 'name' | 'property', key: string, value: string) => {
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, key);
+        document.head.appendChild(element);
+      }
+      element.content = value;
+    };
+
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (privateRoute) {
+      canonical?.remove();
+      setMeta('meta[name="robots"]', 'name', 'robots', 'noindex, nofollow');
+    } else {
+      document.head.querySelector('meta[name="robots"]')?.remove();
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = 'canonical';
+        document.head.appendChild(canonical);
+      }
+      canonical.href = `https://outfit-zone-orpin.vercel.app${pathname === '/products' ? '/products' : pathname}`;
+      setMeta('meta[property="og:url"]', 'property', 'og:url', canonical.href);
+    }
+
+    const descriptions: Record<string, string> = isAr
+      ? {
+          '/': 'Outfit Zone براند ستريت وير رجالي مصري. اكتشف تيشيرتات Box Fit وOversized وبولو وقمصان مع الدفع عند الاستلام.',
+          '/products': 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.',
+          '/about': 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.',
+          '/contact': 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.',
+        }
+      : {
+          '/': 'Outfit Zone is an Egyptian men’s streetwear brand. Explore Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.',
+          '/products': 'Browse the Outfit Zone men’s streetwear collection and discover available styles.',
+          '/about': 'Learn about Outfit Zone and our approach to modern men’s streetwear.',
+          '/contact': 'Contact Outfit Zone about products, sizing and orders.',
+        };
+    if (!privateRoute) {
+      const description = descriptions[pathname] || (isAr
+        ? 'اكتشف هذا الموديل من Outfit Zone، براند الستريت وير الرجالي المصري.'
+        : 'Discover this style from Outfit Zone, an Egyptian men’s streetwear brand.');
+      setMeta('meta[name="description"]', 'name', 'description', description);
+      setMeta('meta[property="og:title"]', 'property', 'og:title', document.title);
+      setMeta('meta[property="og:description"]', 'property', 'og:description', description);
+      setMeta('meta[property="og:type"]', 'property', 'og:type', pathname.startsWith('/products/') ? 'product' : 'website');
+    }
   }, [pathname, language]);
 
   // Observe product cards as they enter/leave the viewport, including async-loaded grids.

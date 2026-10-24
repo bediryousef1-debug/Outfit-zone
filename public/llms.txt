@@ -1,0 +1,21 @@
+# Outfit Zone
+
+> Outfit Zone is an Egyptian men's streetwear storefront.
+
+## Public pages
+
+- Homepage: https://outfit-zone-orpin.vercel.app/
+- Product collection: https://outfit-zone-orpin.vercel.app/products
+- About the brand: https://outfit-zone-orpin.vercel.app/about
+- Contact: https://outfit-zone-orpin.vercel.app/contact
+
+## Store information
+
+The storefront presents men's streetwear styles including Box Fit and Oversized clothing. The site supports cash on delivery. Product availability, prices, and current policies should be checked on the live storefront.
+
+## Discovery
+
+- XML sitemap: https://outfit-zone-orpin.vercel.app/sitemap.xml
+- Robots rules: https://outfit-zone-orpin.vercel.app/robots.txt
+
+Only public pages are listed here. Product availability and details may change.

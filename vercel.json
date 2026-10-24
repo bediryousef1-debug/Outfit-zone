@@ -15,7 +15,15 @@
   ],
   "routes": [
     {
+      "src": "/sitemap\\.xml",
+      "dest": "server.ts"
+    },
+    {
       "src": "/api/(.*)",
+      "dest": "server.ts"
+    },
+    {
+      "src": "/products/([^/]+)",
       "dest": "server.ts"
     },
     {
