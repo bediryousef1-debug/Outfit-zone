@@ -1481,6 +1481,57 @@ app.post(
   }
 );
 
+// Dynamic XML sitemap: include only public, active product URLs and real static routes.
+app.get('/sitemap.xml', async (_req: Request, res: Response) => {
+  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  const staticPaths = ['/', '/products', '/about', '/contact'];
+  let productSlugs: Array<{ slug: string; updated_at?: string | null }> = [];
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('slug, updated_at')
+      .eq('is_active', true)
+      .not('slug', 'is', null);
+
+    if (error) {
+      console.error('[SEO sitemap] Supabase query failed:', error.message);
+      return res.status(503).type('text/plain').send('Sitemap temporarily unavailable');
+    }
+    productSlugs = (data || []).filter((p: any) => typeof p.slug === 'string' && p.slug.trim());
+  } else {
+    productSlugs = db.products
+      .filter((p: any) => p.is_active !== false && typeof p.slug === 'string' && p.slug.trim())
+      .map((p: any) => ({ slug: p.slug, updated_at: p.updated_at || p.created_at || null }));
+  }
+
+  const xmlEscape = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+  const urls = [
+    ...staticPaths.map((pathname) => ({ loc: siteUrl + pathname })),
+    ...productSlugs.map((product) => ({
+      loc: siteUrl + '/products/' + encodeURIComponent(product.slug.trim()),
+      lastmod: product.updated_at || undefined,
+    })),
+  ];
+  const entries = urls.map(({ loc, lastmod }) =>
+    '  <url><loc>' + xmlEscape(loc) + '</loc>' +
+    (lastmod && !Number.isNaN(Date.parse(lastmod))
+      ? '<lastmod>' + new Date(lastmod).toISOString().slice(0, 10) + '</lastmod>'
+      : '') +
+    '</url>'
+  );
+  res.status(200).set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+    .type('application/xml')
+    .send('<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      entries.join('\n') + '\n</urlset>');
+});
+
 // Categories
 // ==============================================================================
 
