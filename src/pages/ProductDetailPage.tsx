@@ -183,14 +183,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     const productName = getLocalizedProductName(product, language);
     const productUrl = 'https://outfit-zone-orpin.vercel.app/products/' + encodeURIComponent(product.slug);
     const productImages = (product.images || [])
-      .map((image) => image.image_url)
-      .filter((url): url is string => typeof url === 'string' && /^https?:\/\//i.test(url));
+      .map((image) => {
+        const imageUrl = String(image.image_url || '').trim();
+        if (!imageUrl || imageUrl.startsWith('data:')) return null;
+        try {
+          const absoluteUrl = new URL(imageUrl, window.location.origin).href;
+          return /^https?:\/\//i.test(absoluteUrl) ? absoluteUrl : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter((url): url is string => Boolean(url));
+    const productDescription = String(product.description || '').replace(/\s+/g, ' ').trim().slice(0, 5000);
     const hasStock = (product.variants || []).some((variant) => Number(variant.stock_quantity) > 0);
     const schema = {
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: productName,
-      description: String(product.description || '').replace(/\s+/g, ' ').trim().slice(0, 5000),
+      ...(productDescription ? { description: productDescription } : {}),
       sku: product.id,
       url: productUrl,
       ...(productImages.length ? { image: productImages } : {}),
