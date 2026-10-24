@@ -1511,7 +1511,7 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-  const urls = [
+  const urls: Array<{ loc: string; lastmod?: string | null }> = [
     ...staticPaths.map((pathname) => ({ loc: siteUrl + pathname })),
     ...productSlugs.map((product) => ({
       loc: siteUrl + '/products/' + encodeURIComponent(product.slug.trim()),
