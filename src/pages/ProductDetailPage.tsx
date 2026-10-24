@@ -155,7 +155,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     if (!product) return;
 
     const productName = getLocalizedProductName(product, language);
-    const descriptionText = String(product.description || '').replace(/\\s+/g, ' ').trim();
+    const descriptionText = String(product.description || '').replace(/\s+/g, ' ').trim();
     document.title = `${productName} | Outfit Zone`;
 
     let description = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
