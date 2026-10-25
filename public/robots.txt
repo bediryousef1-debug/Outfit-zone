@@ -6,4 +6,4 @@ Disallow: /checkout
 Disallow: /order-success/
 Disallow: /track
 
-Sitemap: https://outfit-zone-orpin.vercel.app/sitemap.xml
+Sitemap: https://outfitzone-eg.vercel.app/sitemap.xml
