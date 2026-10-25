@@ -1483,7 +1483,7 @@ app.post(
 
 // Dynamic XML sitemap: include only public, active product URLs and real static routes.
 app.get('/sitemap.xml', async (_req: Request, res: Response) => {
-  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  const siteUrl = 'https://outfitzone-eg.vercel.app';
   const staticPaths = ['/', '/products', '/about', '/contact'];
   let productSlugs: Array<{ slug: string; updated_at?: string | null }> = [];
 
@@ -1535,7 +1535,7 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
 // Server-render product-specific SEO metadata for crawlers and social previews.
 app.get('/products/:slug', async (req: Request, res: Response) => {
   const slug = String(req.params.slug || '');
-  const siteUrl = 'https://outfit-zone-orpin.vercel.app';
+  const siteUrl = 'https://outfitzone-eg.vercel.app';
   let product: any = null;
 
   if (supabaseClient) {
@@ -5017,7 +5017,7 @@ app.post(
       const messageText = String(update?.message?.text || '').trim();
       if (botToken && /^\/(?:طلبات|orders)(?:@\w+)?(?:\s|$)/i.test(messageText)) {
         try {
-          const webhookUrl = 'https://outfit-zone-orpin.vercel.app/api/telegram-webhook';
+          const webhookUrl = 'https://outfitzone-eg.vercel.app/api/telegram-webhook';
           const webhookResult = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
