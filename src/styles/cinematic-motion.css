@@ -477,3 +477,20 @@
     max-width: 100%;
   }
 }
+
+
+/* Mobile performance: keep the first hero image fully visible without entrance/fade animations. */
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .oz-hero-stage.oz-in-view .oz-hero-image {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div,
+  .oz-hero-stage.oz-in-view .oz-hero-visual::before,
+  .oz-hero-stage.oz-in-view .oz-hero-visual::after,
+  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+    animation: none !important;
+  }
+}
