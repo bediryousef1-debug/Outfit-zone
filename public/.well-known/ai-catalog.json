@@ -8,26 +8,22 @@
     {
       "identifier": "urn:air:outfitzone-eg:website:storefront",
       "displayName": "Outfit Zone Public Storefront",
-      "type": "text/html",
-      "url": "https://outfitzone-eg.vercel.app/",
-      "description": "Public Egyptian men's streetwear storefront. Product details, availability, sizing, and cash-on-delivery ordering are available on the website.",
+      "type": "text/markdown",
+      "url": "https://outfitzone-eg.vercel.app/llms.txt",
+      "description": "Public guide to Outfit Zone, an Egyptian men's streetwear storefront with product collection, sizing and cash-on-delivery information.",
       "tags": [
         "streetwear",
         "fashion",
         "Egypt",
-        "men's clothing",
+        "mens clothing",
         "cash on delivery"
-      ],
-      "capabilities": [
-        "public-storefront",
-        "product-discovery"
       ],
       "representativeQueries": [
         "Browse men's streetwear products at Outfit Zone",
         "Find available Box Fit and Oversized clothing from Outfit Zone"
       ],
-      "version": "1.0.0",
-      "updatedAt": "2026-10-25T00:00:00Z"
+      "version": "1.0.1",
+      "updatedAt": "2026-10-25T01:30:00Z"
     }
   ]
 }
