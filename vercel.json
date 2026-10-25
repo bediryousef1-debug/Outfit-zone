@@ -27,6 +27,22 @@
       "dest": "server.ts"
     },
     {
+      "src": "^/$",
+      "dest": "server.ts"
+    },
+    {
+      "src": "^/products/?$",
+      "dest": "server.ts"
+    },
+    {
+      "src": "^/about/?$",
+      "dest": "server.ts"
+    },
+    {
+      "src": "^/contact/?$",
+      "dest": "server.ts"
+    },
+    {
       "handle": "filesystem"
     },
     {
