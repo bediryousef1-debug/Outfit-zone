@@ -634,10 +634,17 @@ export const HomePage: React.FC<HomePageProps> = ({
           1. HERO SECTION & SLIDER
           ===================================================================== */}
 
+      {storeLoading && !currentSlide && (
+        <div
+          className="oz-hero-loading-reserve"
+          aria-hidden="true"
+        />
+      )}
+
       {currentSlide && (
       <section
         data-oz-motion="hero"
-        className={`oz-motion-section oz-hero-stage relative overflow-hidden transition-colors ${
+        className={`oz-motion-section oz-hero-stage oz-hero-layout-reserved relative overflow-hidden transition-colors ${
           isDark
             ? 'bg-gradient-to-b from-[#111115] via-[#09090b] to-[#000000]'
             : 'bg-gradient-to-b from-[#f3f4f6] via-[#f9fafb] to-[#ffffff]'

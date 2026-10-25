@@ -1216,3 +1216,27 @@ html[dir="rtl"] .oz-scroll-progress {
   align-items: center;
   justify-content: center;
 }
+
+/* Reserve the hero's layout while storefront content is loading to prevent CLS. */
+.oz-home-page .oz-hero-loading-reserve {
+  min-height: 600px;
+  background: linear-gradient(to bottom, #f3f4f6, #ffffff);
+}
+html.dark .oz-home-page .oz-hero-loading-reserve {
+  background: linear-gradient(to bottom, #111115, #000000);
+}
+.oz-home-page .oz-hero-layout-reserved {
+  min-height: 600px;
+}
+@media (min-width: 640px) {
+  .oz-home-page .oz-hero-loading-reserve,
+  .oz-home-page .oz-hero-layout-reserved {
+    min-height: 680px;
+  }
+}
+@media (min-width: 1024px) {
+  .oz-home-page .oz-hero-loading-reserve,
+  .oz-home-page .oz-hero-layout-reserved {
+    min-height: 520px;
+  }
+}
