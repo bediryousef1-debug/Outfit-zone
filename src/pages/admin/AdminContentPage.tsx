@@ -110,6 +110,39 @@ export const AdminContentPage: React.FC = () => {
     }
   };
 
+  const handleOptimizeCurrentEditorialImage = async () => {
+    if (!content?.editorial_image_url) return;
+
+    setIsUploadingImage(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const response = await fetch(content.editorial_image_url);
+      if (!response.ok) {
+        throw new Error('تعذر تحميل الصورة الحالية. جرّب رفع الملف من جهازك بدلًا من ذلك.');
+      }
+
+      const blob = await response.blob();
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('الرابط الحالي لا يعيد ملف صورة صالحًا.');
+      }
+
+      const extension = (blob.type.split('/')[1] || 'jpeg').replace('jpeg', 'jpg');
+      const file = new File([blob], `editorial-current.${extension}`, {
+        type: blob.type,
+      });
+      const imageUrl = await api.uploadStoreImage(file);
+
+      handleChange('editorial_image_url', imageUrl);
+      setSuccessMsg('تم رفع نسخة WebP مضغوطة من الصورة الحالية. اضغط «حفظ التعديلات» لتحديث الموقع.');
+    } catch (err: any) {
+      setError(err?.message || 'تعذر تحسين الصورة الحالية. يمكنك اختيار الملف الأصلي من جهازك ورفعه.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -704,6 +737,20 @@ export const AdminContentPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleOptimizeCurrentEditorialImage}
+              disabled={isUploadingImage || !content.editorial_image_url}
+              className="w-full py-3 px-4 rounded-xl border border-emerald-900 bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            >
+              {isUploadingImage ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              <span>{isUploadingImage ? 'جاري ضغط ورفع الصورة...' : 'تحسين الصورة الحالية وتحويلها إلى WebP'}</span>
+            </button>
           </div>
 
           {content.editorial_image_url && (
