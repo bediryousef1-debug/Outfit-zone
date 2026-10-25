@@ -41,7 +41,7 @@ export const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({ 
   return (
     <aside
       aria-label="تواصل معنا عبر واتساب"
-      className={`fixed left-3 sm:left-6 z-50 print:hidden transition-all duration-300 pointer-events-auto max-w-[calc(100vw-24px)] ${isScrollVisible ? 'translate-x-0 opacity-100' : '-translate-x-16 opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto'}`}
+      className={`fixed left-3 sm:left-6 z-50 print:hidden transition-[transform,opacity] duration-300 pointer-events-auto max-w-[calc(100vw-24px)] ${isScrollVisible ? 'translate-x-0 opacity-100' : '-translate-x-16 opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto'}`}
       style={{
         bottom: 'var(--whatsapp-btn-bottom, 220px)',
       }}
