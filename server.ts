@@ -1648,13 +1648,40 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
   );
   const image = imageValue ? (/^https?:\/\//i.test(imageValue) ? imageValue : new URL(imageValue, siteUrl).toString()) : '';
   const price = Number(product.price);
+  let stockKnown = false;
+  let totalStock = 0;
+
+  if (supabaseClient) {
+    const { data: variants, error: variantsError } = await supabaseClient
+      .from('product_variants')
+      .select('stock_quantity')
+      .eq('product_id', product.id);
+
+    if (!variantsError && Array.isArray(variants)) {
+      stockKnown = true;
+      totalStock = variants.reduce((sum: number, variant: any) =>
+        sum + Math.max(0, Number(variant.stock_quantity) || 0), 0);
+    } else if (variantsError) {
+      console.error('[SEO product metadata] Could not read stock for structured data:', variantsError.message);
+    }
+  } else {
+    const variants = db.product_variants.filter((item: any) => item.product_id === product.id);
+    stockKnown = true;
+    totalStock = variants.reduce((sum: number, variant: any) =>
+      sum + Math.max(0, Number(variant.stock_quantity) || 0), 0);
+  }
+
   const offer: Record<string, any> = {
     '@type': 'Offer',
     url: canonical,
     priceCurrency: 'EGP',
-    availability: 'https://schema.org/InStock',
     itemCondition: 'https://schema.org/NewCondition'
   };
+  if (stockKnown) {
+    offer.availability = totalStock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
+  }
   if (Number.isFinite(price) && price >= 0) offer.price = price;
   const jsonLd: Record<string, any> = {
     '@context': 'https://schema.org',
