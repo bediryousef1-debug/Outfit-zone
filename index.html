@@ -53,7 +53,9 @@
     </script>
     <script>
       (function () {
-        var path = window.location.pathname.replace(/\\/$/, '') || '/';
+        var path = window.location.pathname;
+        if (path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
+        path = path || '/';
         var privateRoute = path === '/cart' || path === '/checkout' ||
           path === '/track' || path.indexOf('/order-success/') === 0 ||
           path === '/admin' || path.indexOf('/admin/') === 0;
