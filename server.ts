@@ -1481,6 +1481,70 @@ app.post(
   }
 );
 
+// Server-render route-specific SEO metadata for public static pages.
+// This ensures the raw HTML has the correct canonical/title/description before client JavaScript runs.
+app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) => {
+  const routePath = req.path.length > 1 && req.path.endsWith('/')
+    ? req.path.slice(0, -1)
+    : req.path;
+  const pages: Record<string, { title: string; description: string }> = {
+    '/': {
+      title: 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري',
+      description: 'Outfit Zone - براند ملابس ستريت وير رجالي في مصر. تيشيرتات Box Fit و Oversized مع الدفع عند الاستلام.',
+    },
+    '/products': {
+      title: 'تشكيلة الستريت وير | Outfit Zone',
+      description: 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.',
+    },
+    '/about': {
+      title: 'قصتنا وعن البراند | Outfit Zone',
+      description: 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.',
+    },
+    '/contact': {
+      title: 'تواصل معنا | Outfit Zone',
+      description: 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.',
+    },
+  };
+  const page = pages[routePath];
+  if (!page) return res.status(404).end();
+
+  const siteUrl = 'https://outfitzone-eg.vercel.app';
+  const canonical = siteUrl + (routePath === '/' ? '/' : routePath);
+  const escapeHtml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  try {
+    let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    const setMeta = (attribute: string, key: string, value: string) => {
+      const tag = '<meta ' + attribute + '="' + key + '" content="' + escapeHtml(value) + '" />';
+      const pattern = new RegExp('<meta\\s+' + attribute + '="' + key + '"[^>]*>', 'i');
+      if (pattern.test(html)) html = html.replace(pattern, tag);
+      else html = html.replace('</head>', '    ' + tag + '\\n  </head>');
+    };
+
+    html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeHtml(page.title) + '</title>');
+    setMeta('name', 'description', page.description);
+    setMeta('property', 'og:title', page.title);
+    setMeta('property', 'og:description', page.description);
+    setMeta('property', 'og:url', canonical);
+
+    const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
+    const canonicalPattern = /<link\\s+rel="canonical"[^>]*>/i;
+    if (canonicalPattern.test(html)) html = html.replace(canonicalPattern, canonicalTag);
+    else html = html.replace('</head>', '    ' + canonicalTag + '\\n  </head>');
+
+    res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
+    return res.status(200).type('html').send(html);
+  } catch (error) {
+    console.error('[SEO static metadata] Could not read built HTML:', error);
+    return res.status(500).type('text/plain').send('Page temporarily unavailable');
+  }
+});
+
 // Dynamic XML sitemap: include only public, active product URLs and real static routes.
 app.get('/sitemap.xml', async (_req: Request, res: Response) => {
   const siteUrl = 'https://outfitzone-eg.vercel.app';
