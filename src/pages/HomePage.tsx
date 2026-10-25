@@ -760,20 +760,25 @@ export const HomePage: React.FC<HomePageProps> = ({
                             ? `الشريحة ${idx + 1}: ${slideTitle}`
                             : `Slide ${idx + 1}: ${slideTitle}`
                         }
-                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                          isActive
-                            ? `w-8 ${
-                                isDark
-                                  ? 'bg-white shadow-sm shadow-white/30'
-                                  : 'bg-black shadow-sm shadow-black/30'
-                              }`
-                            : `w-3 hover:w-5 ${
-                                isDark
-                                  ? 'bg-neutral-700 hover:bg-neutral-500'
-                                  : 'bg-neutral-300 hover:bg-neutral-500'
-                              }`
-                        }`}
-                      />
+                        className="min-h-[44px] min-w-[44px] p-[10px] inline-flex items-center justify-center cursor-pointer"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`block h-2 rounded-full transition-all duration-300 ${
+                            isActive
+                              ? `w-8 ${
+                                  isDark
+                                    ? 'bg-white shadow-sm shadow-white/30'
+                                    : 'bg-black shadow-sm shadow-black/30'
+                                }`
+                              : `w-3 hover:w-5 ${
+                                  isDark
+                                    ? 'bg-neutral-700 hover:bg-neutral-500'
+                                    : 'bg-neutral-300 hover:bg-neutral-500'
+                                }`
+                          }`}
+                        />
+                      </button>
                     );
                   })}
                 </div>

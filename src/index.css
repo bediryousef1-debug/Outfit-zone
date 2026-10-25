@@ -1179,3 +1179,40 @@ html[dir="rtl"] .oz-scroll-progress {
     transition: none !important;
   }
 }
+
+/* Keep the homepage's major sections from shifting during cinematic entrance effects. */
+@media (prefers-reduced-motion: no-preference) {
+  .oz-home-page > .oz-motion-section:not(.oz-hero-stage).oz-in-view > div:first-child {
+    animation: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+    scale: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Reserve a stable text column so autoplay slides cannot move the sections below the hero. */
+  .oz-home-page .oz-hero-copy {
+    min-height: 300px;
+  }
+
+  .oz-home-page .oz-hero-zone-word {
+    pointer-events: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .oz-home-page .oz-hero-copy {
+    min-height: 410px;
+  }
+}
+
+/* Slider tabs remain visually slim while meeting the 44px minimum touch target. */
+.oz-home-page .oz-hero-stage [role="tablist"] > [role="tab"] {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
