@@ -428,7 +428,7 @@ function AppContent() {
         canonical.rel = 'canonical';
         document.head.appendChild(canonical);
       }
-      canonical.href = `https://outfit-zone-orpin.vercel.app${pathname === '/products' ? '/products' : pathname}`;
+      canonical.href = `https://outfitzone-eg.vercel.app${pathname === '/products' ? '/products' : pathname}`;
       setMeta('meta[property="og:url"]', 'property', 'og:url', canonical.href);
     }
 
