@@ -51,6 +51,52 @@
         } catch (e) {}
       })();
     </script>
+    <script>
+      (function () {
+        var path = window.location.pathname.replace(/\\/$/, '') || '/';
+        var privateRoute = path === '/cart' || path === '/checkout' ||
+          path === '/track' || path.indexOf('/order-success/') === 0 ||
+          path === '/admin' || path.indexOf('/admin/') === 0;
+        var titles = {
+          '/': ['Outfit Zone | Wear In The Zone - براند ستريت وير مصري', 'Outfit Zone - براند ملابس ستريت وير رجالي في مصر. تيشيرتات Box Fit و Oversized مع الدفع عند الاستلام.'],
+          '/products': ['تشكيلة الستريت وير | Outfit Zone', 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.'],
+          '/about': ['قصتنا وعن البراند | Outfit Zone', 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.'],
+          '/contact': ['تواصل معنا | Outfit Zone', 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.']
+        };
+        var title = titles[path];
+        if (privateRoute) {
+          document.querySelector('link[rel="canonical"]')?.remove();
+          var robots = document.querySelector('meta[name="robots"]');
+          if (!robots) {
+            robots = document.createElement('meta');
+            robots.name = 'robots';
+            document.head.appendChild(robots);
+          }
+          robots.content = 'noindex, nofollow';
+          return;
+        }
+        if (path.indexOf('/products/') === 0) return;
+        var canonicalUrl = 'https://outfitzone-eg.vercel.app' + (path === '/' ? '/' : path);
+        var canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) {
+          canonical = document.createElement('link');
+          canonical.rel = 'canonical';
+          document.head.appendChild(canonical);
+        }
+        canonical.href = canonicalUrl;
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.content = canonicalUrl;
+        if (title) {
+          document.title = title[0];
+          var description = document.querySelector('meta[name="description"]');
+          if (description) description.content = title[1];
+          var ogTitle = document.querySelector('meta[property="og:title"]');
+          if (ogTitle) ogTitle.content = title[0];
+          var ogDescription = document.querySelector('meta[property="og:description"]');
+          if (ogDescription) ogDescription.content = title[1];
+        }
+      })();
+    </script>
   </head>
   <body class="antialiased min-h-screen transition-colors duration-200 bg-[#f9f9fb] text-[#09090b] dark:bg-[#0c0c0e] dark:text-[#ededed] selection:bg-neutral-200 selection:text-black dark:selection:bg-neutral-800 dark:selection:text-white">
     <div id="root"></div>
