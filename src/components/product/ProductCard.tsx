@@ -69,6 +69,8 @@ onSelect(product.slug);
 {/* Product Image Slot */} <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-900/10"> <img
        src={primaryImage}
        alt={localizedName}
+       width={600}
+       height={800}
        loading="lazy"
        decoding="async"
        referrerPolicy="no-referrer"
