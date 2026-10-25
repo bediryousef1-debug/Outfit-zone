@@ -181,7 +181,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     if (!product || isLoading || loadError) return;
 
     const productName = getLocalizedProductName(product, language);
-    const productUrl = 'https://outfit-zone-orpin.vercel.app/products/' + encodeURIComponent(product.slug);
+    const productUrl = 'https://outfitzone-eg.vercel.app/products/' + encodeURIComponent(product.slug);
     const productImages = (product.images || [])
       .map((image) => {
         const imageUrl = String(image.image_url || '').trim();
