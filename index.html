@@ -63,7 +63,13 @@
           '/about': ['قصتنا وعن البراند | Outfit Zone', 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.'],
           '/contact': ['تواصل معنا | Outfit Zone', 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.']
         };
-        var title = titles[path];
+        var englishTitles = {
+          '/': ['Outfit Zone | Wear In The Zone - Egyptian Streetwear Brand', 'Outfit Zone is an Egyptian men’s streetwear brand. Explore Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.'],
+          '/products': ['Streetwear Collection | Outfit Zone', 'Browse the Outfit Zone men’s streetwear collection and discover available styles.'],
+          '/about': ['About the Brand | Outfit Zone', 'Learn about Outfit Zone and our approach to modern men’s streetwear.'],
+          '/contact': ['Contact Us | Outfit Zone', 'Contact Outfit Zone about products, sizing and orders.']
+        };
+        var title = document.documentElement.lang === 'en' ? englishTitles[path] : titles[path];
         if (privateRoute) {
           document.querySelector('link[rel="canonical"]')?.remove();
           var robots = document.querySelector('meta[name="robots"]');
