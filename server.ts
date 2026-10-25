@@ -1523,19 +1523,19 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
       const tag = '<meta ' + attribute + '="' + key + '" content="' + escapeHtml(value) + '" />';
       const pattern = new RegExp('<meta\\s+' + attribute + '="' + key + '"[^>]*>', 'i');
       if (pattern.test(html)) html = html.replace(pattern, tag);
-      else html = html.replace('</head>', '    ' + tag + '\\n  </head>');
+      else html = html.replace('</head>', '    ' + tag + '\n  </head>');
     };
 
-    html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeHtml(page.title) + '</title>');
+    html = html.replace(/<title>[\s\S]*?<\/title>/i, '<title>' + escapeHtml(page.title) + '</title>');
     setMeta('name', 'description', page.description);
     setMeta('property', 'og:title', page.title);
     setMeta('property', 'og:description', page.description);
     setMeta('property', 'og:url', canonical);
 
     const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
-    const canonicalPattern = /<link\\s+rel="canonical"[^>]*>/i;
+    const canonicalPattern = /<link\s+rel="canonical"[^>]*>/i;
     if (canonicalPattern.test(html)) html = html.replace(canonicalPattern, canonicalTag);
-    else html = html.replace('</head>', '    ' + canonicalTag + '\\n  </head>');
+    else html = html.replace('</head>', '    ' + canonicalTag + '\n  </head>');
 
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
