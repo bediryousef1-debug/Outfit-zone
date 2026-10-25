@@ -6,7 +6,7 @@ import {
 formatPrice,
 getLocalizedProductName,
 } from '../../utils/constants';
-import { resolveImageUrl } from '../../utils/imageHelper';
+import { getResponsiveImageSrcSet, resolveImageUrl } from '../../utils/imageHelper';
 import { useTheme } from '../../context/ThemeContext';
 
 interface ProductCardProps {
@@ -68,6 +68,8 @@ onSelect(product.slug);
 >
 {/* Product Image Slot */} <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-900/10"> <img
        src={primaryImage}
+       srcSet={getResponsiveImageSrcSet(rawImage)}
+       sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
        alt={localizedName}
        width={600}
        height={800}
