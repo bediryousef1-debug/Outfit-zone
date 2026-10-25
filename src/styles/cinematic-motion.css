@@ -479,18 +479,27 @@
 }
 
 
-/* Mobile performance: keep the first hero image fully visible without entrance/fade animations. */
+/* Mobile performance: avoid delaying the first hero image with entrance and decorative animations. */
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-  .oz-hero-stage.oz-in-view .oz-hero-image {
+  .oz-hero-stage .oz-hero-slide-visual .oz-hero-image {
     animation: none !important;
     opacity: 1 !important;
     filter: none !important;
+    visibility: visible !important;
   }
 
-  .oz-hero-stage.oz-in-view .oz-hero-visual > div,
-  .oz-hero-stage.oz-in-view .oz-hero-visual::before,
-  .oz-hero-stage.oz-in-view .oz-hero-visual::after,
-  .oz-hero-stage.oz-in-view .oz-hero-visual > div::after {
+  .oz-hero-stage::before,
+  .oz-hero-stage::after,
+  .oz-hero-stage .oz-hero-slide-visual > div:first-child::before,
+  .oz-hero-stage .oz-hero-slide-visual > div:first-child::after,
+  .oz-hero-stage .oz-hero-slide-copy h1 span,
+  .oz-home-page .oz-hero-stage a[class*="bg-black"],
+  .oz-home-page .oz-hero-stage button[class*="bg-black"] {
     animation: none !important;
+  }
+
+  /* Do not animate visibility or layout-affecting properties on the mobile product cards. */
+  .oz-home-page [data-oz-motion-card] button {
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease !important;
   }
 }
