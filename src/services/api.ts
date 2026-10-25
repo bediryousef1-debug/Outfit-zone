@@ -19,7 +19,7 @@ import {
   AnalyticsSummary,
 } from '../types';
 
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, optimizeImageForUpload } from '../lib/supabase';
 import { EGYPTIAN_GOVERNORATES } from '../utils/constants';
 
 const API_BASE = '/api';
@@ -2370,90 +2370,38 @@ export const api = {
   async uploadStoreImage(
     file: File
   ): Promise<string> {
-    if (
-      !isSupabaseConfigured ||
-      !supabase
-    ) {
-      throw new Error(
-        'قاعدة بيانات Supabase غير متصلة.'
-      );
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('قاعدة بيانات Supabase غير متصلة.');
     }
 
-    if (
-      !file.type.startsWith(
-        'image/'
-      )
-    ) {
-      throw new Error(
-        'الملف المختار يجب أن يكون صورة.'
-      );
+    if (!file.type.startsWith('image/')) {
+      throw new Error('الملف المختار يجب أن يكون صورة.');
     }
 
-    const extension =
-      file.name
-        .split('.')
-        .pop()
-        ?.toLowerCase() ||
-      'jpg';
+    const optimizedFile = await optimizeImageForUpload(file);
+    const fileName = `editorial-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.webp`;
+    const path = `editorial/${fileName}`;
 
-    const safeExtension =
-      extension.replace(
-        /[^a-z0-9]/g,
-        ''
-      ) || 'jpg';
-
-    const fileName =
-      `editorial-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}.${safeExtension}`;
-
-    const path =
-      `editorial/${fileName}`;
-
-    const {
-      error,
-    } =
-      await supabase.storage
-        .from(
-          'site-images'
-        )
-        .upload(
-          path,
-          file,
-          {
-            cacheControl:
-              '3600',
-            upsert:
-              false,
-            contentType:
-              file.type,
-          }
-        );
+    const { error } = await supabase.storage
+      .from('site-images')
+      .upload(path, optimizedFile, {
+        cacheControl: '31536000',
+        upsert: false,
+        contentType: 'image/webp',
+      });
 
     if (error) {
-      throw new Error(
-        error.message ||
-          'فشل رفع الصورة'
-      );
+      throw new Error(error.message || 'فشل رفع الصورة');
     }
 
-    const {
-      data,
-    } =
-      supabase.storage
-        .from(
-          'site-images'
-        )
-        .getPublicUrl(
-          path
-        );
+    const { data } = supabase.storage
+      .from('site-images')
+      .getPublicUrl(path);
 
-    if (
-      !data?.publicUrl
-    ) {
-      throw new Error(
-        'تعذر الحصول على رابط الصورة بعد الرفع.'
-      );
+    if (!data?.publicUrl) {
+      throw new Error('تعذر الحصول على رابط الصورة بعد الرفع.');
     }
 
     return data.publicUrl;
