@@ -103,7 +103,7 @@ onSelect(product.slug);
       onClick={(e) => {
         e.stopPropagation();
       }}
-      className={`absolute top-2.5 left-2.5 p-1.5 rounded-full backdrop-blur-md transition-all ${
+      className={`absolute top-2.5 left-2.5 p-1.5 rounded-full backdrop-blur-md transition-colors ${
         isDark
           ? 'bg-black/40 text-neutral-300 hover:text-red-400 hover:bg-black/70'
           : 'bg-white/70 text-neutral-600 hover:text-red-500 hover:bg-white'
