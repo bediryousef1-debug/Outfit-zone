@@ -197,7 +197,7 @@ export const AdminImageUpload: React.FC<AdminImageUploadProps> = ({
                 {isUploading ? 'جاري رفع الصورة...' : 'اضغط لاختيار صورة من هاتفك أو جهازك'}
               </p>
               <p className="text-[11px] text-neutral-500">
-                يدعم JPG، PNG، WEBP حتى 10 ميجابايت (Android / iPhone / PC)
+                JPG وPNG وWebP وSVG حتى 10 ميجابايت — يتم التحويل إلى WebP مضغوط قبل الرفع
               </p>
             </div>
 
