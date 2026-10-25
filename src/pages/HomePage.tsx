@@ -20,7 +20,7 @@ import { ProductCard } from '../components/product/ProductCard';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { resolveImageUrl } from '../utils/imageHelper';
+import { getResponsiveImageSrcSet, resolveImageUrl } from '../utils/imageHelper';
 import { ZoneMarquee } from '../motion/ZoneMarquee';
 import { useHomeCinema } from '../motion/useHomeCinema';
 
@@ -846,6 +846,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <img
                   key={currentSlide.image_url}
                   src={resolveImageUrl(currentSlide.image_url)}
+                  srcSet={getResponsiveImageSrcSet(currentSlide.image_url)}
+                  sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 768px"
                   alt={localizedSubtitle}
                   className="oz-hero-image w-full h-full object-cover object-top sm:object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   width={1200}
@@ -922,9 +924,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <Icon className="w-6 h-6 stroke-[1.5]" />
                 </div>
 
-                <h4 className="text-sm sm:text-base font-bold mb-0.5">
+                <p className="text-sm sm:text-base font-bold mb-0.5">
                   {feat.title}
-                </h4>
+                </p>
 
                 <p className="text-xs text-neutral-400 font-medium">
                   {feat.subtitle}
@@ -990,6 +992,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                     {categoryImage ? (
                       <img
                         src={categoryImage}
+                        srcSet={getResponsiveImageSrcSet(cat.image_url)}
+                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
                         alt={localizedCategoryName}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
