@@ -9,10 +9,10 @@ const outputDir = path.join(root, 'public', 'optimized');
 
 const images = [
   { file: 'hero_streetwear_editorial_1790342899745.jpg', widths: [400, 480, 640, 768, 1200] },
-  { file: 'product_boxfit_tee_black_1790342911897.jpg', widths: [320, 360, 480, 600] },
-  { file: 'product_oversized_tee_offwhite_1790342923739.jpg', widths: [320, 360, 480, 600] },
-  { file: 'product_interlock_polo_charcoal_1790342934447.jpg', widths: [320, 360, 480, 600] },
-  { file: 'product_streetwear_shirt_olive_1790342946975.jpg', widths: [320, 360, 480, 600] },
+  { file: 'product_boxfit_tee_black_1790342911897.jpg', widths: [320, 360, 400, 480, 600] },
+  { file: 'product_oversized_tee_offwhite_1790342923739.jpg', widths: [320, 360, 400, 480, 600] },
+  { file: 'product_interlock_polo_charcoal_1790342934447.jpg', widths: [320, 360, 400, 480, 600] },
+  { file: 'product_streetwear_shirt_olive_1790342946975.jpg', widths: [320, 360, 400, 480, 600] },
 ];
 
 await fs.mkdir(outputDir, { recursive: true });
