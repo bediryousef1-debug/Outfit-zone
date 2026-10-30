@@ -16,7 +16,7 @@ import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { SocialBar } from './components/layout/SocialBar';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { CartDrawer } from './components/cart/CartDrawer';
-import { HomePage } from './pages/HomePage';
+const HomePage = React.lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 import { initSourceTracker } from './utils/sourceTracker';
 import type { AdminTab } from './pages/admin/AdminLayout';
 
@@ -129,7 +129,7 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
           );
         }
 
-        const productCards = routeRoot?.querySelectorAll<HTMLElement>('.oz-card-hover, [data-oz-motion-card]');
+        const productCards = routeRoot?.querySelectorAll<HTMLElement>('.oz-card-hover:not([data-oz-lcp-priority]), [data-oz-motion-card]:not([data-oz-lcp-priority])');
         if (productCards?.length) {
           gsap.fromTo(productCards,
             { autoAlpha: 0, y: 24, scale: 0.99 },
@@ -147,7 +147,7 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
           );
         }
 
-        const pageImages = routeRoot?.querySelectorAll<HTMLElement>('img:not(.oz-hero-image)');
+        const pageImages = routeRoot?.querySelectorAll<HTMLElement>('img:not(.oz-hero-image):not([fetchpriority="high"])');
         if (pageImages?.length) {
           gsap.fromTo(pageImages,
             { autoAlpha: 0.8 },
@@ -305,25 +305,39 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         });
       });
       mutationObserver.observe(main, { childList: true, subtree: true });
+      const cardBounds = new WeakMap<HTMLElement, DOMRect>();
+      const pointerEnter = (event: PointerEvent) => {
+        if (event.pointerType !== 'mouse' || !(event.target instanceof Element)) return;
+        const card = event.target.closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
+        if (!card || (event.relatedTarget instanceof Node && card.contains(event.relatedTarget))) return;
+        cardBounds.set(card, card.getBoundingClientRect());
+      };
       const pointerMove = (event: PointerEvent) => {
-        if (event.pointerType !== 'mouse') return;
-        const card = (event.target as HTMLElement).closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
+        if (event.pointerType !== 'mouse' || !(event.target instanceof Element)) return;
+        const card = event.target.closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
         if (!card) return;
-        const rect = card.getBoundingClientRect();
+        const rect = cardBounds.get(card);
+        if (!rect) return;
         card.style.setProperty('--oz-pointer-x', (event.clientX - rect.left) + 'px');
         card.style.setProperty('--oz-pointer-y', (event.clientY - rect.top) + 'px');
         card.classList.add('oz-pointer-active');
       };
       const pointerLeave = (event: PointerEvent) => {
-        const card = (event.target as HTMLElement).closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
-        if (card && !card.contains(event.relatedTarget as Node | null)) card.classList.remove('oz-pointer-active');
+        if (!(event.target instanceof Element)) return;
+        const card = event.target.closest<HTMLElement>('.oz-page-motion [data-oz-motion-card]');
+        if (card && !card.contains(event.relatedTarget as Node | null)) {
+          card.classList.remove('oz-pointer-active');
+          cardBounds.delete(card);
+        }
       };
+      main.addEventListener('pointerover', pointerEnter, { passive: true });
       main.addEventListener('pointermove', pointerMove, { passive: true });
       main.addEventListener('pointerout', pointerLeave, { passive: true });
       return () => {
         window.removeEventListener('scroll', updateProgress);
         window.removeEventListener('resize', updateProgress);
         mutationObserver.disconnect(); revealObserver.disconnect();
+        main.removeEventListener('pointerover', pointerEnter);
         main.removeEventListener('pointermove', pointerMove);
         main.removeEventListener('pointerout', pointerLeave);
       };
