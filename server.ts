@@ -1481,9 +1481,9 @@ app.post(
   }
 );
 
-// Server-render route-specific SEO metadata for public static pages.
-// This ensures the raw HTML has the correct canonical/title/description before client JavaScript runs.
-app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) => {
+// Server-render SEO metadata AND crawlable page content for public storefront routes.
+// The React client uses createRoot, so it replaces this lightweight HTML fallback on hydration.
+app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Response) => {
   const routePath = req.path.length > 1 && req.path.endsWith('/')
     ? req.path.slice(0, -1)
     : req.path;
@@ -1510,7 +1510,7 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
 
   const siteUrl = 'https://outfitzone-eg.vercel.app';
   const canonical = siteUrl + (routePath === '/' ? '/' : routePath);
-  const escapeHtml = (value: string) => value
+  const escapeHtml = (value: unknown) => String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -1518,6 +1518,72 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
     .replace(/'/g, '&#39;');
 
   try {
+    let products: any[] = [];
+    if (routePath === '/' || routePath === '/products') {
+      if (supabaseClient) {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('id, name, slug, description, price, images:product_images(image_url, sort_order, is_primary)')
+          .eq('is_active', true)
+          .not('slug', 'is', null)
+          .order('created_at', { ascending: false });
+        if (error) {
+          console.error('[SEO storefront HTML] Product query failed:', error.message);
+          return res.status(503).type('text/plain').send('Storefront temporarily unavailable');
+        }
+        products = data || [];
+      } else {
+        products = db.products
+          .filter((product: any) => product.is_active !== false && product.slug)
+          .map((product: any) => ({
+            ...product,
+            images: db.product_images.filter((image: any) => image.product_id === product.id),
+          }));
+      }
+    }
+
+    const productCards = products.map((product: any) => {
+      const images = Array.isArray(product.images) ? [...product.images].sort((a: any, b: any) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      }) : [];
+      const rawImage = images.find((item: any) =>
+        typeof item.image_url === 'string' && item.image_url.trim()
+      )?.image_url;
+      const image = rawImage
+        ? (/^https?:\/\//i.test(rawImage) ? rawImage : new URL(rawImage, siteUrl).toString())
+        : '';
+      const name = String(product.name || 'Outfit Zone');
+      const href = '/products/' + encodeURIComponent(String(product.slug));
+      const price = Number(product.price);
+      return '<article class="oz-seo-product">' +
+        (image ? '<a href="' + escapeHtml(href) + '"><img src="' + escapeHtml(image) +
+          '" alt="' + escapeHtml(name) + '" loading="lazy" width="320" height="429"></a>' : '') +
+        '<h2><a href="' + escapeHtml(href) + '">' + escapeHtml(name) + '</a></h2>' +
+        (Number.isFinite(price) ? '<p>' + escapeHtml(price.toLocaleString('en-EG')) + ' جنيه مصري</p>' : '') +
+        '</article>';
+    }).join('');
+
+    let fallbackContent = '';
+    if (routePath === '/' || routePath === '/products') {
+      const heading = routePath === '/' ? 'ملابس رجالي وستريت وير من Outfit Zone' : 'تشكيلة ملابس رجالي من Outfit Zone';
+      fallbackContent = '<main class="oz-seo-fallback" dir="rtl" lang="ar">' +
+        '<h1>' + heading + '</h1>' +
+        '<p>' + escapeHtml(page.description) + '</p>' +
+        (routePath === '/products'
+          ? (productCards
+            ? '<section aria-label="المنتجات المتاحة">' + productCards + '</section>'
+            : '<p>لا توجد منتجات متاحة حاليًا.</p>')
+          : '<p><a href="/products">تصفح جميع المنتجات المتاحة</a></p>' +
+            (productCards ? '<section aria-label="منتجات من المتجر">' + productCards + '</section>' : '')) +
+        '</main>';
+    } else {
+      fallbackContent = '<main class="oz-seo-fallback" dir="rtl" lang="ar">' +
+        '<h1>' + escapeHtml(page.title) + '</h1>' +
+        '<p>' + escapeHtml(page.description) + '</p>' +
+        '<p><a href="/products">تصفح المنتجات</a></p></main>';
+    }
+
     let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
     const setMeta = (attribute: string, key: string, value: string) => {
       const tag = '<meta ' + attribute + '="' + key + '" content="' + escapeHtml(value) + '" />';
@@ -1537,10 +1603,34 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
     if (canonicalPattern.test(html)) html = html.replace(canonicalPattern, canonicalTag);
     else html = html.replace('</head>', '    ' + canonicalTag + '\n  </head>');
 
+    if (routePath === '/products') {
+      const collectionSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: page.title,
+        description: page.description,
+        url: canonical,
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: products.map((product: any, index: number) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            url: siteUrl + '/products/' + encodeURIComponent(String(product.slug)),
+            name: String(product.name || 'Outfit Zone'),
+          })),
+        },
+      };
+      html = html.replace('</head>', '<script type="application/ld+json">' +
+        JSON.stringify(collectionSchema).replace(/</g, '\\u003c') +
+        '</script>\n</head>');
+    }
+
+    html = html.replace('<div id="root"></div>',
+      '<div id="root">' + fallbackContent + '</div>');
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
-    console.error('[SEO static metadata] Could not read built HTML:', error);
+    console.error('[SEO static metadata] Could not render storefront HTML:', error);
     return res.status(500).type('text/plain').send('Page temporarily unavailable');
   }
 });
@@ -1762,6 +1852,22 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     }
     html = html.replace('</head>', '    <script type="application/ld+json">' +
       JSON.stringify(jsonLd).replace(/</g, '\\u003c') + '</script>\n  </head>');
+
+    const productImageHtml = image
+      ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(name) +
+        '" loading="eager" width="600" height="800">'
+      : '';
+    const productBodyHtml = '<main class="oz-seo-fallback" dir="rtl" lang="ar">' +
+      '<nav aria-label="مسار التنقل"><a href="/">الرئيسية</a> / <a href="/products">المنتجات</a></nav>' +
+      '<article>' + productImageHtml +
+      '<h1>' + escapeHtml(name) + '</h1>' +
+      '<p>' + escapeHtml(description) + '</p>' +
+      (Number.isFinite(price) ? '<p>' + escapeHtml(price.toLocaleString('en-EG')) + ' جنيه مصري</p>' : '') +
+      '<a href="/products">العودة إلى جميع المنتجات</a>' +
+      '</article></main>';
+    html = html.replace('<div id="root"></div>',
+      '<div id="root">' + productBodyHtml + '</div>');
+
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
