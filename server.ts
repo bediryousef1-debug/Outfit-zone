@@ -1545,24 +1545,35 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
   }
 });
 
-// Dynamic XML sitemap: include only public, active product URLs and real static routes.
+// Dynamic XML sitemap: include every public, active product and keep it fresh for crawlers.
 app.get('/sitemap.xml', async (_req: Request, res: Response) => {
   const siteUrl = 'https://outfitzone-eg.vercel.app';
-  const staticPaths = ['/', '/products', '/about', '/contact'];
   let productSlugs: Array<{ slug: string; updated_at?: string | null }> = [];
 
   if (supabaseClient) {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('slug, updated_at')
-      .eq('is_active', true)
-      .not('slug', 'is', null);
+    // Supabase/PostgREST may cap a single response (commonly at 1,000 rows).
+    // Read in stable pages so larger catalogs are not silently truncated.
+    const pageSize = 500;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('slug, updated_at')
+        .eq('is_active', true)
+        .not('slug', 'is', null)
+        .order('slug', { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) {
-      console.error('[SEO sitemap] Supabase query failed:', error.message);
-      return res.status(503).type('text/plain').send('Sitemap temporarily unavailable');
+      if (error) {
+        console.error('[SEO sitemap] Supabase query failed:', error.message);
+        return res.status(503).type('text/plain').send('Sitemap temporarily unavailable');
+      }
+
+      const page = (data || []).filter((p: any) =>
+        typeof p.slug === 'string' && p.slug.trim()
+      );
+      productSlugs.push(...page);
+      if (page.length < pageSize) break;
     }
-    productSlugs = (data || []).filter((p: any) => typeof p.slug === 'string' && p.slug.trim());
   } else {
     productSlugs = db.products
       .filter((p: any) => p.is_active !== false && typeof p.slug === 'string' && p.slug.trim())
@@ -1575,21 +1586,39 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-  const urls: Array<{ loc: string; lastmod?: string | null }> = [
-    ...staticPaths.map((pathname) => ({ loc: siteUrl + pathname })),
+  const validDate = (value?: string | null): string | undefined => {
+    if (!value) return undefined;
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? undefined : new Date(timestamp).toISOString().slice(0, 10);
+  };
+
+  // The home page and product listing change when the active catalog changes.
+  const latestProductUpdate = productSlugs
+    .map((product) => validDate(product.updated_at))
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+
+  const urls: Array<{ loc: string; lastmod?: string }> = [
+    { loc: siteUrl + '/', lastmod: latestProductUpdate },
+    { loc: siteUrl + '/products', lastmod: latestProductUpdate },
+    { loc: siteUrl + '/about' },
+    { loc: siteUrl + '/contact' },
     ...productSlugs.map((product) => ({
       loc: siteUrl + '/products/' + encodeURIComponent(product.slug.trim()),
-      lastmod: product.updated_at || undefined,
+      lastmod: validDate(product.updated_at),
     })),
   ];
+
   const entries = urls.map(({ loc, lastmod }) =>
     '  <url><loc>' + xmlEscape(loc) + '</loc>' +
-    (lastmod && !Number.isNaN(Date.parse(lastmod))
-      ? '<lastmod>' + new Date(lastmod).toISOString().slice(0, 10) + '</lastmod>'
-      : '') +
+    (lastmod ? '<lastmod>' + lastmod + '</lastmod>' : '') +
     '</url>'
   );
-  res.status(200).set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+
+  // Avoid serving a stale sitemap for a full day after products change.
+  res.status(200)
+    .set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
     .type('application/xml')
     .send('<?xml version="1.0" encoding="UTF-8"?>\n' +
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
