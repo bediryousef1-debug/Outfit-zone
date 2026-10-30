@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "server.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["dist/**"]
+      }
     },
     {
       "src": "package.json",
@@ -16,6 +19,10 @@
   "routes": [
     {
       "src": "/sitemap\\.xml",
+      "dest": "server.ts"
+    },
+    {
+      "src": "/robots\\.txt",
       "dest": "server.ts"
     },
     {
