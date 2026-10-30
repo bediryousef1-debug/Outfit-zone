@@ -26,7 +26,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
-const SITE_URL = (process.env.SITE_URL || 'https://outfitzone-eg.vercel.app').replace(/\/+$/, '');
+const SITE_URL = 'https://outfitzone-eg.vercel.app';
 
 function buildSeoHtmlShell(title: string, description: string, canonical: string): string {
   const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/\"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1586,6 +1586,12 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
           .order('created_at', { ascending: false });
         if (error) {
           console.error('[SEO storefront HTML] Product query failed:', error.message);
+          if (routePath === '/products') {
+            res.set('Retry-After', '300');
+            res.set('Cache-Control', 'no-store');
+            res.set('X-Robots-Tag', 'noindex, nofollow');
+            return res.status(503).type('text/plain; charset=utf-8').send('Product catalog temporarily unavailable. Please retry.');
+          }
           products = [];
         } else {
           products = data || [];
@@ -1736,8 +1742,11 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
         if (page.length < pageSize) break;
       }
     } catch (error) {
-      console.error('[SEO sitemap] Supabase query failed; returning static URLs:', error);
-      productSlugs = [];
+      console.error('[SEO sitemap] Supabase query failed; refusing to publish an incomplete sitemap:', error);
+      res.set('Retry-After', '300');
+      res.set('Cache-Control', 'no-store');
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      return res.status(503).type('text/plain; charset=utf-8').send('Sitemap temporarily unavailable. Please retry.');
     }
   } else {
     productSlugs = db.products
@@ -1808,8 +1817,11 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
       if (error) throw error;
       product = data;
     } catch (error) {
-      console.error('[SEO product metadata] Supabase query failed; serving crawlable fallback:', error);
-      product = { id: slug, name: slug.replace(/[-_]+/g, ' '), slug, description: 'اكتشف هذا المنتج من Outfit Zone. تفاصيل المنتج متاحة عند استعادة الاتصال بالمتجر.', price: null, images: [] };
+      console.error('[SEO product metadata] Supabase query failed; product details cannot be verified:', error);
+      res.set('Retry-After', '300');
+      res.set('Cache-Control', 'no-store');
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      return res.status(503).type('text/plain; charset=utf-8').send('Product details temporarily unavailable. Please retry.');
     }
   } else {
     const found = db.products.find((item: any) => item.slug === slug && item.is_active !== false);
@@ -1957,12 +1969,11 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
-    console.error('[SEO product metadata] Unexpected rendering error; serving embedded product shell:', error);
-    const shell = buildSeoHtmlShell(title, description, canonical);
-    const fallback = '<main class="oz-seo-fallback" dir="rtl" lang="ar"><h1>' +
-      escapeHtml(name) + '</h1><p>' + escapeHtml(description) + '</p></main>';
-    res.removeHeader('X-Robots-Tag');
-    return res.status(200).type('html').send(shell.replace('<div id="root"></div>', '<div id="root">' + fallback + '</div>'));
+    console.error('[SEO product metadata] Unexpected rendering error:', error);
+    res.set('Retry-After', '300');
+    res.set('Cache-Control', 'no-store');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    return res.status(503).type('text/plain; charset=utf-8').send('Product page temporarily unavailable. Please retry.');
   }
 });
 
