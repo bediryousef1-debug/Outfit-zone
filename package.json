@@ -7,7 +7,7 @@
     "predev": "node scripts/optimize-images.mjs",
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
-    "prebuild": "node scripts/optimize-images.mjs",
+    "prebuild": "npm run lint && node scripts/optimize-images.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js public/optimized",
