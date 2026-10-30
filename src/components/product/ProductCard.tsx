@@ -12,9 +12,11 @@ import { useTheme } from '../../context/ThemeContext';
 interface ProductCardProps {
 product: Product;
 onSelect: (slug: string) => void;
+priority?: boolean;
+headingLevel?: 2 | 3;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onSelect }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onSelect, priority = false, headingLevel = 3 }) => {
 const { t, language } = useLanguage();
 
 const { isDark } = useTheme();
@@ -49,9 +51,12 @@ language === 'en'
 ? product.category?.name_en || product.category?.name
 : product.category?.name;
 
+const TitleTag: 'h2' | 'h3' = headingLevel === 2 ? 'h2' : 'h3';
+
 return (
 <div
 data-oz-motion-card
+ data-oz-lcp-priority={priority ? 'true' : undefined}
 onClick={() => onSelect(product.slug)}
 className={`group cursor-pointer oz-card-hover flex flex-col rounded-2xl overflow-hidden border ${
         isDark
@@ -73,7 +78,8 @@ onSelect(product.slug);
        alt={localizedName}
        width={600}
        height={800}
-       loading="lazy"
+       loading={priority ? "eager" : "lazy"}
+       fetchPriority={priority ? "high" : "auto"}
        decoding="async"
        referrerPolicy="no-referrer"
        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
@@ -118,7 +124,7 @@ onSelect(product.slug);
   <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-2 text-right">
     <div>
       {/* Category / Style */}
-      <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-1 flex items-center gap-1.5 font-medium">
+      <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mb-1 flex items-center gap-1.5 font-medium">
         <span>
           {localizedCategory || t('product.streetwear', 'Streetwear')}
         </span>
@@ -128,7 +134,7 @@ onSelect(product.slug);
         </span>
       </div>
 
-      <h3
+      <TitleTag
         className={`text-sm sm:text-base font-bold transition-colors line-clamp-1 ${
           isDark
             ? 'text-white group-hover:text-neutral-200'
@@ -136,7 +142,7 @@ onSelect(product.slug);
         }`}
       >
         {localizedName}
-      </h3>
+      </TitleTag>
     </div>
 
     {/* Pricing & Stock status */}
