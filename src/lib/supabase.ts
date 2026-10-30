@@ -106,8 +106,8 @@ export async function optimizeImageForUpload(file: File): Promise<File> {
 }
 
 /**
- * Upload image to Supabase Storage bucket 'product-images'.
- * Every uploaded image is converted and compressed to WebP before it leaves the device.
+ * Upload optimized WebP images to the existing public Supabase Storage bucket 'site-images'.
+ * Every uploaded image is converted and compressed in the browser before upload.
  */
 export async function uploadProductImage(file: File): Promise<string> {
   const optimizedFile = await optimizeImageForUpload(file);
@@ -118,7 +118,7 @@ export async function uploadProductImage(file: File): Promise<string> {
 
     try {
       const { error: uploadError } = await supabase.storage
-        .from('product-images')
+        .from('site-images')
         .upload(filePath, optimizedFile, {
           cacheControl: '31536000',
           contentType: 'image/webp',
@@ -126,7 +126,7 @@ export async function uploadProductImage(file: File): Promise<string> {
         });
 
       if (!uploadError) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        const { data } = supabase.storage.from('site-images').getPublicUrl(filePath);
         if (data?.publicUrl) {
           return data.publicUrl;
         }
