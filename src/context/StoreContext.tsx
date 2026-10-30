@@ -36,7 +36,7 @@ setIsLoading(true);
 setError(null);
 
 // Fetch hero slides independently so slower non-critical metadata cannot delay the first viewport.
-const heroSlidesRequest = api.getHeroSlides()
+void api.getHeroSlides()
   .then((data) => {
     setHeroSlides(data);
     return data;
