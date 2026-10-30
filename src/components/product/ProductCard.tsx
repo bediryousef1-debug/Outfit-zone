@@ -80,7 +80,7 @@ onSelect(product.slug);
        height={800}
        loading={priority ? "eager" : "lazy"}
        fetchPriority={priority ? "high" : "auto"}
-       decoding="async"
+       decoding={priority ? "sync" : "async"}
        referrerPolicy="no-referrer"
        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
      />
