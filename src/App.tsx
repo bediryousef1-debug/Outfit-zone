@@ -16,7 +16,7 @@ import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { SocialBar } from './components/layout/SocialBar';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { CartDrawer } from './components/cart/CartDrawer';
-const HomePage = React.lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+import { HomePage } from './pages/HomePage';
 import { initSourceTracker } from './utils/sourceTracker';
 import type { AdminTab } from './pages/admin/AdminLayout';
 
