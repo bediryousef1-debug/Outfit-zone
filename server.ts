@@ -5311,7 +5311,7 @@ app.post(
       const messageText = String(update?.message?.text || '').trim();
       if (botToken && /^\/(?:طلبات|orders)(?:@\w+)?(?:\s|$)/i.test(messageText)) {
         try {
-          const webhookUrl = 'https://outfitzone-eg.vercel.app/api/telegram-webhook';
+          const webhookUrl = SITE_URL + '/api/telegram-webhook';
           const webhookResult = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
