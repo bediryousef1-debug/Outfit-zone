@@ -1535,7 +1535,7 @@ app.get('/robots.txt', (_req: Request, res: Response) => {
   ]);
 
   body.push('Sitemap: ' + SITE_URL + '/sitemap.xml', '');
-  return res.status(200).type('text/plain; charset=utf-8').send(body.join('\\n'));
+  return res.status(200).type('text/plain; charset=utf-8').send(body.join('\n'));
 });
 
 // Server-render SEO metadata AND crawlable page content for public storefront routes.
