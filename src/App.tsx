@@ -383,12 +383,12 @@ function AppContent() {
 
     if (pathname === '/') {
       document.title = isAr
-        ? 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري'
-        : 'Outfit Zone | Wear In The Zone - Egyptian Streetwear Brand';
+        ? 'Outfit Zone | ملابس رجالي وستريت وير في مصر - Wear In The Zone'
+        : 'Outfit Zone | Men’s Streetwear in Egypt - Wear In The Zone';
     } else if (pathname.startsWith('/products/')) {
       document.title = isAr ? 'تفاصيل الموديل | Outfit Zone' : 'Product Details | Outfit Zone';
     } else if (pathname.startsWith('/products')) {
-      document.title = isAr ? 'تشكيلة الستريت وير | Outfit Zone' : 'Streetwear Collection | Outfit Zone';
+      document.title = isAr ? 'ملابس رجالي وستريت وير | تشكيلة Outfit Zone' : 'Men’s Streetwear Collection | Outfit Zone';
     } else if (pathname === '/cart') {
       document.title = isAr ? 'سلة المشتريات | Outfit Zone' : 'Shopping Bag | Outfit Zone';
     } else if (pathname === '/checkout') {
@@ -434,14 +434,14 @@ function AppContent() {
 
     const descriptions: Record<string, string> = isAr
       ? {
-          '/': 'Outfit Zone براند ستريت وير رجالي مصري. اكتشف تيشيرتات Box Fit وOversized وبولو وقمصان مع الدفع عند الاستلام.',
-          '/products': 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.',
+          '/': 'Outfit Zone متجر ملابس رجالي وشبابي في مصر متخصص في ستايل الستريت وير. اكتشف تيشيرتات Box Fit وOversized والبولو والقمصان المتاحة، مع الدفع عند الاستلام.',
+          '/products': 'تصفح ملابس Outfit Zone الرجالي والشبابي في مصر، واكتشف موديلات التيشيرتات والبولو والقمصان المتاحة بتصميمات ستريت وير.',
           '/about': 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.',
           '/contact': 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.',
         }
       : {
-          '/': 'Outfit Zone is an Egyptian men’s streetwear brand. Explore Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.',
-          '/products': 'Browse the Outfit Zone men’s streetwear collection and discover available styles.',
+          '/': 'Outfit Zone is an Egyptian men’s clothing and streetwear store. Explore available Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.',
+          '/products': 'Browse Outfit Zone men’s clothing and streetwear collection in Egypt, including available T-shirts, polos and shirts.',
           '/about': 'Learn about Outfit Zone and our approach to modern men’s streetwear.',
           '/contact': 'Contact Outfit Zone about products, sizing and orders.',
         };
