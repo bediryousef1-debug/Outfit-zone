@@ -1774,17 +1774,18 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
   let product: any = null;
 
   if (supabaseClient) {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('id, name, slug, description, price, is_active, images:product_images(image_url, sort_order, is_primary)')
-      .eq('slug', slug)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (error) {
-      console.error('[SEO product metadata] Supabase query failed; serving crawlable fallback:', error.message);
-      product = { id: slug, name: slug.replace(/[-_]+/g, ' '), slug, description: 'اكتشف هذا المنتج من Outfit Zone. تفاصيل المنتج متاحة عند استعادة الاتصال بالمتجر.', price: null, images: [] };
-    } else {
+    try {
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('id, name, slug, description, price, is_active, images:product_images(image_url, sort_order, is_primary)')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
       product = data;
+    } catch (error) {
+      console.error('[SEO product metadata] Supabase query failed; serving crawlable fallback:', error);
+      product = { id: slug, name: slug.replace(/[-_]+/g, ' '), slug, description: 'اكتشف هذا المنتج من Outfit Zone. تفاصيل المنتج متاحة عند استعادة الاتصال بالمتجر.', price: null, images: [] };
     }
   } else {
     const found = db.products.find((item: any) => item.slug === slug && item.is_active !== false);
@@ -1895,6 +1896,7 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     replaceMeta('property', 'og:description', description);
     replaceMeta('property', 'og:type', 'product');
     replaceMeta('property', 'og:url', canonical);
+    replaceMeta('property', 'og:image', image || SITE_URL + '/og-image.svg');
     replaceMeta('name', 'twitter:title', title);
     replaceMeta('name', 'twitter:description', description);
     if (image) {
