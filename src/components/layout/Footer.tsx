@@ -49,13 +49,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               />
 
               <div>
-                <h2
+                <h3
                   className={`text-sm font-semibold mb-1 ${
                     isDark ? 'text-white' : 'text-neutral-900'
                   }`}
                 >
                   {t('footer.cod_title', 'الدفع عند الاستلام')}
-                </h2>
+                </h3>
 
                 <p
                   className={`text-xs leading-relaxed ${
@@ -91,13 +91,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 />
 
                 <div>
-                  <h2
+                  <h3
                     className={`text-sm font-semibold mb-1 ${
                       isDark ? 'text-white' : 'text-neutral-900'
                     }`}
                   >
                     {t('footer.inspection_title', 'معاينة مجانية عند الاستلام')}
-                  </h2>
+                  </h3>
 
                   <p
                     className={`text-xs leading-relaxed ${
@@ -133,13 +133,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               />
 
               <div>
-                <h2
+                <h3
                   className={`text-sm font-semibold mb-1 ${
                     isDark ? 'text-white' : 'text-neutral-900'
                   }`}
                 >
                   {t('footer.exchange_title', 'استبدال المقاس')}
-                </h2>
+                </h3>
 
                 <p
                   className={`text-xs leading-relaxed ${
@@ -296,13 +296,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h2
+            <h3
               className={`text-xs font-bold uppercase tracking-wider ${
                 isDark ? 'text-neutral-300' : 'text-neutral-800'
               }`}
             >
               {t('footer.quick_nav', 'التنقل السريع')}
-            </h2>
+            </h3>
 
             <ul className="space-y-2 text-xs">
               <li>
@@ -355,13 +355,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Policies */}
           <div className="space-y-3">
-            <h2
+            <h3
               className={`text-xs font-bold uppercase tracking-wider ${
                 isDark ? 'text-neutral-300' : 'text-neutral-800'
               }`}
             >
               {t('footer.policies', 'السياسات والشحن')}
-            </h2>
+            </h3>
 
             <ul className="space-y-2 text-xs">
               {/* Return Policy */}
