@@ -84,11 +84,11 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  const currentSlides = storeLoading
-    ? []
-    : heroSlides
-        .filter((slide) => slide.is_active !== false)
-        .sort((a, b) => a.sort_order - b.sort_order);
+  // Hero slides load independently from the rest of the store metadata.
+  // Do not hold the first viewport behind unrelated settings/categories requests.
+  const currentSlides = heroSlides
+    .filter((slide) => slide.is_active !== false)
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   const currentSlide = currentSlides[activeSlide] || currentSlides[0];
 
