@@ -1500,6 +1500,24 @@ app.post(
   }
 );
 
+// Keep crawler access and sitemap URLs aligned with the configured canonical domain.
+app.get('/robots.txt', (_req: Request, res: Response) => {
+  const body = [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    'Disallow: /cart',
+    'Disallow: /checkout',
+    'Disallow: /order-success/',
+    'Disallow: /track',
+    '',
+    'Sitemap: ' + SITE_URL + '/sitemap.xml',
+    '',
+  ].join('\\n');
+  res.removeHeader('X-Robots-Tag');
+  return res.status(200).type('text/plain').send(body);
+});
+
 // Server-render SEO metadata AND crawlable page content for public storefront routes.
 // The React client uses createRoot, so it replaces this lightweight HTML fallback on hydration.
 app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Response) => {
@@ -1624,6 +1642,8 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
     setMeta('property', 'og:title', page.title);
     setMeta('property', 'og:description', page.description);
     setMeta('property', 'og:url', canonical);
+    setMeta('property', 'og:image', SITE_URL + '/og-image.svg');
+    html = html.replaceAll('https://outfitzone-eg.vercel.app', SITE_URL);
 
     const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
     const canonicalPattern = /<link\s+rel="canonical"[^>]*>/i;
@@ -1654,6 +1674,8 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
 
     html = html.replace('<div id="root"></div>',
       '<div id="root">' + fallbackContent + '</div>');
+    res.removeHeader('X-Robots-Tag');
+    res.removeHeader('X-Robots-Tag');
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
