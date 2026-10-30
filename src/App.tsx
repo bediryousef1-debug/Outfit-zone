@@ -91,7 +91,9 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
 
     const motionContext = gsap.context(() => {
       const routeRoot = main.querySelector<HTMLElement>('.oz-route-motion-root');
-      if (routeRoot) {
+      // Keep the products listing visible immediately so its LCP image is not
+      // delayed by the decorative route-entry fade/transform.
+      if (routeRoot && pathname !== '/products') {
         gsap.fromTo(routeRoot,
           { autoAlpha: 0, y: 38, scale: 0.985 },
           {

@@ -202,7 +202,9 @@ export function useStorefrontCinema(pathname: string): void {
       const animateProductImages = () => {
         const grid = root.querySelector<HTMLElement>('[class*="grid-cols-2"][class*="sm:grid-cols-3"]');
         if (!grid) return;
-        const images = Array.from(grid.querySelectorAll<HTMLElement>('img')).slice(0, 16);
+        const images = Array.from(grid.querySelectorAll<HTMLElement>('img'))
+          .filter((image) => !image.closest('[data-oz-lcp-priority]'))
+          .slice(0, 16);
         if (!images.length) return;
         productGridTween?.kill();
         gsap.killTweensOf(images);
