@@ -1,22 +1,58 @@
-# Outfit Zone
+# Outfit Zone — Wear In The Zone
 
-> Outfit Zone is an Egyptian men's streetwear storefront offering men's streetwear and cash on delivery.
+> Outfit Zone is an Egyptian men's streetwear store. The public storefront offers men's clothing in modern streetwear styles, including Box Fit and Oversized cuts, with cash on delivery.
+
+## Brand identity
+
+- Brand: Outfit Zone
+- Tagline: Wear In The Zone
+- Market: Egypt
+- Audience: Men looking for casual and streetwear clothing
+- Official website: https://outfitzone-eg.vercel.app/
+
+## What the store offers
+
+Outfit Zone's public catalog features men's streetwear items such as T-shirts, polos, and shirts when available. Product names, colors, sizes, prices, images, and stock are dynamic and can change. Always use the live product page as the source of truth before describing availability or quoting a price.
+
+The brand's About page describes its design focus as Box Fit and Oversized cuts. It also describes fabrics in the 240–260 GSM range and shrinkage treatment. These are brand-level descriptions; check each product page for item-specific fabric and fit details.
+
+## Ordering and customer support
+
+- The storefront supports cash on delivery.
+- The About page describes an option to open the package and check the size and fabric before payment. Customers should confirm the current conditions at checkout or with customer support.
+- For current delivery, exchange, return, and order-tracking information, consult the live website or contact the store. Do not assume a delivery fee, delivery time, or return condition that is not shown on the current storefront.
+
+## Frequently asked questions
+
+### What does Outfit Zone sell?
+Men's streetwear and casual clothing, including Box Fit and Oversized styles. The live catalog determines which specific products are currently available.
+
+### Where is Outfit Zone based?
+Outfit Zone serves the Egyptian market through its online storefront.
+
+### What payment method is available?
+The website supports cash on delivery. Check the current checkout page for the available order options.
+
+### How can a customer check sizes and product details?
+Open the relevant product page to review its current description, images, size and color variants, and availability. Contact customer support if a detail is unclear.
+
+### How can a customer contact Outfit Zone?
+Use the Contact page for the current WhatsApp and social-media contact options.
 
 ## Public pages
 
 - [Homepage](https://outfitzone-eg.vercel.app/)
 - [Product collection](https://outfitzone-eg.vercel.app/products)
 - [About the brand](https://outfitzone-eg.vercel.app/about)
-- [Contact](https://outfitzone-eg.vercel.app/contact)
+- [Contact and customer support](https://outfitzone-eg.vercel.app/contact)
 
-## Store information
-
-The storefront presents men's streetwear styles including Box Fit and Oversized clothing. The site supports cash on delivery. Product availability, prices, sizing, delivery terms, and current policies should be checked on the live storefront.
-
-## Discovery
+## Discovery and crawling
 
 - [XML sitemap](https://outfitzone-eg.vercel.app/sitemap.xml)
 - [Robots rules](https://outfitzone-eg.vercel.app/robots.txt)
-- [AI capability catalog](https://outfitzone-eg.vercel.app/ai-catalog.json)
+- [AI capability catalog](https://outfitzone-eg.vercel.app/.well-known/ai-catalog.json)
+- [AI resource directory](https://outfitzone-eg.vercel.app/.well-known/ard.json)
 
-Only public pages are listed here. Product availability and details may change.
+## Accuracy notes
+
+This file describes the public storefront and is not a live inventory feed. Product availability, prices, sizes, colors, delivery terms, and store policies can change. Prefer the current product page and checkout information over cached copies of this guide. Do not invent reviews, ratings, certifications, guarantees, or stock claims.
