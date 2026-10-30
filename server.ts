@@ -1505,20 +1505,37 @@ app.post(
 
 // Keep crawler access and sitemap URLs aligned with the configured canonical domain.
 app.get('/robots.txt', (_req: Request, res: Response) => {
-  const body = [
-    'User-agent: *',
-    'Allow: /',
+  // Keep private/customer-specific storefront routes unavailable to every crawler.
+  // Search and training crawlers are explicitly allowed on public content.
+  const protectedPaths = [
     'Disallow: /admin',
     'Disallow: /cart',
     'Disallow: /checkout',
     'Disallow: /order-success/',
     'Disallow: /track',
+  ];
+
+  const crawlerGroups = [
+    '*',
+    'OAI-SearchBot',
+    'GPTBot',
+    'ChatGPT-User',
+    'OAI-AdsBot',
+    'ClaudeBot',
+    'Claude-SearchBot',
+    'Claude-User',
+    'Google-Extended',
+  ];
+
+  const body = crawlerGroups.flatMap((agent) => [
+    'User-agent: ' + agent,
+    'Allow: /',
+    ...protectedPaths,
     '',
-    'Sitemap: ' + SITE_URL + '/sitemap.xml',
-    '',
-  ].join('\\n');
-  res.removeHeader('X-Robots-Tag');
-  return res.status(200).type('text/plain').send(body);
+  ]);
+
+  body.push('Sitemap: ' + SITE_URL + '/sitemap.xml', '');
+  return res.status(200).type('text/plain; charset=utf-8').send(body.join('\\n'));
 });
 
 // Server-render SEO metadata AND crawlable page content for public storefront routes.
