@@ -1760,6 +1760,7 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
   );
 
   // Avoid serving a stale sitemap for a full day after products change.
+  res.removeHeader('X-Robots-Tag');
   res.status(200)
     .set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
     .type('application/xml')
@@ -1903,10 +1904,7 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     replaceMeta('property', 'og:image', image || SITE_URL + '/og-image.svg');
     replaceMeta('name', 'twitter:title', title);
     replaceMeta('name', 'twitter:description', description);
-    if (image) {
-      replaceMeta('property', 'og:image', image);
-      replaceMeta('name', 'twitter:image', image);
-    }
+    replaceMeta('name', 'twitter:image', image || SITE_URL + '/og-image.svg');
     const canonicalTag = '<link rel="canonical" href="' + escapeHtml(canonical) + '" />';
     const canonicalStart = html.indexOf('<link rel="canonical"');
     if (canonicalStart >= 0) {
@@ -1941,6 +1939,7 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     const shell = buildSeoHtmlShell(title, description, canonical);
     const fallback = '<main class="oz-seo-fallback" dir="rtl" lang="ar"><h1>' +
       escapeHtml(name) + '</h1><p>' + escapeHtml(description) + '</p></main>';
+    res.removeHeader('X-Robots-Tag');
     return res.status(200).type('html').send(shell.replace('<div id="root"></div>', '<div id="root">' + fallback + '</div>'));
   }
 });
