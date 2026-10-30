@@ -1594,7 +1594,9 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
         : '';
       const name = String(product.name || 'Outfit Zone');
       const href = '/products/' + encodeURIComponent(String(product.slug));
-      const price = Number(product.price);
+      const price = product.price === null || product.price === undefined || product.price === ''
+    ? NaN
+    : Number(product.price);
       return '<article class="oz-seo-product">' +
         (image ? '<a href="' + escapeHtml(href) + '"><img src="' + escapeHtml(image) +
           '" alt="' + escapeHtml(name) + '" loading="lazy" width="320" height="429"></a>' : '') +
