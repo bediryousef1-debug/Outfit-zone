@@ -510,10 +510,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-          {filteredProducts.map((product) => (
+          {filteredProducts.map((product, index) => (
             <ProductCard
               key={product.id}
               product={product}
+              priority={index < 2}
+              headingLevel={2}
               onSelect={(slug) =>
                 onSelectProduct(slug)
               }
@@ -522,9 +524,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
       )}
 
-      <div className="-mx-3.5 sm:-mx-6 my-10" aria-label={language === 'en' ? 'Outfit Zone collection divider' : 'فاصل مجموعة Outfit Zone'}>
+      <section className="-mx-3.5 sm:-mx-6 my-10" aria-label={language === 'en' ? 'Outfit Zone collection divider' : 'فاصل مجموعة Outfit Zone'}>
         <ZoneMarquee />
-      </div>
+      </section>
 
       {/* Filter Modal */}
       <ProductFilterModal
