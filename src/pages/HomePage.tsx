@@ -106,6 +106,14 @@ export const HomePage: React.FC<HomePageProps> = ({
       document.head.appendChild(preload);
     }
     preload.href = href;
+    const heroSrcSet = getResponsiveImageSrcSet(firstHeroImage);
+    if (heroSrcSet) {
+      preload.setAttribute('imagesrcset', heroSrcSet);
+      preload.setAttribute('imagesizes', '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 768px');
+    } else {
+      preload.removeAttribute('imagesrcset');
+      preload.removeAttribute('imagesizes');
+    }
     preload.setAttribute('fetchpriority', 'high');
   }, [currentSlides[0]?.image_url]);
 
