@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>Outfit Zone | Wear In The Zone - براند ستريت وير مصري</title>
-    <meta name="description" content="Outfit Zone - براند ملابس ستريت وير رجالي في مصر. تيشيرتات Box Fit و Oversized، بولو وقمصان بتصميم عصري وخامات قطنية ثقيلة. الدفع عند الاستلام مع إمكانية المعاينة قبل الاستلام." />
-    <meta property="og:title" content="Outfit Zone | Wear In The Zone - براند ستريت وير مصري" />
-    <meta property="og:description" content="تيشيرتات وبولو ستريت وير Box Fit و Oversized بأعلى خامات قطن مصري والدفع عند الاستلام." />
+    <title>Outfit Zone | ملابس رجالي وستريت وير في مصر - Wear In The Zone</title>
+    <meta name="description" content="Outfit Zone متجر ملابس رجالي وشبابي في مصر متخصص في ستايل الستريت وير. اكتشف تيشيرتات Box Fit وOversized والبولو والقمصان المتاحة، مع الدفع عند الاستلام." />
+    <meta property="og:title" content="Outfit Zone | ملابس رجالي وستريت وير في مصر - Wear In The Zone" />
+    <meta property="og:description" content="ملابس رجالي وشبابي وستريت وير من Outfit Zone في مصر. اكتشف التيشيرتات والبولو والقمصان المتاحة مع الدفع عند الاستلام." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://outfitzone-eg.vercel.app/" />
     <link rel="canonical" href="https://outfitzone-eg.vercel.app/" />
@@ -64,14 +64,14 @@
           path === '/track' || path.indexOf('/order-success/') === 0 ||
           path === '/admin' || path.indexOf('/admin/') === 0;
         var titles = {
-          '/': ['Outfit Zone | Wear In The Zone - براند ستريت وير مصري', 'Outfit Zone - براند ملابس ستريت وير رجالي في مصر. تيشيرتات Box Fit و Oversized مع الدفع عند الاستلام.'],
-          '/products': ['تشكيلة الستريت وير | Outfit Zone', 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.'],
+          '/': ['Outfit Zone | ملابس رجالي وستريت وير في مصر - Wear In The Zone', 'Outfit Zone متجر ملابس رجالي وشبابي في مصر متخصص في ستايل الستريت وير. اكتشف تيشيرتات Box Fit وOversized والبولو والقمصان المتاحة، مع الدفع عند الاستلام.'],
+          '/products': ['ملابس رجالي وستريت وير | تشكيلة Outfit Zone', 'تصفح ملابس Outfit Zone الرجالي والشبابي في مصر، واكتشف موديلات التيشيرتات والبولو والقمصان المتاحة بتصميمات ستريت وير.'],
           '/about': ['قصتنا وعن البراند | Outfit Zone', 'تعرف على قصة Outfit Zone ورؤيتنا في تقديم ملابس ستريت وير رجالي بتصاميم عصرية.'],
           '/contact': ['تواصل معنا | Outfit Zone', 'تواصل مع Outfit Zone للاستفسار عن المنتجات والمقاسات والطلبات.']
         };
         var englishTitles = {
-          '/': ['Outfit Zone | Wear In The Zone - Egyptian Streetwear Brand', 'Outfit Zone is an Egyptian men’s streetwear brand. Explore Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.'],
-          '/products': ['Streetwear Collection | Outfit Zone', 'Browse the Outfit Zone men’s streetwear collection and discover available styles.'],
+          '/': ['Outfit Zone | Men’s Streetwear in Egypt - Wear In The Zone', 'Outfit Zone is an Egyptian men’s clothing and streetwear store. Explore available Box Fit and Oversized T-shirts, polos and shirts with cash on delivery.'],
+          '/products': ['Men’s Streetwear Collection | Outfit Zone', 'Browse Outfit Zone men’s clothing and streetwear collection in Egypt, including available T-shirts, polos and shirts.'],
           '/about': ['About the Brand | Outfit Zone', 'Learn about Outfit Zone and our approach to modern men’s streetwear.'],
           '/contact': ['Contact Us | Outfit Zone', 'Contact Outfit Zone about products, sizing and orders.']
         };
@@ -108,6 +108,36 @@
           if (ogDescription) ogDescription.content = title[1];
         }
       })();
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://outfitzone-eg.vercel.app/#organization",
+            "name": "Outfit Zone",
+            "alternateName": ["OutfitZone", "اوتفيت زون", "أوتفيت زون", "اوت فيت زون"],
+            "url": "https://outfitzone-eg.vercel.app/",
+            "description": "متجر مصري للملابس الرجالي والشبابي وستايل الستريت وير.",
+            "areaServed": {
+              "@type": "Country",
+              "name": "Egypt"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://outfitzone-eg.vercel.app/#website",
+            "url": "https://outfitzone-eg.vercel.app/",
+            "name": "Outfit Zone",
+            "alternateName": ["OutfitZone", "اوتفيت زون", "أوتفيت زون", "اوت فيت زون"],
+            "inLanguage": ["ar-EG", "en"],
+            "publisher": {
+              "@id": "https://outfitzone-eg.vercel.app/#organization"
+            }
+          }
+        ]
+      }
     </script>
   </head>
   <body class="antialiased min-h-screen transition-colors duration-200 bg-[#f9f9fb] text-[#09090b] dark:bg-[#0c0c0e] dark:text-[#ededed] selection:bg-neutral-200 selection:text-black dark:selection:bg-neutral-800 dark:selection:text-white">

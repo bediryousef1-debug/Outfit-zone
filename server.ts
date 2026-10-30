@@ -1489,12 +1489,12 @@ app.get(['/', '/products', '/about', '/contact'], (req: Request, res: Response) 
     : req.path;
   const pages: Record<string, { title: string; description: string }> = {
     '/': {
-      title: 'Outfit Zone | Wear In The Zone - براند ستريت وير مصري',
-      description: 'Outfit Zone - براند ملابس ستريت وير رجالي في مصر. تيشيرتات Box Fit و Oversized مع الدفع عند الاستلام.',
+      title: 'Outfit Zone | ملابس رجالي وستريت وير في مصر - Wear In The Zone',
+      description: 'Outfit Zone متجر ملابس رجالي وشبابي في مصر متخصص في ستايل الستريت وير. اكتشف تيشيرتات Box Fit وOversized والبولو والقمصان المتاحة، مع الدفع عند الاستلام.',
     },
     '/products': {
-      title: 'تشكيلة الستريت وير | Outfit Zone',
-      description: 'تصفح تشكيلة Outfit Zone من ملابس الستريت وير الرجالي واكتشف الموديلات المتاحة.',
+      title: 'ملابس رجالي وستريت وير | تشكيلة Outfit Zone',
+      description: 'تصفح ملابس Outfit Zone الرجالي والشبابي في مصر، واكتشف موديلات التيشيرتات والبولو والقمصان المتاحة بتصميمات ستريت وير.'
     },
     '/about': {
       title: 'قصتنا وعن البراند | Outfit Zone',
