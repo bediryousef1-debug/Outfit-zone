@@ -524,9 +524,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
       )}
 
-      <section className="-mx-3.5 sm:-mx-6 my-10" aria-label={language === 'en' ? 'Outfit Zone collection divider' : 'فاصل مجموعة Outfit Zone'}>
+      <div className="-mx-3.5 sm:-mx-6 my-10" aria-hidden="true">
         <ZoneMarquee />
-      </section>
+      </div>
 
       {/* Filter Modal */}
       <ProductFilterModal
