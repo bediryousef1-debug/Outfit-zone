@@ -35,8 +35,19 @@ const loadData = async () => {
 setIsLoading(true);
 setError(null);
 
+// Fetch hero slides independently so slower non-critical metadata cannot delay the first viewport.
+const heroSlidesRequest = api.getHeroSlides()
+  .then((data) => {
+    setHeroSlides(data);
+    return data;
+  })
+  .catch(() => {
+    setHeroSlides([]);
+    return [];
+  });
+
 try {
-  const [settingsData, categoriesData, contentData, socialData, heroSlidesData] = await Promise.all([
+  const [settingsData, categoriesData, contentData, socialData] = await Promise.all([
     api.getStoreSettings().catch(() => ({
       id: 'default',
       store_name: 'Outfit Zone',
@@ -94,14 +105,12 @@ try {
       messenger_enabled: true,
     })),
 
-    api.getHeroSlides().catch(() => []),
   ]);
 
   setSettings(settingsData);
   setCategories(categoriesData);
   setContent(contentData);
   setContactSocial(socialData);
-  setHeroSlides(heroSlidesData);
 } catch (err: any) {
   console.error('Failed to load store metadata:', err);
   setError(err.message || 'حدث خطأ في جلب بيانات المتجر');
