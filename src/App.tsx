@@ -17,11 +17,12 @@ import { SocialBar } from './components/layout/SocialBar';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { CartDrawer } from './components/cart/CartDrawer';
 import { HomePage } from './pages/HomePage';
-import { ProductsPage } from './pages/ProductsPage';
-import { ProductDetailPage } from './pages/ProductDetailPage';
-import { CartPage } from './pages/CartPage';
 import { initSourceTracker } from './utils/sourceTracker';
 import type { AdminTab } from './pages/admin/AdminLayout';
+
+const ProductsPage = React.lazy(() => import('./pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
+const ProductDetailPage = React.lazy(() => import('./pages/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })));
+const CartPage = React.lazy(() => import('./pages/CartPage').then(m => ({ default: m.CartPage })));
 
 const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const OrderSuccessPage = React.lazy(() => import('./pages/OrderSuccessPage').then(m => ({ default: m.OrderSuccessPage })));
