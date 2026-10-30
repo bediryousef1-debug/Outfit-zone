@@ -1075,7 +1075,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
             <div className="md:col-span-7 space-y-4 text-right z-10">
-              <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-400">
+              <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-200">
                 <span className="w-8 h-[1px] bg-neutral-500" />
                 <span>OUTFIT ZONE</span>
               </div>
@@ -1098,7 +1098,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </h3>
               </div>
 
-              <p className="text-xs sm:text-sm text-neutral-400 max-w-md leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-200 max-w-md leading-relaxed">
                 {language === 'en'
                   ? content?.editorial_description_en ||
                     'Designs that reflect your modern taste, with refined details and premium cotton fabrics made for every moment of your day.'
