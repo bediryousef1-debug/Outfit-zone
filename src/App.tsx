@@ -115,11 +115,10 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
         const pageHeading = routeRoot?.querySelectorAll<HTMLElement>('h1, h2');
         if (pageHeading?.length) {
           gsap.fromTo(pageHeading,
-            { autoAlpha: 0, y: 30, clipPath: 'inset(0 0 22% 0)' },
+            { autoAlpha: 0, y: 30 },
             {
               autoAlpha: 1,
               y: 0,
-              clipPath: 'inset(0 0 0% 0)',
               duration: 0.78,
               stagger: 0.09,
               ease: 'power4.out',
