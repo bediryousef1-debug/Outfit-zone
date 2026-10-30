@@ -1675,7 +1675,6 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
     html = html.replace('<div id="root"></div>',
       '<div id="root">' + fallbackContent + '</div>');
     res.removeHeader('X-Robots-Tag');
-    res.removeHeader('X-Robots-Tag');
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
@@ -1683,8 +1682,10 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
     const page = pages[routePath];
     const canonical = SITE_URL + (routePath === '/' ? '/' : routePath);
     const shell = buildSeoHtmlShell(page.title, page.description, canonical);
+    const safePageTitle = String(page.title).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safePageDescription = String(page.description).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const fallback = '<main class="oz-seo-fallback" dir="rtl" lang="ar"><h1>' +
-      escapeHtml(page.title) + '</h1><p>' + escapeHtml(page.description) +
+      safePageTitle + '</h1><p>' + safePageDescription +
       '</p><a href="/products">تصفح المنتجات</a></main>';
     return res.status(200).type('html').send(shell.replace('<div id="root"></div>', '<div id="root">' + fallback + '</div>'));
   }
@@ -1873,6 +1874,7 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     let html: string;
     try {
       html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+      html = html.replaceAll('https://outfitzone-eg.vercel.app', SITE_URL);
     } catch (readError) {
       console.error('[SEO product metadata] Could not read dist/index.html; using embedded HTML shell:', readError);
       html = buildSeoHtmlShell(title, description, canonical);
@@ -1931,6 +1933,7 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     html = html.replace('<div id="root"></div>',
       '<div id="root">' + productBodyHtml + '</div>');
 
+    res.removeHeader('X-Robots-Tag');
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
