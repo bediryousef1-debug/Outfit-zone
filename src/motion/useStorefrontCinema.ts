@@ -172,7 +172,7 @@ export function useStorefrontCinema(pathname: string): void {
           let bounds: DOMRect | null = null;
           const onEnter = () => { bounds = card.getBoundingClientRect(); };
           const onMove = (event: PointerEvent) => {
-            if (!bounds) bounds = card.getBoundingClientRect();
+            if (!bounds) return;
             const x = (event.clientX - bounds.left) / Math.max(bounds.width, 1) - 0.5;
             const y = (event.clientY - bounds.top) / Math.max(bounds.height, 1) - 0.5;
             xTo(x * 3.2);

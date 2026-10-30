@@ -7,11 +7,11 @@ const staticImageMap: Record<string, string> = {
 };
 
 const responsiveWidths: Record<string, number[]> = {
-  'hero_streetwear_editorial_1790342899745.jpg': [480, 768, 1200],
-  'product_boxfit_tee_black_1790342911897.jpg': [360, 480, 600],
-  'product_oversized_tee_offwhite_1790342923739.jpg': [360, 480, 600],
-  'product_interlock_polo_charcoal_1790342934447.jpg': [360, 480, 600],
-  'product_streetwear_shirt_olive_1790342946975.jpg': [360, 480, 600],
+  'hero_streetwear_editorial_1790342899745.jpg': [400, 480, 640, 768, 1200],
+  'product_boxfit_tee_black_1790342911897.jpg': [320, 360, 480, 600],
+  'product_oversized_tee_offwhite_1790342923739.jpg': [320, 360, 480, 600],
+  'product_interlock_polo_charcoal_1790342934447.jpg': [320, 360, 480, 600],
+  'product_streetwear_shirt_olive_1790342946975.jpg': [320, 360, 480, 600],
 };
 
 const fallbackImage = staticImageMap['product_boxfit_tee_black_1790342911897.jpg'];
