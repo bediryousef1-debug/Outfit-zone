@@ -50,7 +50,9 @@ function splitWords(heading: HTMLElement) {
 /** Shared inner-page intro, scenes and small interaction feedback. Reuses the app's GSAP/ScrollTrigger/Lenis setup. */
 export function useStorefrontCinema(pathname: string): void {
   useEffect(() => {
-    if (pathname.startsWith('/admin')) return;
+    // Keep the products listing free of entrance/scroll animation work so its
+    // first product image can paint as soon as data and the image are ready.
+    if (pathname === '/products' || pathname.startsWith('/admin')) return;
     const root = document.querySelector<HTMLElement>('.oz-route-motion-root');
     if (!root) return;
     const isInnerPage = pathname !== '/' && root.classList.contains('oz-page-motion');

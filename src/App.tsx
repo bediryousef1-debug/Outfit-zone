@@ -60,6 +60,9 @@ function StorefrontMotionEffects({ pathname }: { pathname: string }) {
   useStorefrontCinema(pathname);
 
   useEffect(() => {
+    // The products listing is optimized for immediate content paint; skip the
+    // global Lenis/GSAP entrance and scroll-trigger setup on this route only.
+    if (pathname === '/products') return;
     const main = document.querySelector('main');
     if (!main) return;
 
