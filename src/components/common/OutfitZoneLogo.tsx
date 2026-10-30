@@ -106,7 +106,7 @@ export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
           ZONE
         </div>
 
-        <div className="text-[7px] sm:text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-semibold mt-1 whitespace-nowrap">
+        <div className={`text-[7px] sm:text-[9px] tracking-[0.3em] uppercase ${isDark ? 'text-neutral-400' : 'text-neutral-600'} font-semibold mt-1 whitespace-nowrap`}>
           WEAR IN THE ZONE
         </div>
       </div>
@@ -142,7 +142,7 @@ export const OutfitZoneLogo: React.FC<OutfitZoneLogoProps> = ({
           OUTFIT ZONE
         </span>
 
-        <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-neutral-400 font-medium mt-0.5 whitespace-nowrap">
+        <span className={`text-[9px] sm:text-[10px] tracking-widest uppercase ${isDark ? 'text-neutral-400' : 'text-neutral-600'} font-medium mt-0.5 whitespace-nowrap`}>
           WEAR IN THE ZONE
         </span>
       </div>
