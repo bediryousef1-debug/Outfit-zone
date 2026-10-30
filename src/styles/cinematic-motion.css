@@ -214,7 +214,6 @@
     border-color: rgba(160,160,160,.8);
     box-shadow: 0 24px 55px rgba(0,0,0,.2);
   }
-  .oz-page-motion button[type="submit"]:not(:disabled),
   .oz-home-page a[class*="bg-black"],
   .oz-home-page button[class*="bg-black"] {
     animation: ozButtonEnergy 4.2s ease-in-out 1.6s infinite;
