@@ -49,13 +49,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               />
 
               <div>
-                <h4
+                <h2
                   className={`text-sm font-semibold mb-1 ${
                     isDark ? 'text-white' : 'text-neutral-900'
                   }`}
                 >
                   {t('footer.cod_title', 'الدفع عند الاستلام')}
-                </h4>
+                </h2>
 
                 <p
                   className={`text-xs leading-relaxed ${
@@ -91,13 +91,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 />
 
                 <div>
-                  <h4
+                  <h2
                     className={`text-sm font-semibold mb-1 ${
                       isDark ? 'text-white' : 'text-neutral-900'
                     }`}
                   >
                     {t('footer.inspection_title', 'معاينة مجانية عند الاستلام')}
-                  </h4>
+                  </h2>
 
                   <p
                     className={`text-xs leading-relaxed ${
@@ -133,13 +133,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               />
 
               <div>
-                <h4
+                <h2
                   className={`text-sm font-semibold mb-1 ${
                     isDark ? 'text-white' : 'text-neutral-900'
                   }`}
                 >
                   {t('footer.exchange_title', 'استبدال المقاس')}
-                </h4>
+                </h2>
 
                 <p
                   className={`text-xs leading-relaxed ${
@@ -202,7 +202,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   className={`transition-colors ${
                     isDark
                       ? 'text-neutral-400 hover:text-white'
-                      : 'text-neutral-500 hover:text-neutral-900'
+                      : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
                   Instagram
@@ -228,7 +228,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     className={`transition-colors ${
                       isDark
                         ? 'text-neutral-400 hover:text-white'
-                        : 'text-neutral-500 hover:text-neutral-900'
+                        : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
                     Facebook
@@ -255,7 +255,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     className={`transition-colors ${
                       isDark
                         ? 'text-neutral-400 hover:text-white'
-                        : 'text-neutral-500 hover:text-neutral-900'
+                        : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
                     TikTok
@@ -284,7 +284,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     className={`transition-colors ${
                       isDark
                         ? 'text-neutral-400 hover:text-white'
-                        : 'text-neutral-500 hover:text-neutral-900'
+                        : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
                     Messenger
@@ -296,13 +296,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h4
+            <h2
               className={`text-xs font-bold uppercase tracking-wider ${
                 isDark ? 'text-neutral-300' : 'text-neutral-800'
               }`}
             >
               {t('footer.quick_nav', 'التنقل السريع')}
-            </h4>
+            </h2>
 
             <ul className="space-y-2 text-xs">
               <li>
@@ -355,13 +355,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Policies */}
           <div className="space-y-3">
-            <h4
+            <h2
               className={`text-xs font-bold uppercase tracking-wider ${
                 isDark ? 'text-neutral-300' : 'text-neutral-800'
               }`}
             >
               {t('footer.policies', 'السياسات والشحن')}
-            </h4>
+            </h2>
 
             <ul className="space-y-2 text-xs">
               {/* Return Policy */}
@@ -426,7 +426,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           className={`mt-12 pt-6 border-t flex flex-col sm:flex-row items-center justify-between text-[11px] gap-3 ${
             isDark
               ? 'border-neutral-900 text-neutral-500'
-              : 'border-neutral-200 text-neutral-500'
+              : 'border-neutral-200 text-neutral-600'
           }`}
         >
           <p>
