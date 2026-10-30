@@ -1611,8 +1611,22 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
         typeof item.image_url === 'string' && item.image_url.trim() &&
         !item.image_url.trim().toLowerCase().startsWith('data:')
       )?.image_url;
+      const filename = rawImage ? rawImage.split(/[?#]/)[0].split('/').pop() || '' : '';
+      const optimizedFiles: Record<string, number[]> = {
+        'product_boxfit_tee_black_1790342911897.jpg': [360, 480, 600],
+        'product_oversized_tee_offwhite_1790342923739.jpg': [360, 480, 600],
+        'product_interlock_polo_charcoal_1790342934447.jpg': [360, 480, 600],
+        'product_streetwear_shirt_olive_1790342946975.jpg': [360, 480, 600],
+      };
+      const widths = optimizedFiles[filename];
+      const baseName = filename.replace(/\.jpg$/i, '');
       const image = rawImage
-        ? (/^https?:\/\//i.test(rawImage) ? rawImage : new URL(rawImage, siteUrl).toString())
+        ? widths
+          ? siteUrl + '/optimized/' + baseName + '-480.webp'
+          : (/^https?:\/\//i.test(rawImage) ? rawImage : new URL(rawImage, siteUrl).toString())
+        : '';
+      const srcSet = widths
+        ? widths.map((width) => siteUrl + '/optimized/' + baseName + '-' + width + '.webp ' + width + 'w').join(', ')
         : '';
       const name = String(product.name || 'Outfit Zone');
       const href = '/products/' + encodeURIComponent(String(product.slug));
@@ -1621,7 +1635,8 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
     : Number(product.price);
       return '<article class="oz-seo-product">' +
         (image ? '<a href="' + escapeHtml(href) + '"><img src="' + escapeHtml(image) +
-          '" alt="' + escapeHtml(name) + '" loading="lazy" width="320" height="429"></a>' : '') +
+          '"' + (srcSet ? ' srcset="' + escapeHtml(srcSet) + '" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"' : '') +
+          ' alt="' + escapeHtml(name) + '" loading="lazy" decoding="async" width="320" height="429"></a>' : '') +
         '<h2><a href="' + escapeHtml(href) + '">' + escapeHtml(name) + '</a></h2>' +
         (Number.isFinite(price) ? '<p>' + escapeHtml(price.toLocaleString('en-EG')) + ' جنيه مصري</p>' : '') +
         '</article>';
