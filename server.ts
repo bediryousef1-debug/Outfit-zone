@@ -1548,7 +1548,8 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
         return (a.sort_order ?? 0) - (b.sort_order ?? 0);
       }) : [];
       const rawImage = images.find((item: any) =>
-        typeof item.image_url === 'string' && item.image_url.trim()
+        typeof item.image_url === 'string' && item.image_url.trim() &&
+        !item.image_url.trim().toLowerCase().startsWith('data:')
       )?.image_url;
       const image = rawImage
         ? (/^https?:\/\//i.test(rawImage) ? rawImage : new URL(rawImage, siteUrl).toString())
