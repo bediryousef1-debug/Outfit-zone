@@ -1825,17 +1825,19 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
   let totalStock = 0;
 
   if (supabaseClient) {
-    const { data: variants, error: variantsError } = await supabaseClient
-      .from('product_variants')
-      .select('stock_quantity')
-      .eq('product_id', product.id);
-
-    if (!variantsError && Array.isArray(variants)) {
-      stockKnown = true;
-      totalStock = variants.reduce((sum: number, variant: any) =>
-        sum + Math.max(0, Number(variant.stock_quantity) || 0), 0);
-    } else if (variantsError) {
-      console.error('[SEO product metadata] Could not read stock for structured data:', variantsError.message);
+    try {
+      const { data: variants, error: variantsError } = await supabaseClient
+        .from('product_variants')
+        .select('stock_quantity')
+        .eq('product_id', product.id);
+      if (variantsError) throw variantsError;
+      if (Array.isArray(variants)) {
+        stockKnown = true;
+        totalStock = variants.reduce((sum: number, variant: any) =>
+          sum + Math.max(0, Number(variant.stock_quantity) || 0), 0);
+      }
+    } catch (variantsError) {
+      console.error('[SEO product metadata] Could not read stock for structured data:', variantsError);
     }
   } else {
     const variants = db.product_variants.filter((item: any) => item.product_id === product.id);
