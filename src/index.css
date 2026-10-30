@@ -1240,3 +1240,14 @@ html.dark .oz-home-page .oz-hero-loading-reserve {
     min-height: 520px;
   }
 }
+
+
+/* Improve WCAG text contrast on the light storefront without changing layout or typography. */
+html.light .oz-home-page .text-neutral-400,
+html.light .oz-home-page .text-neutral-500,
+html.light header .text-neutral-400,
+html.light header .text-neutral-500,
+html.light footer .text-neutral-400,
+html.light footer .text-neutral-500 {
+  color: #595959 !important;
+}
