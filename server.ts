@@ -26,6 +26,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+const SITE_URL = (process.env.SITE_URL || 'https://outfitzone-eg.vercel.app').replace(/\/+$/, '');
+
+function buildSeoHtmlShell(title: string, description: string, canonical: string): string {
+  const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/\"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8" />' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0" />' +
+    '<title>' + escape(title) + '</title>' +
+    '<meta name="description" content="' + escape(description) + '" />' +
+    '<link rel="canonical" href="' + escape(canonical) + '" />' +
+    '<meta property="og:type" content="website" /><meta property="og:title" content="' + escape(title) + '" />' +
+    '<meta property="og:description" content="' + escape(description) + '" />' +
+    '<meta property="og:url" content="' + escape(canonical) + '" />' +
+    '<meta property="og:image" content="' + escape(SITE_URL + '/og-image.svg') + '" />' +
+    '<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@graph': [
+      { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: 'Outfit Zone', url: SITE_URL + '/' },
+      { '@type': 'WebSite', '@id': SITE_URL + '/#website', name: 'Outfit Zone', url: SITE_URL + '/', publisher: { '@id': SITE_URL + '/#organization' } }
+    ] }).replace(/</g, '\\u003c') + '</script></head><body><div id="root"></div></body></html>';
+}
+
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -1508,7 +1527,7 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
   const page = pages[routePath];
   if (!page) return res.status(404).end();
 
-  const siteUrl = 'https://outfitzone-eg.vercel.app';
+  const siteUrl = SITE_URL;
   const canonical = siteUrl + (routePath === '/' ? '/' : routePath);
   const escapeHtml = (value: unknown) => String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -1529,9 +1548,10 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
           .order('created_at', { ascending: false });
         if (error) {
           console.error('[SEO storefront HTML] Product query failed:', error.message);
-          return res.status(503).type('text/plain').send('Storefront temporarily unavailable');
+          products = [];
+        } else {
+          products = data || [];
         }
-        products = data || [];
       } else {
         products = db.products
           .filter((product: any) => product.is_active !== false && product.slug)
@@ -1585,7 +1605,13 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
         '<p><a href="/products">تصفح المنتجات</a></p></main>';
     }
 
-    let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    let html: string;
+    try {
+      html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    } catch (readError) {
+      console.error('[SEO static metadata] Could not read dist/index.html; using embedded HTML shell:', readError);
+      html = buildSeoHtmlShell(page.title, page.description, canonical);
+    }
     const setMeta = (attribute: string, key: string, value: string) => {
       const tag = '<meta ' + attribute + '="' + key + '" content="' + escapeHtml(value) + '" />';
       const pattern = new RegExp('<meta\\s+' + attribute + '="' + key + '"[^>]*>', 'i');
@@ -1631,39 +1657,42 @@ app.get(['/', '/products', '/about', '/contact'], async (req: Request, res: Resp
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
-    console.error('[SEO static metadata] Could not render storefront HTML:', error);
-    return res.status(500).type('text/plain').send('Page temporarily unavailable');
+    console.error('[SEO static metadata] Unexpected rendering error; serving embedded HTML shell:', error);
+    const page = pages[routePath];
+    const canonical = SITE_URL + (routePath === '/' ? '/' : routePath);
+    const shell = buildSeoHtmlShell(page.title, page.description, canonical);
+    const fallback = '<main class="oz-seo-fallback" dir="rtl" lang="ar"><h1>' +
+      escapeHtml(page.title) + '</h1><p>' + escapeHtml(page.description) +
+      '</p><a href="/products">تصفح المنتجات</a></main>';
+    return res.status(200).type('html').send(shell.replace('<div id="root"></div>', '<div id="root">' + fallback + '</div>'));
   }
 });
 
 // Dynamic XML sitemap: include every public, active product and keep it fresh for crawlers.
 app.get('/sitemap.xml', async (_req: Request, res: Response) => {
-  const siteUrl = 'https://outfitzone-eg.vercel.app';
+  const siteUrl = SITE_URL;
   let productSlugs: Array<{ slug: string; updated_at?: string | null }> = [];
 
   if (supabaseClient) {
     // Supabase/PostgREST may cap a single response (commonly at 1,000 rows).
-    // Read in stable pages so larger catalogs are not silently truncated.
     const pageSize = 500;
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await supabaseClient
-        .from('products')
-        .select('slug, updated_at')
-        .eq('is_active', true)
-        .not('slug', 'is', null)
-        .order('slug', { ascending: true })
-        .range(from, from + pageSize - 1);
-
-      if (error) {
-        console.error('[SEO sitemap] Supabase query failed:', error.message);
-        return res.status(503).type('text/plain').send('Sitemap temporarily unavailable');
+    try {
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('slug, updated_at')
+          .eq('is_active', true)
+          .not('slug', 'is', null)
+          .order('slug', { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const page = (data || []).filter((p: any) => typeof p.slug === 'string' && p.slug.trim());
+        productSlugs.push(...page);
+        if (page.length < pageSize) break;
       }
-
-      const page = (data || []).filter((p: any) =>
-        typeof p.slug === 'string' && p.slug.trim()
-      );
-      productSlugs.push(...page);
-      if (page.length < pageSize) break;
+    } catch (error) {
+      console.error('[SEO sitemap] Supabase query failed; returning static URLs:', error);
+      productSlugs = [];
     }
   } else {
     productSlugs = db.products
@@ -1719,7 +1748,7 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
 // Server-render product-specific SEO metadata for crawlers and social previews.
 app.get('/products/:slug', async (req: Request, res: Response) => {
   const slug = String(req.params.slug || '');
-  const siteUrl = 'https://outfitzone-eg.vercel.app';
+  const siteUrl = SITE_URL;
   let product: any = null;
 
   if (supabaseClient) {
@@ -1730,10 +1759,11 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
       .eq('is_active', true)
       .maybeSingle();
     if (error) {
-      console.error('[SEO product metadata] Supabase query failed:', error.message);
-      return res.status(503).type('text/plain').send('Product temporarily unavailable');
+      console.error('[SEO product metadata] Supabase query failed; serving crawlable fallback:', error.message);
+      product = { id: slug, name: slug.replace(/[-_]+/g, ' '), slug, description: 'اكتشف هذا المنتج من Outfit Zone. تفاصيل المنتج متاحة عند استعادة الاتصال بالمتجر.', price: null, images: [] };
+    } else {
+      product = data;
     }
-    product = data;
   } else {
     const found = db.products.find((item: any) => item.slug === slug && item.is_active !== false);
     if (found) {
@@ -1815,7 +1845,13 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
   if (image) jsonLd.image = [image];
 
   try {
-    let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    let html: string;
+    try {
+      html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf8');
+    } catch (readError) {
+      console.error('[SEO product metadata] Could not read dist/index.html; using embedded HTML shell:', readError);
+      html = buildSeoHtmlShell(title, description, canonical);
+    }
     const replaceMeta = (attribute: string, key: string, value: string) => {
       const prefix = '<meta ' + attribute + '="' + key + '"';
       const start = html.indexOf(prefix);
@@ -1872,8 +1908,11 @@ app.get('/products/:slug', async (req: Request, res: Response) => {
     res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1800');
     return res.status(200).type('html').send(html);
   } catch (error) {
-    console.error('[SEO product metadata] Could not read built HTML:', error);
-    return res.status(500).type('text/plain').send('Page temporarily unavailable');
+    console.error('[SEO product metadata] Unexpected rendering error; serving embedded product shell:', error);
+    const shell = buildSeoHtmlShell(title, description, canonical);
+    const fallback = '<main class="oz-seo-fallback" dir="rtl" lang="ar"><h1>' +
+      escapeHtml(name) + '</h1><p>' + escapeHtml(description) + '</p></main>';
+    return res.status(200).type('html').send(shell.replace('<div id="root"></div>', '<div id="root">' + fallback + '</div>'));
   }
 });
 
